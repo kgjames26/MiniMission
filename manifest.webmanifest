@@ -1,0 +1,15 @@
+{
+  "name": "Mini Mission",
+  "short_name": "Mini Mission",
+  "description": "Une mission d'entraide avec Ziggy, Filou ou Titan.",
+  "lang": "fr-BE",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#bfeaff",
+  "theme_color": "#68c9f5",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

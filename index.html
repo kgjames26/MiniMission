@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#68c9f5" />
+    <meta name="description" content="Une petite mission d'entraide avec Ziggy, Filou ou Titan." />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>Mini Mission</title>
+  </head>
+  <body>
+    <main id="app" class="app">
+      <section id="home" class="screen home-screen active" aria-label="Accueil de Mini Mission">
+        <img class="home-art" src="assets/mini-mission-start.jpg" alt="Ziggy la Comète, Filou le Tisseur et Titan Puce aident le quartier" />
+        <div class="home-shade"></div>
+        <div class="home-top"><span class="eyebrow"><span class="sun-dot"></span> LA MISSION DU JOUR</span><button class="icon-button settings-open" aria-label="Réglages pour l'adulte" title="Réglages">⚙</button></div>
+        <div class="home-copy">
+          <p class="mini-kicker">Une aventure pour faire du bien</p>
+          <h1>Prêt pour<br /><span>Mini Mission&nbsp;?</span></h1>
+          <p class="home-description">Choisis ton héros. Ensemble, vous allez aider le quartier.</p>
+          <button id="start-button" class="primary-button">Commencer <span aria-hidden="true">➜</span></button>
+          <p class="home-footnote">Une mission. Puis les héros se reposent.</p>
+        </div>
+        <div class="home-sticker sticker-heart" aria-hidden="true">♥</div>
+        <div class="home-sticker sticker-star" aria-hidden="true">★</div>
+      </section>
+
+      <section id="hero-select" class="screen hero-screen" aria-label="Choisir un héros">
+        <header class="screen-header"><button class="back-button" data-go="home" aria-label="Retour">←</button><div><p class="eyebrow">MISSION DU JOUR</p><h2>Qui part aider&nbsp;?</h2></div><span class="header-spacer"></span></header>
+        <p class="screen-intro">Choisis ton héros. Il t'accompagne pour toute la mission.</p>
+        <div class="hero-grid">
+          <button class="hero-card ziggy" data-hero="ziggy">
+            <span class="hero-art-wrap"><svg viewBox="0 0 180 210" class="hero-svg" aria-hidden="true"><ellipse cx="90" cy="194" rx="53" ry="10" fill="#c5e7f5"/><path d="M48 110 17 145l37-7M132 110l31 35-37-7" fill="#ffba42" stroke="#b85831" stroke-width="4" stroke-linejoin="round"/><path d="M63 100h54l15 61H49z" fill="#ffcf37" stroke="#bd6137" stroke-width="5"/><path d="m90 111 6 12 13 2-10 9 2 13-11-7-11 7 2-13-10-9 13-2z" fill="#ff6d62"/><path d="M58 157h27l-7 29H51zM96 157h27l9 29h-28z" fill="#ef514d" stroke="#b85831" stroke-width="4"/><path d="M46 187h36q6 0 6 6v6H45q-8 0-8-6t9-6zm49 0h38q8 0 8 7t-8 5h-35z" fill="#47b8eb" stroke="#386c9e" stroke-width="4"/><circle cx="90" cy="66" r="39" fill="#f3bf91" stroke="#7b4438" stroke-width="4"/><path d="M51 66Q48 23 90 22q40 0 40 45l-17-12-20-14-23 18z" fill="#f24e50" stroke="#8f353c" stroke-width="5"/><path d="M57 68q33-24 66 0v19q-33 15-66 0z" fill="#ffd13d" stroke="#b85831" stroke-width="4"/><ellipse cx="76" cy="76" rx="6" ry="8" fill="#293b5b"/><ellipse cx="104" cy="76" rx="6" ry="8" fill="#293b5b"/><path d="M79 96q11 10 22 0" fill="none" stroke="#9d4b40" stroke-width="4" stroke-linecap="round"/><path d="m70 48 6-9 7 9m19 0 7-9 6 9" fill="#fff7c9" stroke="#d68b32" stroke-width="2"/><circle cx="146" cy="42" r="13" fill="#fff2a6"/><path d="m146 32 3 7 8 1-6 5 2 8-7-4-7 4 2-8-6-5 8-1z" fill="#ff9f32"/></svg></span>
+            <span class="hero-name">Ziggy la Comète</span><span class="hero-power">Bond lumineux</span><span class="choose-pill">Choisir Ziggy</span>
+          </button>
+          <button class="hero-card filou" data-hero="filou">
+            <span class="hero-art-wrap"><svg viewBox="0 0 180 210" class="hero-svg" aria-hidden="true"><ellipse cx="90" cy="194" rx="53" ry="10" fill="#c5e7f5"/><path d="M58 105 24 145l41-11M122 105l34 40-41-11" fill="#7b66d8" stroke="#50459a" stroke-width="5" stroke-linejoin="round"/><path d="M62 102h56l15 58H48z" fill="#397fc5" stroke="#315a96" stroke-width="5"/><path d="M72 113q18 16 36 0m-42 18q24 14 48 0" fill="none" stroke="#a9dfff" stroke-width="3"/><path d="M58 158h27l-5 29H50zM96 158h27l8 29h-29z" fill="#f58c4f" stroke="#76529b" stroke-width="4"/><path d="M47 187h35q7 0 7 7v5H44q-8 0-8-6t11-6zm52 0h37q8 0 8 7t-8 5h-34z" fill="#ffce64" stroke="#70529a" stroke-width="4"/><circle cx="90" cy="66" r="39" fill="#eeb993" stroke="#774e64" stroke-width="4"/><path d="M50 67Q50 26 90 23q41 0 41 46l-15-12-26 3-26 15z" fill="#3189cd" stroke="#315a96" stroke-width="5"/><path d="M61 68q29-20 58 0v20q-29 13-58 0z" fill="#fff8d7" stroke="#315a96" stroke-width="4"/><ellipse cx="77" cy="77" rx="6" ry="8" fill="#303756"/><ellipse cx="103" cy="77" rx="6" ry="8" fill="#303756"/><path d="M80 97q10 9 20 0" fill="none" stroke="#9c584c" stroke-width="4" stroke-linecap="round"/><path d="M49 63q-12 6-18 20m100-19q13 7 19 20M54 97l-15 14m85-14 16 14" fill="none" stroke="#b9eaff" stroke-width="3" stroke-linecap="round"/><circle cx="144" cy="45" r="14" fill="#fff"/><path d="M137 45h14m-7-7v14m-13-3 26-8" stroke="#8a6cdb" stroke-width="2"/></svg></span>
+            <span class="hero-name">Filou le Tisseur</span><span class="hero-power">Fil doux et pont sûr</span><span class="choose-pill">Choisir Filou</span>
+          </button>
+          <button class="hero-card titan" data-hero="titan">
+            <span class="hero-art-wrap"><svg viewBox="0 0 180 210" class="hero-svg" aria-hidden="true"><ellipse cx="90" cy="194" rx="53" ry="10" fill="#c5e7f5"/><path d="M61 103 24 141l39-7M119 103l36 38-37-7" fill="#ffcf44" stroke="#58834d" stroke-width="5" stroke-linejoin="round"/><path d="M62 102h56l16 59H46z" fill="#4eaf77" stroke="#397b57" stroke-width="5"/><path d="m69 111 21 19 21-19-8 36H78z" fill="#ffe16c"/><path d="M58 158h28l-8 29H49zM96 158h28l9 29h-31z" fill="#f0be50" stroke="#58834d" stroke-width="4"/><path d="M45 187h37q8 0 8 7v5H43q-8 0-8-6t10-6zm54 0h37q8 0 8 7t-8 5h-34z" fill="#456fbd" stroke="#42688c" stroke-width="4"/><circle cx="90" cy="64" r="39" fill="#a96542" stroke="#583d38" stroke-width="4"/><path d="M50 66Q50 27 90 24q42 0 41 46l-15-16-24-8-25 15z" fill="#352d34" stroke="#292833" stroke-width="5"/><path d="M58 66q32-21 64 0v21q-32 14-64 0z" fill="#ffe07a" stroke="#567d53" stroke-width="4"/><ellipse cx="76" cy="76" rx="6" ry="8" fill="#293b5b"/><ellipse cx="104" cy="76" rx="6" ry="8" fill="#293b5b"/><path d="M80 96q10 9 20 0" fill="none" stroke="#6c3f3b" stroke-width="4" stroke-linecap="round"/><path d="M55 109 34 145l25-11m66-24 23 35-27-11" fill="#f7cf45" stroke="#658f57" stroke-width="3"/><path d="M146 43q9-12 17-1-8 4-10 12" fill="#fff0a7"/><path d="m150 35 3 6 7 1-5 5 1 7-6-4-7 4 1-7-5-5 7-1z" fill="#77c784"/></svg></span>
+            <span class="hero-name">Titan Puce</span><span class="hero-power">Force douce</span><span class="choose-pill">Choisir Titan</span>
+          </button>
+        </div>
+        <div class="hero-footer"><span class="footer-spark">✦</span> Une seule mission aujourd'hui <span class="footer-spark">✦</span></div>
+      </section>
+
+      <section id="game-screen" class="screen game-screen" aria-label="Mission en cours">
+        <div class="game-topbar"><button id="pause-button" class="game-icon-button" aria-label="Pause">Ⅱ</button><div class="mission-label"><span class="mission-day">MISSION DU JOUR</span><strong id="mission-title">Le chaton a besoin d'aide</strong></div><div class="progress-wrap" aria-label="Progression"><div id="progress-dots" class="progress-dots"></div></div></div>
+        <div class="game-stage"><canvas id="game-canvas" width="960" height="540" aria-label="Jeu de plateforme 2D"></canvas>
+          <div id="hint-bubble" class="hint-bubble"><span class="hint-icon">✦</span><span id="hint-text">Avance doucement vers le chaton.</span></div>
+          <div id="interaction-prompt" class="interaction-prompt hidden"><span>Tu peux aider&nbsp;!</span><button id="help-button" class="help-button">AIDER <span>♥</span></button></div>
+          <div class="touch-controls" aria-label="Commandes de déplacement"><div class="move-pair"><button class="touch-button" data-control="left" aria-label="Aller à gauche">‹</button><button class="touch-button" data-control="right" aria-label="Aller à droite">›</button></div><button class="touch-button jump-button" data-control="jump" aria-label="Sauter">SAUT</button></div>
+        </div>
+        <div class="game-bottom"><span class="safe-note"><span>♥</span> Ici, tout le monde est en sécurité.</span><button id="sound-button" class="sound-button" aria-label="Couper les sons">♫</button></div>
+      </section>
+
+      <section id="pause-screen" class="screen modal-screen" aria-label="Pause">
+        <div class="modal-card pause-card"><div class="modal-icon">☁</div><p class="eyebrow">PETIT REPOS</p><h2>On reprend quand tu veux.</h2><p>Ta mission t'attend juste ici.</p><button id="resume-button" class="primary-button">Reprendre <span>➜</span></button><button class="text-button" data-go="home">Quitter la mission</button></div>
+      </section>
+
+      <section id="puzzle-screen" class="screen modal-screen" aria-label="Choisir comment aider">
+        <div class="modal-card puzzle-card"><div class="modal-icon" id="puzzle-icon">🐾</div><p class="eyebrow">ON RÉFLÉCHIT ENSEMBLE</p><h2 id="puzzle-question">Qu'est-ce qui aiderait le plus&nbsp;?</h2><p class="puzzle-subtitle">Tu peux essayer. Il n'y a pas de mauvaise réponse.</p><div id="choice-list" class="choice-list"></div><p id="puzzle-feedback" class="puzzle-feedback" aria-live="polite"></p></div>
+      </section>
+
+      <section id="ending-screen" class="screen ending-screen" aria-label="Mission terminée">
+        <div class="ending-confetti" aria-hidden="true"><i>✦</i><i>✧</i><i>★</i><i>✦</i><i>♥</i><i>✧</i></div>
+        <div id="ending-hero" class="ending-hero"></div><div class="ending-copy"><p class="eyebrow">MISSION ACCOMPLIE</p><h2>Tu as aidé<br />tout le quartier&nbsp;!</h2><p id="ending-message">Merci d'avoir fait équipe avec nous.</p><div class="rest-card"><span class="rest-stars">✦　✦　✦</span><strong>Les héros se reposent maintenant.</strong><span>La prochaine mission sera pour un autre jour.</span></div><button id="finish-button" class="primary-button">Terminer <span>♥</span></button></div>
+      </section>
+
+      <section id="done-screen" class="screen done-screen" aria-label="Mission du jour déjà terminée">
+        <div class="done-card"><div class="done-badge">✓</div><p class="eyebrow">BELLE ÉQUIPE</p><h2>La mission du jour<br />est terminée.</h2><p id="done-hero-copy">Ton héros se repose après cette belle aventure.</p><div class="nap-cloud">☁ <span>z</span><b>z</b></div><button class="secondary-button" data-go="home">Retour à l'accueil</button></div>
+      </section>
+
+      <section id="settings-screen" class="screen modal-screen" aria-label="Réglages adulte">
+        <div class="modal-card settings-card"><button class="close-settings" data-go="home" aria-label="Fermer">×</button><p class="eyebrow">POUR L'ADULTE</p><h2>Réglages</h2><label class="setting-row"><span>Sons du jeu</span><input id="music-toggle" type="checkbox" checked /></label><label class="setting-row"><span>Sons des actions</span><input id="effects-toggle" type="checkbox" checked /></label><p class="settings-note">La mission est courte et se termine quand le héros rentre à la base.</p><button id="reset-day-button" class="text-button reset-day">Maintenir pour réinitialiser la mission du jour</button></div>
+      </section>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </main>
+    <script src="app.js" defer></script>
+  </body>
+</html>
