@@ -10,3 +10,4 @@
 @media(orientation:portrait) and (max-width:720px){.home-art{object-fit:contain;object-position:center 15%}.home-screen{background:linear-gradient(180deg,#71c6eb 0%,#c9ecf6 46%,#6eaa81 100%)}.home-shade{background:linear-gradient(0deg,rgba(18,60,85,.78),rgba(18,60,85,.04) 72%)}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 .choice-button.try-again{border-color:#f6d28f;background:#fff9e9}.choice-button.hint-answer{border-color:#72c58c;background:#eaffee;animation:answer-pulse .7s ease-in-out infinite alternate}@keyframes answer-pulse{to{transform:scale(1.035)}}
+.choice-button:disabled{cursor:default;opacity:.9}
