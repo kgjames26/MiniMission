@@ -218,7 +218,7 @@
     world.coins=mission.coins;world.enemies=mission.enemies;world.bigFriends=mission.bigFriends;world.letters=mission.letters;
     save.coinTotal=Number(save.coinTotal)||0;$('#coin-count').textContent=String(save.coinTotal);
     updateFriendCounter();updateLetterCounter();
-    const startX=save.progress?world.stations[save.progress]?.x-460:140;
+    const startX=save.progress?world.stations[save.progress]?.x-460:70;
     player = {x:Math.max(70,startX), y:world.floor-86, vx:0, vy:0, w:58,h:86,grounded:true,jumping:false,facing:1,bob:0};
     world.checkpoint=player.x;
     particles=[]; lastPromptStation=-1; ropeBridge=null;abilityUntil=0;abilityCooldownUntil=0;heroAnimation={state:'idle',previous:null,changedAt:performance.now(),override:'',overrideUntil:0};lastActiveTick=performance.now(); lastTime=performance.now();
