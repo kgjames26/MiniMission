@@ -15,20 +15,20 @@
       <section id="home" class="screen home-screen active" aria-label="Accueil de Mini Mission">
         <img class="home-art" src="assets/mini-mission-start.jpg" alt="Ziggy la Comète, Filou le Tisseur et Titan Puce aident le quartier" />
         <div class="home-shade"></div>
-        <div class="home-top"><span class="eyebrow"><span class="sun-dot"></span> LA MISSION DU JOUR</span><button class="icon-button settings-open" aria-label="Réglages pour l'adulte" title="Réglages">⚙</button></div>
+        <div class="home-top"><span class="eyebrow"><span class="sun-dot"></span> MINI MISSION</span><button class="icon-button settings-open" aria-label="Réglages pour l'adulte" title="Réglages">⚙</button></div>
         <div class="home-copy">
           <p class="mini-kicker">Une aventure pour faire du bien</p>
           <h1>Prêt pour<br /><span>Mini Mission&nbsp;?</span></h1>
           <p class="home-description">Choisis ton héros. Ensemble, vous allez aider le quartier.</p>
           <button id="start-button" class="primary-button">Commencer <span aria-hidden="true">➜</span></button>
-          <p class="home-footnote">Une mission. Puis les héros se reposent.</p>
+          <p class="home-footnote">Une aventure après l’autre, à ton rythme.</p>
         </div>
         <div class="home-sticker sticker-heart" aria-hidden="true">♥</div>
         <div class="home-sticker sticker-star" aria-hidden="true">★</div>
       </section>
 
       <section id="hero-select" class="screen hero-screen" aria-label="Choisir un héros">
-        <header class="screen-header"><button class="back-button" data-go="home" aria-label="Retour">←</button><div><p class="eyebrow">MISSION DU JOUR</p><h2>Qui part aider&nbsp;?</h2></div><span class="header-spacer"></span></header>
+        <header class="screen-header"><button class="back-button" data-go="home" aria-label="Retour">←</button><div><p class="eyebrow">NOUVELLE PARTIE</p><h2>Qui part aider&nbsp;?</h2></div><span class="header-spacer"></span></header>
         <p class="screen-intro">Choisis ton héros. Il t'accompagne pour toute la mission.</p>
         <div class="hero-grid">
           <button class="hero-card ziggy" data-hero="ziggy">
@@ -44,11 +44,12 @@
             <span class="hero-name">Titan Puce</span><span class="hero-power">Force douce</span><span class="choose-pill">Choisir Titan</span>
           </button>
         </div>
-        <div class="hero-footer"><span class="footer-spark">✦</span> Une seule mission aujourd'hui <span class="footer-spark">✦</span></div>
+        <div id="session-timer-row" class="session-timer-row"><label for="session-timer-select">Minuteur de partie <span>(facultatif)</span></label><select id="session-timer-select"><option value="0">Désactivé</option><option value="600">10 minutes</option></select></div>
+        <div class="hero-footer"><span class="footer-spark">✦</span> Après une mission, tu peux repartir <span class="footer-spark">✦</span></div>
       </section>
 
       <section id="game-screen" class="screen game-screen" aria-label="Mission en cours">
-        <div class="game-topbar"><button id="pause-button" class="game-icon-button" aria-label="Pause">Ⅱ</button><div class="mission-label"><span class="mission-day">MISSION DU JOUR</span><strong id="mission-title">Le chaton a besoin d'aide</strong></div><div class="coin-counter" aria-label="Pièces ramassées"><span aria-hidden="true">🪙</span><strong id="coin-count">0</strong></div><div class="progress-wrap" aria-label="Progression"><div id="progress-dots" class="progress-dots"></div></div></div>
+        <div class="game-topbar"><button id="pause-button" class="game-icon-button" aria-label="Pause">Ⅱ</button><div class="mission-label"><span class="mission-day">MISSION EN COURS</span><strong id="mission-title">Le chaton a besoin d'aide</strong></div><div class="coin-counter" aria-label="Pièces ramassées"><span aria-hidden="true">🪙</span><strong id="coin-count">0</strong></div><div class="progress-wrap" aria-label="Progression"><div id="progress-dots" class="progress-dots"></div></div></div>
         <div class="game-stage"><canvas id="game-canvas" width="960" height="540" aria-label="Jeu de plateforme 2D"></canvas>
           <div id="hint-bubble" class="hint-bubble"><span class="hint-icon">✦</span><span id="hint-text">Avance doucement vers le chaton.</span></div>
           <div id="interaction-prompt" class="interaction-prompt hidden"><span>Tu peux aider&nbsp;!</span><button id="help-button" class="help-button">AIDER <span>♥</span></button></div>
@@ -67,18 +68,11 @@
 
       <section id="ending-screen" class="screen ending-screen" aria-label="Mission terminée">
         <div class="ending-confetti" aria-hidden="true"><i>✦</i><i>✧</i><i>★</i><i>✦</i><i>♥</i><i>✧</i></div>
-        <div id="ending-hero" class="ending-hero"></div><div class="ending-copy"><p class="eyebrow">MISSION ACCOMPLIE</p><h2>Tu as aidé<br />tout le quartier&nbsp;!</h2><p id="ending-message">Merci d'avoir fait équipe avec nous.</p><div class="rest-card"><span class="rest-stars">✦　✦　✦</span><strong>Les héros se reposent maintenant.</strong><span>La prochaine mission sera pour un autre jour.</span></div><button id="finish-button" class="primary-button">Terminer <span>♥</span></button></div>
-      </section>
-
-      <section id="done-screen" class="screen done-screen" aria-label="Mission du jour déjà terminée">
-        <div class="done-card"><div class="done-badge">✓</div><p class="eyebrow">BELLE ÉQUIPE</p><h2>La mission du jour<br />est terminée.</h2><p id="done-hero-copy">Ton héros se repose après cette belle aventure.</p><div class="nap-cloud">☁ <span>z</span><b>z</b></div><button class="secondary-button" data-go="home">Retour à l'accueil</button></div>
+        <div id="ending-hero" class="ending-hero"></div><div class="ending-copy"><p class="eyebrow">MISSION ACCOMPLIE</p><h2>Tu as aidé<br />tout le quartier&nbsp;!</h2><p id="ending-message">Merci d'avoir fait équipe avec nous.</p><div class="rest-card"><span class="rest-stars">✦　✦　✦</span><strong id="ending-rest-title">Belle mission !</strong><span id="ending-rest-copy">Tu peux repartir ou terminer.</span></div><button id="new-mission-button" class="secondary-button">Nouvelle mission <span>➜</span></button><button id="finish-button" class="primary-button">Terminer <span>♥</span></button></div>
       </section>
 
       <section id="settings-screen" class="screen modal-screen" aria-label="Réglages adulte">
-        <div class="modal-card settings-card"><button class="close-settings" data-go="home" aria-label="Fermer">×</button><p class="eyebrow">POUR L'ADULTE</p><h2>Réglages</h2><label class="setting-row"><span>Sons du jeu</span><input id="music-toggle" type="checkbox" checked /></label><label class="setting-row"><span>Sons des actions</span><input id="effects-toggle" type="checkbox" checked /></label><p class="settings-note">La mission est courte et se termine quand le héros rentre à la base.</p><button id="reset-day-button" class="reset-day" type="button">Réinitialiser la mission du jour</button></div>
-      </section>
-      <section id="reset-confirm-screen" class="screen modal-screen" aria-label="Confirmer la remise à zéro">
-        <div class="modal-card reset-confirm-card"><div class="modal-icon">↻</div><p class="eyebrow">RECOMMENCER</p><h2>Préparer une nouvelle mission&nbsp;?</h2><p>La mission du jour sera remise à zéro.</p><button id="confirm-reset-button" class="primary-button" type="button">Oui, recommencer</button><button id="cancel-reset-button" class="text-button" type="button">Garder ma mission</button></div>
+        <div class="modal-card settings-card"><button class="close-settings" data-go="home" aria-label="Fermer">×</button><p class="eyebrow">POUR L'ADULTE</p><h2>Réglages</h2><label class="setting-row"><span>Sons du jeu</span><input id="music-toggle" type="checkbox" checked /></label><label class="setting-row"><span>Sons des actions</span><input id="effects-toggle" type="checkbox" /></label><p class="settings-note">Le héros peut repartir en mission autant de fois que tu le souhaites.</p></div>
       </section>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </main>

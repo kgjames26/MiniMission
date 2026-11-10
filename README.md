@@ -1,6 +1,6 @@
 # Mini Mission
 
-PWA de plateforme 2D, en français, conçue pour une mission d'entraide courte avec Ziggy la Comète, Filou le Tisseur ou Titan Puce.
+PWA de plateforme 2D, en français, avec des missions d'entraide à enchaîner avec Ziggy la Comète, Filou le Tisseur ou Titan Puce.
 
 ## Lancer en local
 
@@ -16,8 +16,10 @@ Puis ouvrez `http://localhost:4173`. Le service worker et l'installation PWA né
 
 - Écran d'accueil utilisant l'illustration fournie.
 - Choix du héros, niveau 2D à défilement et commandes tactiles/clavier.
-- Trois petites énigmes d'entraide avec essais sans pénalité ; la question et toutes les réponses sont lues en français par la synthèse vocale de l'appareil avant d'activer les choix.
-- Mission quotidienne choisie par date locale ; le jeu reprend la mission inachevée et marque la journée comme terminée après sa réussite.
+- Trois petites énigmes tirées d'une banque de 1 000 questions ; la question et toutes les réponses sont lues en français avant d'activer les choix.
+- Plusieurs missions à la suite, sans limite quotidienne ; après chacune, le joueur peut repartir ou terminer la partie.
+- Minuteur de 10 minutes facultatif et discret au choix du héros. À son expiration, une voix prévient l'enfant ; il termine sa mission en cours, puis le héros se repose. Le minuteur ne coupe jamais la partie.
+- Plateformes à différentes hauteurs, pièces à collecter et petits farceurs que le héros transforme en amis avec une étoile magique.
 - Sauvegarde locale, réglages sonores et fonctionnement hors ligne après le premier chargement.
 - Aucun compte, publicité, collecte de données ni service externe.
 
@@ -29,4 +31,4 @@ Puis ouvrez `http://localhost:4173`. Le service worker et l'installation PWA né
 - `sw.js` : cache PWA hors ligne.
 - `assets/mini-mission-start.jpg` : image d'accueil fournie.
 
-Le niveau actuel est un premier prototype jouable : les variantes sont assemblées à partir de modèles sûrs et l'ensemble des missions utilise actuellement les mêmes trois familles d'énigmes simples.
+Les niveaux restent bienveillants : aucun héros ne meurt ou ne subit de dégâts, et le minuteur ne force jamais l'arrêt d'une mission en cours.
