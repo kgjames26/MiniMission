@@ -1,5 +1,5 @@
-const CACHE_NAME = 'mini-mission-v13';
-const CORE = ['./', './index.html', './styles.css', './app.js', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './assets/home-art.jpg', './assets/hero-select-art.jpg', './assets/controls-art.jpg', './assets/ziggy-small.png', './assets/filou-titan-small.png'];
+const CACHE_NAME = 'mini-mission-v14';
+const CORE = ['./', './index.html', './styles.css', './app.js', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './assets/home-art.jpg', './assets/hero-select-art.jpg', './assets/controls-art.jpg', './assets/heroes-atlas.webp'];
 // Le code (HTML, JS, CSS, manifeste) passe d'abord par le réseau pour que les mises à jour
 // arrivent sans attendre ; les images restent servies depuis le cache. Hors ligne, tout vient du cache.
 const NETWORK_FIRST = /\.(?:html|js|css|webmanifest)$/;

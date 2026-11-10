@@ -7,11 +7,9 @@
   const ctx = canvas.getContext('2d', { alpha: false });
   const STORE = 'mini-mission-v1';
   const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-  // Les deux planches contiennent les trois héros, sur une grille commune :
-  // déplacement/locomotion puis expressions et actions dédiées.
-  const spriteSheets = { movement: new Image(), expressions: new Image() };
-  spriteSheets.movement.src = 'assets/ziggy-small.png';
-  spriteSheets.expressions.src = 'assets/filou-titan-small.png';
+  // Planche des héros : une ligne par héros (Ziggy, Filou, Titan), six poses chacune. Voir « Animation des héros ».
+  const heroAtlas = new Image();
+  heroAtlas.src = 'assets/heroes-atlas.webp';
   const heroes = {
     ziggy: { name: 'Ziggy la Comète', power: 'Bond lumineux', suit: '#ef5a53', accent: '#ffd34f', skin: '#f3bf91', hair: '#6e483e', cape: '#f5a542', icon: '☄️', message: 'Ziggy a laissé un chemin de lumière pour les voisins.' },
     filou: { name: 'Filou le Tisseur', power: 'Fil doux et pont sûr', suit: '#438ccc', accent: '#a980e6', skin: '#eeb993', hair: '#463c59', cape: '#7561cf', icon: '🧶', message: 'Filou a tissé un passage tout doux pour les amis.' },
@@ -116,7 +114,7 @@
   let lastMagicTime = 0;
   let abilityUntil = 0;
   let abilityCooldownUntil = 0;
-  let heroAnimation = { state:'idle', previous:null, changedAt:0, override:'', overrideUntil:0 };
+  let heroAnim = newHeroAnim();
   let ropeBridge = null;
   let audio = null;
   let audioEnabled = save.audioEnabled !== false;
@@ -233,7 +231,7 @@
     const nextStation=world.stations.find(station=>!station.done);const startX=safeGroundX(!world.stations.some(station=>station.done)?70:nextStation?nextStation.x-460:world.stations[2].x+120);
     player = {x:Math.max(70,startX), y:world.floor-86, vx:0, vy:0, w:58,h:86,grounded:true,jumping:false,facing:1,bob:0};
     world.checkpoint=player.x;
-    particles=[]; lastPromptStation=-1; ropeBridge=null;abilityUntil=0;abilityCooldownUntil=0;heroAnimation={state:'idle',previous:null,changedAt:performance.now(),override:'',overrideUntil:0};lastActiveTick=performance.now(); lastTime=performance.now();
+    particles=[]; lastPromptStation=-1; ropeBridge=null;abilityUntil=0;abilityCooldownUntil=0;heroAnim=newHeroAnim();lastActiveTick=performance.now(); lastTime=performance.now();
     const power={ziggy:['☄️','VITESSE','Action : foncer très vite à travers les obstacles et transformer un farceur en ami'],filou:['🧶','LAINE','Action : tisser un pont de laine et transformer un farceur en ami'],titan:['✊','FORCE','Action : pousser doucement les rochers et transformer un farceur en ami']}[activeHero];$('#attack-button .action-power').textContent=power[0];$('#attack-button small').textContent=power[1];$('#attack-button').setAttribute('aria-label',power[2]);$('#attack-button').classList.remove('cooldown');houseHintShown=false;
     setScreen('game-screen'); startLoop();if(resume&&timerAnnouncementPending)speakTimerNotice();
     if (!resume) sound('start');
@@ -258,15 +256,16 @@
   function update(dt) {
     const move = (keys.right?1:0)-(keys.left?1:0);
     if(move)player.facing=move;player.vx=performance.now()<abilityUntil&&activeHero==='ziggy'?player.facing*390:move*235;
+    updateHeroAnimation(dt);
     if((keys.jump||keys.jumpHeld) && player.grounded) { player.vy=-600; player.grounded=false; player.jumping=true; triggerHeroAnimation('jump',360); sound('jump'); }
     keys.jump=false;
-    if(keys.down&&player.grounded&&player.y+player.h<world.floor-2){player.dropUntil=performance.now()+260;player.grounded=false;player.y+=3;}
+    if(keys.down&&player.grounded&&player.y+player.h<world.floor-2){triggerHeroAnimation('drop',300);player.dropUntil=performance.now()+260;player.grounded=false;player.y+=3;}
     keys.down=false;
     const wasGrounded=player.grounded;
     const previousX=player.x, previousY=player.y, previousFeet=previousY+player.h;
     player.x += player.vx*dt; player.x=Math.max(18,Math.min(world.width-player.w,player.x));
     // Les petits obstacles au sol bloquent seulement si le héros ne les a pas sautés.
-    for(const b of world.bumps){if(activeHero==='ziggy'&&performance.now()<abilityUntil)continue;const overlap=player.x+player.w>b.x&&player.x<b.x+b.w;const crossesSide=(previousX+player.w<=b.x&&player.x+player.w>b.x)||(previousX>=b.x+b.w&&player.x<b.x+b.w);if(overlap&&crossesSide&&player.y+player.h>world.floor-b.h+3){player.x=previousX;player.vx=0;triggerHeroAnimation('stumble',420);}}
+    for(const b of world.bumps){if(activeHero==='ziggy'&&performance.now()<abilityUntil)continue;const overlap=player.x+player.w>b.x&&player.x<b.x+b.w;const crossesSide=(previousX+player.w<=b.x&&player.x+player.w>b.x)||(previousX>=b.x+b.w&&player.x<b.x+b.w);if(overlap&&crossesSide&&player.y+player.h>world.floor-b.h+3){player.x=previousX;player.vx=0;triggerHeroAnimation('stumble');}}
     player.vy += 1450*dt; player.y += player.vy*dt; player.grounded=false;
     // Les plateformes sont traversables par-dessous et attrapent le héros pendant sa descente.
     let landingY=Infinity;
@@ -314,18 +313,101 @@
     const finishX=world.width-world.camera-90;ctx.fillStyle='#fff7cd';ctx.beginPath();ctx.arc(finishX,world.floor-58,32,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#f1bd45';ctx.lineWidth=4;ctx.stroke();ctx.font='25px sans-serif';ctx.textAlign='center';ctx.fillText('🏡',finishX,world.floor-49);}
   function drawCuteEnemy(x,y,time,enemy={}){const friendly=enemy.friendly;const palettes=[['#8d82d8','#c5bafa'],['#68b8ce','#a8e1e8'],['#e89b69','#ffd1a0'],['#80b779','#c3e49a']];const colors=palettes[enemy.variant%palettes.length]||palettes[0];ctx.save();ctx.translate(x,y);if(enemy.giant)ctx.scale(1.48,1.48);ctx.fillStyle=enemy.giant?'#e9575c':friendly?'#ffb5c8':colors[0];ctx.beginPath();ctx.ellipse(0,0,24,21,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=enemy.giant?'#ffad67':friendly?'#ffdf8d':colors[1];ctx.beginPath();ctx.arc(-10,-15,8,0,Math.PI*2);ctx.arc(10,-15,8,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(-8,-2,5,7,0,0,Math.PI*2);ctx.ellipse(8,-2,5,7,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#34425e';ctx.beginPath();ctx.arc(-7,-1,2.2,0,Math.PI*2);ctx.arc(9,-1,2.2,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#a94f68';ctx.lineWidth=2;ctx.beginPath();ctx.arc(1,6,5,.15,Math.PI-.15);ctx.stroke();ctx.fillStyle='#fff0a3';ctx.font='14px sans-serif';ctx.textAlign='center';ctx.fillText(friendly?'♥':'✦',0,-28-Math.sin(time*5)*2);ctx.restore();}
   function flower(x,y,i){ctx.fillStyle='#438f5d';ctx.fillRect(x,y-10,2,13);ctx.fillStyle=['#ff7e77','#fff0a5','#8b79d8','#fff'][i];for(let j=0;j<5;j++){const a=j*Math.PI*2/5;ctx.beginPath();ctx.arc(x+Math.cos(a)*4,y-11+Math.sin(a)*4,3,0,Math.PI*2);ctx.fill();}ctx.fillStyle='#f7be43';ctx.beginPath();ctx.arc(x,y-11,2.3,0,Math.PI*2);ctx.fill();}
-  function drawPlayer(time){const x=player.x-world.camera+player.w/2,y=player.y+player.h/2+(player.grounded?Math.sin(player.bob)*1.5:0);if(activeHero==='filou'&&ropeBridge&&performance.now()<ropeBridge.until){ctx.save();ctx.strokeStyle='#9b65ce';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(x+player.facing*22,y-25);ctx.quadraticCurveTo((x+ropeBridge.x-world.camera)/2,y-105,ropeBridge.x-world.camera+ropeBridge.w/2,ropeBridge.y+5);ctx.stroke();ctx.restore();}drawSpriteHero(ctx,x,y,activeHero,time,player.facing,player.grounded);}
-  const heroPoseMap={
-    ziggy:{row:0,cols:12,states:{idle:{atlas:'movement',frames:[0],fps:1},walk:{atlas:'movement',frames:[1,2],fps:8},run:{atlas:'movement',frames:[2,1,2,4],fps:11},jump:{atlas:'movement',frames:[3,4],fps:7},fall:{atlas:'movement',frames:[4,5],fps:5},land:{atlas:'expressions',frames:[2,3],fps:6},ability:{atlas:'movement',frames:[2,4,2,3],fps:13},question:{atlas:'expressions',frames:[10,0],fps:3},collect:{atlas:'expressions',frames:[10,6],fps:6},celebrate:{atlas:'expressions',frames:[6,6,0],fps:3},stumble:{atlas:'expressions',frames:[1,8,0],fps:5}}},
-    filou:{row:1,cols:11,states:{idle:{atlas:'movement',frames:[0],fps:1},walk:{atlas:'movement',frames:[1,2],fps:7},run:{atlas:'movement',frames:[2,3,2,1],fps:10},jump:{atlas:'movement',frames:[4,5],fps:7},fall:{atlas:'movement',frames:[5,6],fps:6},land:{atlas:'expressions',frames:[2,0],fps:5},ability:{atlas:'movement',frames:[3,4,5,4],fps:9},question:{atlas:'expressions',frames:[4,1],fps:5},collect:{atlas:'expressions',frames:[1,6],fps:6},celebrate:{atlas:'expressions',frames:[6,6,1],fps:3},stumble:{atlas:'expressions',frames:[3,2,0],fps:5}}},
-    titan:{row:2,cols:11,states:{idle:{atlas:'movement',frames:[0],fps:1},walk:{atlas:'movement',frames:[1,2],fps:7},run:{atlas:'movement',frames:[2,3,2,1],fps:9},jump:{atlas:'movement',frames:[3,8],fps:6},fall:{atlas:'movement',frames:[8,4],fps:5},land:{atlas:'expressions',frames:[2,4],fps:5},ability:{atlas:'expressions',frames:[1,7,5,7],fps:7},question:{atlas:'expressions',frames:[4,5],fps:4},collect:{atlas:'expressions',frames:[4,5],fps:6},celebrate:{atlas:'expressions',frames:[5,6,10,5],fps:4},stumble:{atlas:'expressions',frames:[9,2,0],fps:5}}}
-  };
-  function triggerHeroAnimation(state,duration=420){const now=performance.now();heroAnimation.override=state;heroAnimation.overrideUntil=now+duration;}
-  function heroState(now){if(heroAnimation.override&&now<heroAnimation.overrideUntil)return heroAnimation.override;if(now>=heroAnimation.overrideUntil)heroAnimation.override='';if(!player.grounded)return player.vy<20?'jump':'fall';if(Math.abs(player.vx)>270)return 'run';if(Math.abs(player.vx)>12)return 'walk';return 'idle';}
-  function poseFor(id,state,now){const hero=heroPoseMap[id]||heroPoseMap.ziggy;const pose=hero.states[state]||hero.states.idle;const frameIndex=pose.frames.length===1?0:Math.floor(now/1000*pose.fps)%pose.frames.length;return {atlas:pose.atlas,row:hero.row,cols:hero.cols,frame:pose.frames[frameIndex],pose,state};}
-  function drawPose(c,pose,alpha,x,y,facing,now){const image=spriteSheets[pose.atlas];if(!image?.complete||!image.naturalWidth)return false;const cols=pose.cols,rows=3,cellW=image.naturalWidth/cols,cellH=image.naturalHeight/rows;const targetW=pose.state==='run'?92:84,targetH=pose.state==='run'?144:140;const progress=Math.min(1,(now-heroAnimation.changedAt)/170);const ease=progress*progress*(3-2*progress);const tilt=pose.state==='run'?-.04:pose.state==='fall'?-.09:pose.state==='jump'?.035:pose.state==='land'?.045:0;const stretch=pose.state==='jump'?1.035:pose.state==='land'?.94:1;c.save();c.globalAlpha=alpha;c.translate(x,y+((pose.state==='run')?Math.sin(now/70)*1.8:0));c.scale(facing,1);c.rotate(tilt*(1-ease));c.scale(1,stretch);c.drawImage(image,pose.frame*cellW,pose.row*cellH,cellW,cellH,-targetW/2,-targetH*.69,targetW,targetH);c.restore();return true;}
-  function drawSpriteHero(c,x,y,id,time,facing,grounded){const now=performance.now();const nextState=heroState(now);if(nextState!==heroAnimation.state){heroAnimation.previous=poseFor(id,heroAnimation.state,now);heroAnimation.state=nextState;heroAnimation.changedAt=now;}const current=poseFor(id,nextState,now);const progress=Math.min(1,(now-heroAnimation.changedAt)/170);const ease=progress*progress*(3-2*progress);c.save();c.fillStyle='rgba(34,76,96,.2)';c.beginPath();c.ellipse(x,y+44,30,7,0,0,Math.PI*2);c.fill();c.restore();if(heroAnimation.previous&&ease<1)drawPose(c,heroAnimation.previous,1-ease,x,y,facing,now);if(!drawPose(c,current,ease,x,y,facing,now))drawHero(c,x,y,id,time,facing,grounded);}
-  function drawHero(c,x,y,id,time,facing=1,grounded=true){const h=heroes[id]||heroes.ziggy;const walking=grounded&&Math.abs(player.vx)>1;const step=walking?Math.sin(time*13)*.42:0;const armStep=walking?Math.sin(time*13+Math.PI)*.28:0;c.save();c.translate(x,y);c.scale(facing,1);const bob=grounded&&!walking?Math.sin(time*2)*1.3:walking?Math.abs(Math.sin(time*13))*2:0;c.translate(0,bob);c.fillStyle='rgba(36,87,107,.16)';c.beginPath();c.ellipse(0,44,28,7,0,0,Math.PI*2);c.fill();c.fillStyle=h.cape;c.beginPath();c.moveTo(-10,-19);c.lineTo(-32,25+Math.sin(time*5)*2);c.quadraticCurveTo(-5,23,1,-18);c.fill();for(const side of [-1,1]){c.save();c.translate(side*17,-7);c.rotate(side*armStep);c.fillStyle=h.suit;roundRect(-6,0,12,25,6,true);c.fillStyle=h.accent;roundRect(-7,20,14,9,5,true);c.restore();}for(const side of [-1,1]){c.save();c.translate(side*10,16);c.rotate(side*step);c.fillStyle=h.suit;roundRect(-7,0,14,24,7,true);c.fillStyle='#547bad';roundRect(-10,18,20,10,5,true);c.restore();}c.fillStyle=h.suit;roundRect(-21,-19,42,44,14,true);c.strokeStyle='#76536e';c.lineWidth=3;c.stroke();c.fillStyle=h.accent;c.beginPath();c.moveTo(0,-11);c.lineTo(5,-1);c.lineTo(16,1);c.lineTo(8,8);c.lineTo(10,19);c.lineTo(0,13);c.lineTo(-10,19);c.lineTo(-8,8);c.lineTo(-16,1);c.lineTo(-5,-1);c.closePath();c.fill();c.fillStyle=h.skin;c.beginPath();c.arc(0,-35,23,0,Math.PI*2);c.fill();c.fillStyle=h.hair;c.beginPath();c.arc(0,-40,23,Math.PI,Math.PI*2);c.quadraticCurveTo(18,-57,22,-35);c.lineTo(12,-42);c.lineTo(2,-48);c.lineTo(-11,-39);c.lineTo(-21,-33);c.closePath();c.fill();c.fillStyle=id==='ziggy'?'#ffd34f':id==='filou'?'#e9f8ff':'#ffe17a';roundRect(-23,-37,46,13,6,true);c.fillStyle='#2e4257';c.beginPath();c.arc(-8,-32,2.3,0,Math.PI*2);c.arc(8,-32,2.3,0,Math.PI*2);c.fill();c.strokeStyle='#9b5b48';c.lineWidth=2;c.beginPath();c.arc(0,-24,6,.1,Math.PI-.1);c.stroke();c.fillStyle=h.accent;c.beginPath();c.arc(0,-19,4,0,Math.PI*2);c.fill();c.restore();}
+  function drawPlayer(time){
+    const x=player.x-world.camera+player.w/2,y=player.y+player.h/2;
+    if(activeHero==='filou'&&ropeBridge&&performance.now()<ropeBridge.until){ctx.save();ctx.strokeStyle='#9b65ce';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(x+player.facing*22,y-25);ctx.quadraticCurveTo((x+ropeBridge.x-world.camera)/2,y-105,ropeBridge.x-world.camera+ropeBridge.w/2,ropeBridge.y+5);ctx.stroke();ctx.restore();}
+    drawHero(ctx,x,player.y+player.h,time);
+  }
+
+  // ===== Animation des héros =====
+  // assets/heroes-atlas.webp : 3 lignes (Ziggy, Filou, Titan) × 6 poses. Chaque case est alignée sur les pieds
+  // (bas de la case) et centrée sur le corps, donc on dessine toujours « pieds au sol » sans décalage.
+  // Une seule pose est dessinée à la fois : pas de fondu, pas de superposition.
+  const HERO_ATLAS = { cellW: 262, cellH: 303, pad: 3, scale: 0.48 };
+  const HERO_ROW = { ziggy: 0, filou: 1, titan: 2 };
+  const POSE = { walkA: 0, walkB: 1, duck: 2, dodge: 3, jump: 4, land: 5 };
+  const HERO_IDLE = { ziggy: POSE.walkB, filou: POSE.land, titan: POSE.land };
+  const STRIDE = 34; // unités de monde parcourues par pose de marche : les pieds ne glissent pas
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  // Toute l'animation est pilotée par le temps de jeu (dt) : une pause la fige, elle ne « saute » pas à la reprise.
+  function newHeroAnim() { return { time:0, phase:0, squash:0, timers:{}, stumbleAge:0, celebrateStart:0 }; }
+  // Action ponctuelle ; ms = durée. L'écrasement/étirement (squash) donne du poids aux sauts et aux arrivées.
+  function triggerHeroAnimation(name, ms = 400) {
+    const a = heroAnim;
+    if (name === 'stumble') {
+      // Plusieurs chocs d'affilée contre le même obstacle prolongent juste l'action, sans la rejouer.
+      if (!a.timers.stumble) { a.stumbleAge = 0; a.squash = -.08; }
+      a.timers.stumble = Math.max(a.timers.stumble || 0, .25);
+      return;
+    }
+    a.timers[name] = ms / 1000;
+    if (name === 'jump') a.squash = .14;
+    else if (name === 'land') a.squash = -.15;
+    else if (name === 'collect') a.squash = .09;
+    else if (name === 'celebrate') a.celebrateStart = a.time;
+    else if (name === 'ability' && activeHero === 'titan') a.squash = -.12;
+  }
+  function updateHeroAnimation(dt) {
+    const a = heroAnim;
+    a.time += dt;
+    for (const name in a.timers) { a.timers[name] -= dt; if (a.timers[name] <= 0) delete a.timers[name]; }
+    if (a.timers.stumble) a.stumbleAge += dt;
+    const moving = player.grounded && Math.abs(player.vx) > 12;
+    if (moving) a.phase += Math.abs(player.vx) * dt / STRIDE; else if (player.grounded) a.phase = 0;
+    // On ne fête que sur place : dès que le héros bouge, la fête s'arrête.
+    if (a.timers.celebrate && (moving || !player.grounded)) delete a.timers.celebrate;
+    a.squash *= Math.exp(-dt * 14);
+    if (Math.abs(a.squash) < .002) a.squash = 0;
+  }
+  // Quelle pose afficher, selon ce que fait le héros (du plus prioritaire au moins prioritaire).
+  function choosePose() {
+    const a = heroAnim, t = a.timers;
+    if (t.stumble) return a.stumbleAge < .18 ? POSE.duck : POSE.dodge;          // choc : on se protège, puis on recule
+    if (t.ability) return activeHero === 'ziggy' ? POSE.dodge : activeHero === 'filou' ? POSE.jump : POSE.land;
+    if (t.drop) return POSE.duck;                                                // on se baisse pour descendre d'une plateforme
+    if (t.celebrate) return POSE.jump;                                           // bravo !
+    if (!player.grounded) return POSE.jump;                                      // montée et descente
+    if (t.land && t.land > .14) return POSE.land;                                // réception
+    if (Math.abs(player.vx) > 12) return Math.floor(a.phase) % 2 ? POSE.walkB : POSE.walkA;
+    return HERO_IDLE[activeHero] ?? POSE.walkB;
+  }
+  function drawHero(c, x, feetY, time) {
+    if (!heroAtlas.complete || !heroAtlas.naturalWidth) return;
+    const A = HERO_ATLAS, a = heroAnim, pose = choosePose(), row = HERO_ROW[activeHero] ?? 0;
+    const dw = A.cellW * A.scale, dh = A.cellH * A.scale;
+    const walking = player.grounded && Math.abs(player.vx) > 12 && !a.timers.ability;
+    // ombre au sol : suit le héros, rétrécit quand il saute, disparaît au-dessus d'un ravin
+    const overGap = world.gaps.some(g => player.x + player.w * .5 > g.x && player.x + player.w * .5 < g.x + g.w);
+    const groundY = player.grounded ? feetY : Math.max(feetY, world.floor);
+    if (player.grounded || !overGap) {
+      const lift = clamp((groundY - feetY) / 260, 0, .6);
+      c.save(); c.fillStyle = `rgba(34,76,96,${.22 * (1 - lift)})`; c.beginPath(); c.ellipse(x, groundY + 1, 30 * (1 - lift * .8), 7 * (1 - lift * .8), 0, 0, Math.PI * 2); c.fill(); c.restore();
+    }
+    // mouvements du corps
+    const hop = a.timers.celebrate ? Math.abs(Math.sin((a.time - a.celebrateStart) * 10)) * 15 : 0;
+    const bob = walking ? Math.abs(Math.sin(a.phase * Math.PI)) * 3.5 : 0;
+    const breathe = !walking && player.grounded && pose === (HERO_IDLE[activeHero] ?? POSE.walkB) ? Math.sin(a.time * 2.6) * .012 : 0;
+    let tilt = 0;
+    if (!player.grounded) tilt = clamp(player.vy * .00018, -.09, .14);
+    else if (a.timers.ability && activeHero === 'ziggy') tilt = .1;
+    else if (walking) tilt = .03;
+    const sx = 1 - a.squash * .6 - breathe * .5, sy = 1 + a.squash + breathe;
+    c.save();
+    const prevSmoothing = c.imageSmoothingEnabled; c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+    const drawPose = (offsetX, alpha) => {
+      c.save(); c.globalAlpha = alpha;
+      c.translate(x + offsetX, feetY - hop - bob + A.pad * A.scale); c.scale(player.facing, 1);
+      c.translate(0, -dh * .35); c.rotate(tilt); c.translate(0, dh * .35);   // on s'incline depuis les hanches
+      c.scale(sx, sy);
+      c.drawImage(heroAtlas, pose * A.cellW, row * A.cellH, A.cellW, A.cellH, -dw / 2, -dh, dw, dh);
+      c.restore();
+    };
+    // Ziggy fonce : trois images fantômes derrière lui
+    if (a.timers.ability && activeHero === 'ziggy') for (let i = 3; i >= 1; i--) drawPose(-player.facing * i * 24, .16 / i * 1.6);
+    drawPose(0, 1);
+    c.imageSmoothingEnabled = prevSmoothing;
+    c.restore();
+  }
   function drawParticles(){particles.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x-world.camera,p.y,p.r,0,Math.PI*2);ctx.fill();});ctx.globalAlpha=1;}
   function roundRect(x,y,w,h,r,fill=true){ctx.beginPath();if(typeof ctx.roundRect==='function')ctx.roundRect(x,y,w,h,Math.min(r,w/2,h/2));else{ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);}if(fill)ctx.fill();else ctx.stroke();}
   function cancelSpeech(requeueTimer=true){speechToken++;if(timerNoticePlaying){timerNoticePlaying=false;if(requeueTimer){timerAnnouncementPending=true;save.timerAnnouncementPending=true;writeSave();}}if('speechSynthesis'in window)window.speechSynthesis.cancel();}
@@ -340,7 +422,7 @@
   function addCoins(amount){if(!mission)return;mission.coinCount=(Number(mission.coinCount)||0)+amount;save.coinTotal=(Number(save.coinTotal)||0)+amount;updateCoinCounter();}
   function updateFriendCounter(){const node=$('#friend-count');if(node)node.textContent=String(friendScore());}
   function updateLetterCounter(){const node=$('#letter-count');if(node)node.textContent=`${(mission?.letters||[]).filter(letter=>letter.collected).length}/26`;}
-  function collectFriendlyEnemy(enemy){triggerHeroAnimation('celebrate',700);enemy.friendly=true;enemy.friendOrder=Math.max(-1,...mission.enemies.map(item=>Number(item.friendOrder)||0),...mission.bigFriends.map(item=>Number(item.friendOrder)||0))+1;enemy.x=player.x+player.w/2;enemy.y=player.y+player.h-20;addCoins(2);sprinkle(enemy.x,enemy.y);const smallFriends=mission.enemies.filter(item=>item.friendly).sort((a,b)=>(a.friendOrder??0)-(b.friendOrder??0));if(smallFriends.length>=10){const gathered=smallFriends.slice(0,10);mission.enemies=mission.enemies.filter(item=>!gathered.includes(item));world.enemies=mission.enemies;mission.bigFriends.push({id:`red-friend-${mission.bigFriends.length+1}`,x:player.x+player.w/2,y:player.y+player.h-20,friendly:true,giant:true,bob:0,friendOrder:Math.max(...gathered.map(item=>item.friendOrder))});world.bigFriends=mission.bigFriends;}updateFriendCounter();writeSave();}
+  function collectFriendlyEnemy(enemy){triggerHeroAnimation('collect',400);enemy.friendly=true;enemy.friendOrder=Math.max(-1,...mission.enemies.map(item=>Number(item.friendOrder)||0),...mission.bigFriends.map(item=>Number(item.friendOrder)||0))+1;enemy.x=player.x+player.w/2;enemy.y=player.y+player.h-20;addCoins(2);sprinkle(enemy.x,enemy.y);const smallFriends=mission.enemies.filter(item=>item.friendly).sort((a,b)=>(a.friendOrder??0)-(b.friendOrder??0));if(smallFriends.length>=10){const gathered=smallFriends.slice(0,10);mission.enemies=mission.enemies.filter(item=>!gathered.includes(item));world.enemies=mission.enemies;mission.bigFriends.push({id:`red-friend-${mission.bigFriends.length+1}`,x:player.x+player.w/2,y:player.y+player.h-20,friendly:true,giant:true,bob:0,friendOrder:Math.max(...gathered.map(item=>item.friendOrder))});world.bigFriends=mission.bigFriends;}updateFriendCounter();writeSave();}
   function attackNearestEnemy(){const now=performance.now();if(scene!=='game-screen'||now-lastMagicTime<500)return;lastMagicTime=now;if(now>=abilityCooldownUntil){abilityCooldownUntil=now+2600;const actionNode=$('#attack-button');actionNode.classList.add('cooldown');setTimeout(()=>actionNode.classList.remove('cooldown'),2600);abilityUntil=now+800;triggerHeroAnimation('ability',activeHero==='filou'?850:650);if(activeHero==='ziggy'){player.vx=player.facing*390;for(let i=0;i<7;i++)sprinkle(player.x+player.w/2-player.facing*i*19,player.y+player.h-8);}else if(activeHero==='filou'){const x=Math.max(35,Math.min(world.width-190,player.x+player.facing*100));ropeBridge={x,y:world.floor-112,w:158,h:18,until:now+5500};player.vy=-640;player.grounded=false;player.jumping=true;sprinkle(x+75,world.floor-112);}else{const direction=player.facing;const broken=world.bumps.filter(b=>b.type===0&&Math.abs((b.x+b.w/2)-(player.x+player.w/2+direction*105))<90);world.bumps=world.bumps.filter(b=>!broken.includes(b));if(broken.length)mission.brokenBumps=[...(mission.brokenBumps||[]),...broken.map(b=>b.id)];broken.forEach(b=>{sprinkle(b.x+b.w/2,world.floor-b.h);mission.coins.push({id:`smash-${Date.now()}-${b.x}`,x:b.x+b.w/2,y:world.floor-b.h-25,collected:false,bob:0});});if(broken.length)writeSave();}}
     const nearby=world.enemies.filter(enemy=>!enemy.friendly&&Math.abs(enemy.x-(player.x+player.w/2))<175).sort((a,b)=>Math.abs(a.x-player.x)-Math.abs(b.x-player.x))[0];sound('magic');if(nearby)collectFriendlyEnemy(nearby);else sprinkle(player.x+player.w/2+player.facing*65,player.y+player.h/2);}
   function finishMission(){if(scene==='ending-screen')return;save.activeMission=null;save.activeHero=null;save.activeDate=null;save.progress=0;save.sessionElapsed=sessionElapsed;save.stopAfterMission=stopAfterMission;writeSave();$('#ending-message').textContent=`${mission.outro} ${heroes[activeHero].message}`;$('#ending-hero').innerHTML=heroSvg(activeHero);const littleFriends=mission.enemies.filter(enemy=>enemy.friendly).sort((a,b)=>(a.friendOrder??0)-(b.friendOrder??0));const bigFriends=mission.bigFriends||[];const friendCount=friendScore();const parade=[...littleFriends,...bigFriends].sort((a,b)=>(a.friendOrder??0)-(b.friendOrder??0));$('#ending-friends').innerHTML=friendCount?`<strong>Toute la bande te suit !</strong><div class="friend-parade" aria-label="${friendCount} amis suivent le héros">${parade.map((friend,index)=>`<span class="parade-friend ${friend.giant?'parade-giant':''}" style="--friend-delay:${index*45}ms" aria-hidden="true"><i></i><b>♥</b></span>`).join('')}</div><small>${friendCount} ami${friendCount>1?'s':''} en tout. Le grand ami rouge compte pour 10.</small>`:'';$('#ending-friends').classList.toggle('hidden',friendCount===0);const found=mission.letters.filter(item=>item.collected).map(item=>item.letter);$('#alphabet-grid').innerHTML=ALPHABET.map(letter=>`<span class="alphabet-letter ${found.includes(letter)?'found':'missing'}" aria-label="${letter} ${found.includes(letter)?'récoltée':'pas encore récoltée'}">${letter}</span>`).join('');$('#alphabet-summary').textContent=`${found.length} lettre${found.length>1?'s':''} sur 26 récoltée${found.length>1?'s':''}.`;$('#new-mission-button').classList.toggle('hidden',stopAfterMission);$('#ending-rest-title').textContent=stopAfterMission?'Le héros va se reposer maintenant.':'Belle mission !';$('#ending-rest-copy').textContent=stopAfterMission?'Tu as terminé ta mission tranquillement.':'Tu peux repartir ou terminer la partie.';$('#finish-button').innerHTML=stopAfterMission?'Terminer, le héros se repose <span>♥</span>':'Terminer <span>♥</span>';setScreen('ending-screen');sound('finish');if(found.length)sayText(`À la fin de ta mission, tu as récolté les lettres : ${found.join(', ')}.`);}
