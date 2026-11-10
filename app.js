@@ -7,6 +7,9 @@
   const ctx = canvas.getContext('2d', { alpha: false });
   const STORE = 'mini-mission-v1';
   const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  // Autocollants à collectionner (récompense quand l'enfant répond juste du premier coup).
+  const STICKERS = [['🦁','le lion'],['🐼','le panda'],['🦊','le renard'],['🐸','la grenouille'],['🦄','la licorne'],['🐙','la pieuvre'],['🐢','la tortue'],['🦋','le papillon'],['🐬','le dauphin'],['🦖','le dinosaure'],['🚀','la fusée'],['🌈','l’arc-en-ciel'],['🐝','l’abeille'],['🐧','le pingouin'],['🦒','la girafe'],['🐘','l’éléphant'],['🐞','la coccinelle'],['🐳','la baleine'],['🦉','le hibou'],['🐨','le koala'],['🍓','la fraise'],['⭐','l’étoile d’or'],['🎈','le ballon'],['🏰','le château']];
+  const REWARD_COINS = 5;
   // Planche des héros : une ligne par héros (Ziggy, Filou, Titan), six poses chacune. Voir « Animation des héros ».
   const heroAtlas = new Image();
   heroAtlas.src = 'assets/heroes-atlas.webp';
@@ -70,7 +73,7 @@
   ];
   const questionBank = questionThemes.flatMap((theme,themeIndex)=>theme.people.flatMap((person,personIndex)=>questionPatterns.map((pattern,patternIndex)=>({
     id:`q-${themeIndex}-${personIndex}-${patternIndex}`,
-    prompt:pattern.replace('{person}',person).replace('{goal}',theme.goal),
+    prompt:(t=>t.charAt(0).toUpperCase()+t.slice(1))(pattern.replace('{person}',person).replace('{goal}',theme.goal)),
     options:theme.answers.map(option=>[...option]), answer:0, icon:['💧','☁️','🧣','🍎','🪧','🌳','🪵','🌞','🧸','🌱'][themeIndex]
   }))));
   const praisePhrases = [
@@ -108,7 +111,6 @@
   let toastTimer = 0;
   let rafId = 0;
   let puzzleStation = null;
-  let houseHintShown = false;
   let dpadPointer = null;
   const dpadState = { left:false, right:false, up:false, down:false };
   let lastMagicTime = 0;
@@ -119,7 +121,9 @@
   let audio = null;
   let audioEnabled = save.audioEnabled !== false;
   let effectsEnabled = save.effectsEnabled !== false;
-  let keys = { left: false, right: false, jump: false, jumpHeld: false, down: false };
+  let keys = { left: false, right: false, jump: false, down: false };
+  let jumpBuffer = 0;
+  let rewardAdvance = null;
   let view = { scale: 1, ox: 0, oy: 0, w: 960, h: 540 };
   let world = { width: 6200, floor: 426, camera: 0, checkpoint: 60, stations: [], gaps: [], bumps: [], platforms: [], coins: [], letters: [], enemies: [], bigFriends: [] };
   let player = { x: 70, y: 0, vx: 0, vy: 0, w: 58, h: 86, grounded: true, jumping: false, facing: 1, bob: 0 };
@@ -132,28 +136,28 @@
   }
   function writeSave() { try { localStorage.setItem(STORE, JSON.stringify(save)); } catch {} }
   function dayKey(date = new Date()) { return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`; }
-  function dayIndex() { const n=new Date(); return Math.floor(Date.UTC(n.getFullYear(),n.getMonth(),n.getDate())/86400000); }
   function todaysMission(heroId) {
-    const missionNumber=Number(save.missionNumber)||0;
-    const index = ((dayIndex()+missionNumber) % missionTemplates.length + missionTemplates.length) % missionTemplates.length;
-    const template = missionTemplates[index];
-    const seed = hash(`${dayKey()}-${heroId}-${template.title}-${missionNumber}`);
-    const random = seeded(seed);
-    const variants = [
-      { suffix: '', palette: ['#fff2bb','#ffc96b','#e28a6e'] },
-      { suffix: ' — nouvelle aventure', palette: ['#d6f7ed','#7ac3a0','#8ea5dc'] },
-      { suffix: ' — version surprise', palette: ['#eee5ff','#af9ce3','#f08d84'] }
-    ];
-    const variant = variants[Math.floor(random()*variants.length)];
-    const unused = questionBank.slice();
-    const tasks = [0,1,2].map(() => {
-      const task = unused.splice(Math.floor(random()*unused.length),1)[0];
-      const order = [0,1,2];
-      for(let i=order.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
-      const options = order.map(i => task.options[i]);
-      return { ...task, options, answer: order.indexOf(task.answer) };
+    const template = missionTemplates[Math.floor(Math.random()*missionTemplates.length)];
+    // Questions et ordre des réponses tirés au hasard à chaque mission.
+    const tasks = pickQuestions(3).map(task => {
+      const order = shuffle([0,1,2]);
+      return { ...task, options: order.map(i => task.options[i]), answer: order.indexOf(task.answer) };
     });
-    return { ...template, title: 'Les petits coups de main' + variant.suffix, friend:'les amis du quartier', outro:'Les amis du quartier ont reçu de jolis coups de main.', tasks, seed, palette: variant.palette };
+    return { ...template, title:'Les petits coups de main', friend:'les amis du quartier', outro:'Les amis du quartier ont reçu de jolis coups de main.', tasks, seed: Math.floor(Math.random()*4294967294)+1, palette:['#fff2bb','#ffc96b','#e28a6e'] };
+  }
+  function shuffle(list) { const a = list.slice(); for (let i=a.length-1;i>0;i--) { const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } return a; }
+  const cap = (text) => text.charAt(0).toUpperCase() + text.slice(1);
+  // Trois questions de trois thèmes différents, en évitant celles vues récemment.
+  function pickQuestions(count) {
+    const recent = new Set(save.recentQuestions || []);
+    const chosen = shuffle([...questionThemes.keys()]).slice(0, count).map(themeIndex => {
+      const pool = questionBank.filter(q => q.id.startsWith(`q-${themeIndex}-`));
+      const fresh = pool.filter(q => !recent.has(q.id));
+      const list = fresh.length ? fresh : pool;
+      return list[Math.floor(Math.random()*list.length)];
+    });
+    save.recentQuestions = [...(save.recentQuestions || []), ...chosen.map(q => q.id)].slice(-150);
+    return chosen;
   }
   const missionTitles = { ziggy:'La piste des étoiles', filou:'Le grand pont de Filou', titan:'Le parcours des gros blocs' };
   const missionPalettes = { ziggy:['#b9edff','#66bd82','#ffd68a'], filou:['#c9f2ff','#65b9a4','#a8a3ef'], titan:['#bce9f7','#58a96f','#f2c76d'] };
@@ -162,7 +166,7 @@
   function safeGroundX(x) { x = Math.max(70, Number(x) || 70); for (const gap of world.gaps) { if (x + 58 > gap.x - 20 && x < gap.x + gap.w + 20) x = gap.x + gap.w + 30; } return Math.min(x, world.width - 260); }
   function hash(value) { let h = 2166136261; for (let i=0;i<value.length;i++) { h ^= value.charCodeAt(i); h = Math.imul(h,16777619); } return h >>> 0; }
   function seeded(seed) { let s = seed || 1; return () => { s += 0x6D2B79F5; let t = s; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-  function setScreen(id) { if(id!=='puzzle-screen')cancelSpeech(); screens.forEach(s => s.classList.toggle('active', s.id === id)); scene = id; if (id !== 'game-screen') releaseControls(); if (!['game-screen','puzzle-screen'].includes(id)) lastActiveTick=performance.now(); if (id === 'game-screen') resizeCanvas(); }
+  function setScreen(id) { if(id!=='puzzle-screen')cancelSpeech(); if(id!=='game-screen')$('#toast')?.classList.remove('show'); screens.forEach(s => s.classList.toggle('active', s.id === id)); scene = id; if (id !== 'game-screen') releaseControls(); if (!['game-screen','puzzle-screen'].includes(id)) lastActiveTick=performance.now(); if (id === 'game-screen') resizeCanvas(); }
   function startToday() {
     if (save.activeHero && save.activeMission) { activeHero = save.activeHero; mission = save.activeMission; beginGame(true); return; }
     if(sessionActive&&stopAfterMission){endSession();showToast('Le héros va se reposer maintenant.');sayText('Le héros va se reposer maintenant.');return;}
@@ -231,17 +235,21 @@
     const nextStation=world.stations.find(station=>!station.done);const startX=safeGroundX(!world.stations.some(station=>station.done)?70:nextStation?nextStation.x-460:world.stations[2].x+120);
     player = {x:Math.max(70,startX), y:world.floor-86, vx:0, vy:0, w:58,h:86,grounded:true,jumping:false,facing:1,bob:0};
     world.checkpoint=player.x;
-    particles=[]; lastPromptStation=-1; ropeBridge=null;abilityUntil=0;abilityCooldownUntil=0;heroAnim=newHeroAnim();lastActiveTick=performance.now(); lastTime=performance.now();
-    const power={ziggy:['☄️','VITESSE','Action : foncer très vite à travers les obstacles et transformer un farceur en ami'],filou:['🧶','LAINE','Action : tisser un pont de laine et transformer un farceur en ami'],titan:['✊','FORCE','Action : pousser doucement les rochers et transformer un farceur en ami']}[activeHero];$('#attack-button .action-power').textContent=power[0];$('#attack-button small').textContent=power[1];$('#attack-button').setAttribute('aria-label',power[2]);$('#attack-button').classList.remove('cooldown');houseHintShown=false;
+    particles=[]; lastPromptStation=-1;jumpBuffer=0; ropeBridge=null;abilityUntil=0;abilityCooldownUntil=0;heroAnim=newHeroAnim();lastActiveTick=performance.now(); lastTime=performance.now();
+    const power={ziggy:['☄️','VITESSE','Action : foncer très vite à travers les obstacles et transformer un farceur en ami'],filou:['🧶','LAINE','Action : tisser un pont de laine et transformer un farceur en ami'],titan:['✊','FORCE','Action : pousser doucement les rochers et transformer un farceur en ami']}[activeHero];$('#attack-button .action-power').textContent=power[0];$('#attack-button small').textContent=power[1];$('#attack-button').setAttribute('aria-label',power[2]);$('#attack-button').classList.remove('cooldown');
     setScreen('game-screen'); startLoop();if(resume&&timerAnnouncementPending)speakTimerNotice();
-    if (!resume) sound('start');
+    if (!resume) { sound('start'); showToast('Cours jusqu’à la maison 🏡 ! Saute sous les caisses ? pour aider un ami.'); }
   }
   function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = Math.round(rect.width*dpr); canvas.height = Math.round(rect.height*dpr);
-    view.scale = canvas.height/540; view.w=canvas.width/view.scale; view.h=540; view.ox=0; view.oy=0;
+    // Le monde fait 540 unités de haut. Sur un écran étroit (téléphone en portrait) on garde au moins 520 unités de large
+    // et le décor se prolonge simplement vers le haut : le jeu remplit toujours tout l'espace disponible.
+    view.scale = Math.min(canvas.height/540, canvas.width/520);
+    view.w = canvas.width/view.scale; view.h = canvas.height/view.scale;
+    view.ox = 0; view.oy = (view.h-540)*view.scale;
   }
   // Une seule boucle à la fois, même après une pause/reprise très rapide.
   function startLoop() { lastTime = performance.now(); if (!rafId) rafId = requestAnimationFrame(loop); }
@@ -257,8 +265,8 @@
     const move = (keys.right?1:0)-(keys.left?1:0);
     if(move)player.facing=move;player.vx=performance.now()<abilityUntil&&activeHero==='ziggy'?player.facing*390:move*235;
     updateHeroAnimation(dt);
-    if((keys.jump||keys.jumpHeld) && player.grounded) { player.vy=-600; player.grounded=false; player.jumping=true; triggerHeroAnimation('jump',360); sound('jump'); }
-    keys.jump=false;
+    if(keys.jump){jumpBuffer=.14;keys.jump=false;}
+    if(jumpBuffer>0){jumpBuffer-=dt;if(player.grounded){jumpBuffer=0;player.vy=-600;player.grounded=false;player.jumping=true;triggerHeroAnimation('jump',360);sound('jump');}}
     if(keys.down&&player.grounded&&player.y+player.h<world.floor-2){triggerHeroAnimation('drop',300);player.dropUntil=performance.now()+260;player.grounded=false;player.y+=3;}
     keys.down=false;
     const wasGrounded=player.grounded;
@@ -278,8 +286,8 @@
     if(landingY!==Infinity){player.y=landingY-player.h;player.vy=0;player.grounded=true;player.jumping=false;if(!wasGrounded)triggerHeroAnimation('land',300);if(landingY===world.floor&&player.x>world.checkpoint)world.checkpoint=player.x;}
     if(player.vy<0){const box=world.stations.find(station=>!station.done&&!station.hit&&player.x+player.w>station.x-39&&player.x<station.x+39&&previousY>=station.y+54&&player.y<=station.y+54);if(box){box.hit=true;player.y=box.y+54;player.vy=100;triggerHeroAnimation('question',700);sprinkle(box.x,box.y+54);sound('open');openPuzzle(box);return;}}
     if(player.y>650) { player.x=world.checkpoint; player.y=world.floor-player.h; player.vy=0; player.grounded=true; }
-    // La mission se termine en arrivant à la maison, une fois les trois caisses ouvertes.
-    if(player.x+player.w>=world.width-150){if(player.grounded&&world.stations.every(station=>station.done)){finishMission();return;}if(!houseHintShown){houseHintShown=true;const left=world.stations.filter(station=>!station.done).length;if(left)showToast(`Encore ${left} caisse${left>1?'s':''} ? à ouvrir avant de rentrer à la maison.`);}}else if(player.x<world.width-450)houseHintShown=false;
+    // La mission se termine en arrivant à la maison : on n'est pas obligé d'ouvrir toutes les caisses.
+    if(player.x+player.w>=world.width-150&&player.grounded){finishMission();return;}
     let leaderX=player.x+player.w/2-player.facing*56;
     const followers=[...world.bigFriends,...world.enemies.filter(enemy=>enemy.friendly)].sort((a,b)=>(a.friendOrder??0)-(b.friendOrder??0));
     followers.forEach((friend,index)=>{const spacing=friend.giant?84:54;const targetX=leaderX-player.facing*spacing;const targetY=player.y+player.h-20;friend.x+=(targetX-friend.x)*Math.min(1,dt*7);friend.y=(Number.isFinite(friend.y)?friend.y:world.floor-20)+(targetY-(Number.isFinite(friend.y)?friend.y:world.floor-20))*Math.min(1,dt*6);friend.followIndex=index;leaderX=friend.x;});
@@ -294,7 +302,7 @@
     const dpr=Math.min(window.devicePixelRatio||1,2); ctx.setTransform(1,0,0,1,0,0); ctx.fillStyle='#93ddf5';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.setTransform(view.scale,0,0,view.scale,view.ox,view.oy);
     drawSky(time); drawHills(); drawTown(time); drawWorld(time); drawPlayer(time); drawParticles();
   }
-  function drawSky(time){const W=view.w,p=mission?.palette||[];const g=ctx.createLinearGradient(0,0,0,540);g.addColorStop(0,p[0]||'#70d0f4');g.addColorStop(.67,p[2]||'#c8f1fa');g.addColorStop(1,'#e8f9e9');ctx.fillStyle=g;ctx.fillRect(0,0,W,540);for(let i=0;i<Math.ceil(W/260)+2;i++){const x=((i*260-world.camera*.16+time*3)%(W+260))-130,y=55+(i%3)*48;cloud(x,y,1+(i%2)*.18);}}
+  function drawSky(time){const W=view.w,p=mission?.palette||[],extra=Math.max(0,view.h-540);const g=ctx.createLinearGradient(0,0,0,540);g.addColorStop(0,p[0]||'#70d0f4');g.addColorStop(.67,p[2]||'#c8f1fa');g.addColorStop(1,'#e8f9e9');ctx.fillStyle=g;ctx.fillRect(0,-extra-2,W,extra+544);for(let i=0;i<Math.ceil(W/260)+2;i++){const x=((i*260-world.camera*.16+time*3)%(W+260))-130,y=55+(i%3)*48;cloud(x,y,1+(i%2)*.18);}if(extra>40)for(let i=0;i<Math.ceil(W/300)+2;i++){const x=((i*300-world.camera*.1+time*2)%(W+300))-150,y=-extra*(.2+(i%3)*.25);cloud(x,y,1.1+(i%2)*.25);}}
   function cloud(x,y,s=1){ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.fillStyle='rgba(255,255,255,.78)';ctx.beginPath();ctx.ellipse(0,12,49,18,0,0,Math.PI*2);ctx.ellipse(-23,2,24,20,0,0,Math.PI*2);ctx.ellipse(0,-5,28,27,0,0,Math.PI*2);ctx.ellipse(26,4,24,19,0,0,Math.PI*2);ctx.fill();ctx.restore();}
   function drawHills(){const W=view.w,p=mission?.palette||[];ctx.fillStyle=p[1]||'#9edba8';ctx.beginPath();ctx.moveTo(0,355);for(let x=0;x<=W;x+=5){ctx.lineTo(x,350+28*Math.sin((x+world.camera*.18)/160)+16*Math.sin(x/63));}ctx.lineTo(W,540);ctx.lineTo(0,540);ctx.fill();ctx.fillStyle='#78c98e';ctx.beginPath();ctx.moveTo(0,395);for(let x=0;x<=W;x+=5)ctx.lineTo(x,390+22*Math.sin((x+world.camera*.31)/125));ctx.lineTo(W,540);ctx.lineTo(0,540);ctx.fill();}
   function drawTown(time){const W=view.w;for(let i=0;i<Math.ceil(W/430)+3;i++){const wx=i*430+80;const x=wx-world.camera*.48;if(x<-130||x>W+130)continue;const h=110+(i%3)*22,w=108+(i%2)*25,y=390-h;ctx.fillStyle=['#f8bb86','#f3d27f','#b9dcec','#d7b7e6'][i%4];roundRect(x,y,w,h,10,true);ctx.fillStyle='#e8877d';ctx.beginPath();ctx.moveTo(x-9,y+4);ctx.lineTo(x+w/2,y-44);ctx.lineTo(x+w+9,y+4);ctx.closePath();ctx.fill();for(let r=0;r<2;r++)for(let c=0;c<2;c++){ctx.fillStyle='rgba(255,255,255,.86)';roundRect(x+18+c*44,y+26+r*34,19,23,6,true);ctx.fillStyle='#90cadf';ctx.fillRect(x+26+c*44,y+26+r*34,3,23);ctx.fillRect(x+18+c*44,y+36+r*34,19,3);}ctx.fillStyle='#ab7860';roundRect(x+w/2-13,y+h-53,26,53,12,true);}
@@ -412,11 +420,64 @@
   function roundRect(x,y,w,h,r,fill=true){ctx.beginPath();if(typeof ctx.roundRect==='function')ctx.roundRect(x,y,w,h,Math.min(r,w/2,h/2));else{ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);}if(fill)ctx.fill();else ctx.stroke();}
   function cancelSpeech(requeueTimer=true){speechToken++;if(timerNoticePlaying){timerNoticePlaying=false;if(requeueTimer){timerAnnouncementPending=true;save.timerAnnouncementPending=true;writeSave();}}if('speechSynthesis'in window)window.speechSynthesis.cancel();}
   function sayText(text,onComplete){if(!('speechSynthesis'in window)||!('SpeechSynthesisUtterance'in window))return false;cancelSpeech(false);const token=++speechToken;const utterance=new SpeechSynthesisUtterance(text);utterance.rate=.88;utterance.pitch=1.02;utterance.volume=1;const voices=window.speechSynthesis.getVoices();const voice=voices.find(v=>/^fr-BE/i.test(v.lang))||voices.find(v=>/^fr-FR/i.test(v.lang))||voices.find(v=>/^fr/i.test(v.lang))||null;utterance.voice=voice;utterance.lang=voice?.lang||'fr-FR';utterance.onend=()=>{if(token===speechToken)onComplete?.(true);};utterance.onerror=()=>{if(token===speechToken)onComplete?.(false);};window.speechSynthesis.speak(utterance);return true;}
-  function speakTimerNotice(onComplete){if(!timerAnnouncementPending){onComplete?.();return;}timerAnnouncementPending=false;if(scene==='puzzle-screen'){ $('#puzzle-read-button').disabled=true;$('#choice-list').querySelectorAll('button').forEach(choice=>choice.disabled=true); }const started=sayText('On va bientôt terminer. Tu peux finir cette mission tranquillement. Après, ton héros ira se reposer.',()=>{timerNoticePlaying=false;save.timerAnnouncementPending=false;save.sessionElapsed=sessionElapsed;writeSave();onComplete?.();if(scene==='puzzle-screen'&&puzzleTask&&!onComplete)readPuzzleAloud();});timerNoticePlaying=started;if(!started){save.timerAnnouncementPending=false;writeSave();onComplete?.();}}
-  function readPuzzleAloud(){if(!puzzleTask||puzzleResolved||timerNoticePlaying)return;const choices=[...$('#choice-list').querySelectorAll('button')];choices.forEach(choice=>choice.disabled=true);$('#puzzle-read-button').disabled=true;$('#speech-status').textContent='Écoute bien…';const text=`${puzzleTask.prompt} Choisis une réponse : ${puzzleTask.options.map(option=>option[1]).join('. ')}.`;const enableChoices=()=>{if(scene!=='puzzle-screen'||puzzleResolved)return;$('#puzzle-read-button').disabled=false;$('#speech-status').textContent='À toi de choisir.';choices.forEach(choice=>choice.disabled=false);};const started=sayText(text,(success)=>{if(scene!=='puzzle-screen'||puzzleResolved)return;if(timerAnnouncementPending){speakTimerNotice(enableChoices);return;}$('#puzzle-read-button').disabled=false;if(success){$('#speech-status').textContent='À toi de choisir.';choices.forEach(choice=>choice.disabled=false);}else{$('#speech-status').textContent='La lecture a été interrompue. Tu peux choisir une image ou relire.';choices.forEach(choice=>choice.disabled=false);}});if(!started){$('#puzzle-read-button').disabled=false;$('#speech-status').textContent='La voix n’est pas disponible ici. Tu peux choisir une image.';choices.forEach(choice=>choice.disabled=false);}}
-  function openPuzzle(station){if(!station||station.done)return;puzzleStation=station;const index=station.i; puzzleTask=mission.tasks[index];puzzleWrong=0;puzzleResolved=false;$('#puzzle-icon').textContent=puzzleTask.icon||mission.icon;$('#puzzle-question').textContent=puzzleTask.prompt;$('#puzzle-feedback').textContent='';$('#speech-status').textContent='';$('#choice-list').innerHTML='';puzzleTask.options.forEach((opt,i)=>{const b=document.createElement('button');b.className='choice-button';b.disabled=true;b.innerHTML=`<span>${escapeHtml(opt[0])}</span><span>${escapeHtml(opt[1])}</span>`;b.addEventListener('click',()=>chooseOption(i,b));$('#choice-list').appendChild(b);});setScreen('puzzle-screen');if(timerNoticePlaying)$('#puzzle-read-button').disabled=true;else readPuzzleAloud();}
+  function speakTimerNotice(onComplete){if(!timerAnnouncementPending){onComplete?.();return;}timerAnnouncementPending=false;const started=sayText('On va bientôt terminer. Tu peux finir cette mission tranquillement. Après, ton héros ira se reposer.',()=>{timerNoticePlaying=false;save.timerAnnouncementPending=false;save.sessionElapsed=sessionElapsed;writeSave();onComplete?.();if(scene==='puzzle-screen'&&puzzleTask&&!puzzleResolved&&!onComplete)readPuzzleAloud();});timerNoticePlaying=started;if(!started){save.timerAnnouncementPending=false;writeSave();onComplete?.();}}
+  function readPuzzleAloud() {
+    if (!puzzleTask || puzzleResolved || timerNoticePlaying) return;
+    const status = $('#speech-status');
+    const text = `${puzzleTask.prompt} Choisis une réponse : ${puzzleTask.options.map(option => option[1]).join('. ')}.`;
+    const started = sayText(text, () => {
+      if (scene !== 'puzzle-screen' || puzzleResolved) return;
+      status.textContent = 'À toi de choisir !';
+      if (timerAnnouncementPending) speakTimerNotice();
+    });
+    // Les réponses restent toujours cliquables : on peut répondre sans attendre la fin de la lecture.
+    status.textContent = started ? 'Je lis la question… tu peux répondre tout de suite !' : 'La voix n’est pas disponible ici. Tu peux choisir une image.';
+  }
+  function openPuzzle(station) {
+    if (!station || station.done) return;
+    puzzleStation = station; puzzleTask = mission.tasks[station.i]; puzzleWrong = 0; puzzleResolved = false;
+    $('#puzzle-main').classList.remove('hidden'); $('#puzzle-reward').classList.add('hidden');
+    $('#puzzle-icon').textContent = puzzleTask.icon || mission.icon;
+    $('#puzzle-question').textContent = puzzleTask.prompt;
+    $('#puzzle-feedback').textContent = ''; $('#speech-status').textContent = '';
+    const list = $('#choice-list'); list.innerHTML = '';
+    puzzleTask.options.forEach((opt, i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'choice-button';
+      b.innerHTML = `<span>${escapeHtml(opt[0])}</span><span>${escapeHtml(opt[1])}</span>`;
+      b.addEventListener('click', () => chooseOption(i, b));
+      list.appendChild(b);
+    });
+    setScreen('puzzle-screen');
+    if (!timerNoticePlaying) readPuzzleAloud();
+  }
   function advanceAfterPuzzle(){if(scene!=='puzzle-screen')return;const advance=()=>{if(scene!=='puzzle-screen')return;puzzleTask=null;puzzleStation=null;world.checkpoint=safeGroundX(player.x);setScreen('game-screen');startLoop();if(world.stations.every(station=>station.done))showToast('Bravo ! Rejoins maintenant la maison 🏡 au bout du chemin.');};if(timerAnnouncementPending)speakTimerNotice(advance);else advance();}
-  function chooseOption(index,button){if(!puzzleTask||puzzleResolved||$('#choice-list').querySelector('button:disabled'))return;if(index!==puzzleTask.answer){puzzleWrong++;const feedback=retryPhrases[Math.floor(Math.random()*retryPhrases.length)];$('#puzzle-feedback').textContent=feedback;button.classList.add('try-again');if(puzzleWrong>=2){const answer=$('#choice-list').children[puzzleTask.answer];answer.classList.add('hint-answer');}$('#choice-list').querySelectorAll('button').forEach(choice=>choice.disabled=true);const restoreChoices=()=>{if(scene==='puzzle-screen'&&!puzzleResolved){$('#speech-status').textContent='À toi de choisir.';$('#choice-list').querySelectorAll('button').forEach(choice=>choice.disabled=false);}};const retrySpeechStarted=sayText(feedback,()=>{if(timerAnnouncementPending)speakTimerNotice(restoreChoices);else restoreChoices();});if(!retrySpeechStarted){if(timerAnnouncementPending)speakTimerNotice(restoreChoices);else restoreChoices();}sound('soft');return;}puzzleResolved=true;$('#choice-list').querySelectorAll('button').forEach(choice=>choice.disabled=true);const station=puzzleStation;if(station&&!station.done){station.done=true;mission.stationsDone[station.i]=true;save.progress=mission.stationsDone.filter(Boolean).length;writeSave();$('#progress-dots').children[station.i]?.classList.add('done');sprinkle(station.x,world.floor-90);}triggerHeroAnimation('celebrate',1250);const feedback=praisePhrases[Math.floor(Math.random()*praisePhrases.length)];$('#puzzle-feedback').textContent=feedback;sound('success');const started=sayText(feedback,()=>advanceAfterPuzzle());if(!started)setTimeout(advanceAfterPuzzle,500);}
+  function chooseOption(index, button) {
+    if (!puzzleTask || puzzleResolved) return;
+    cancelSpeech(); // l'enfant n'a pas à attendre la fin de la lecture
+    const choices = [...$('#choice-list').querySelectorAll('button')];
+    if (index !== puzzleTask.answer) {
+      puzzleWrong++;
+      const feedback = retryPhrases[Math.floor(Math.random()*retryPhrases.length)];
+      $('#puzzle-feedback').textContent = feedback; $('#speech-status').textContent = '';
+      button.classList.add('try-again'); button.disabled = true;
+      if (puzzleWrong >= 2) choices[puzzleTask.answer].classList.add('hint-answer');
+      sound('soft');
+      sayText(feedback, () => { if (timerAnnouncementPending && scene === 'puzzle-screen') speakTimerNotice(); });
+      return;
+    }
+    puzzleResolved = true;
+    choices.forEach(choice => choice.disabled = true);
+    const station = puzzleStation;
+    if (station && !station.done) { station.done = true; mission.stationsDone[station.i] = true; save.progress = mission.stationsDone.filter(Boolean).length; writeSave(); $('#progress-dots').children[station.i]?.classList.add('done'); sprinkle(station.x, world.floor-90); }
+    triggerHeroAnimation('celebrate', 1250);
+    const feedback = praisePhrases[Math.floor(Math.random()*praisePhrases.length)];
+    $('#puzzle-feedback').textContent = feedback; $('#speech-status').textContent = '';
+    sound('success');
+    if (puzzleWrong === 0) { showReward(feedback); return; } // bonne réponse du premier coup : cadeau !
+    const started = sayText(feedback, () => advanceAfterPuzzle());
+    if (!started) setTimeout(advanceAfterPuzzle, 500);
+  }
   function friendScore(){return (mission?.bigFriends?.length||0)*10+(mission?.enemies||[]).filter(enemy=>enemy.friendly).length;}
   function updateCoinCounter(){const node=$('#coin-count');if(node)node.textContent=String(mission?.coinCount||0);}
   function addCoins(amount){if(!mission)return;mission.coinCount=(Number(mission.coinCount)||0)+amount;save.coinTotal=(Number(save.coinTotal)||0)+amount;updateCoinCounter();}
@@ -425,13 +486,55 @@
   function collectFriendlyEnemy(enemy){triggerHeroAnimation('collect',400);enemy.friendly=true;enemy.friendOrder=Math.max(-1,...mission.enemies.map(item=>Number(item.friendOrder)||0),...mission.bigFriends.map(item=>Number(item.friendOrder)||0))+1;enemy.x=player.x+player.w/2;enemy.y=player.y+player.h-20;addCoins(2);sprinkle(enemy.x,enemy.y);const smallFriends=mission.enemies.filter(item=>item.friendly).sort((a,b)=>(a.friendOrder??0)-(b.friendOrder??0));if(smallFriends.length>=10){const gathered=smallFriends.slice(0,10);mission.enemies=mission.enemies.filter(item=>!gathered.includes(item));world.enemies=mission.enemies;mission.bigFriends.push({id:`red-friend-${mission.bigFriends.length+1}`,x:player.x+player.w/2,y:player.y+player.h-20,friendly:true,giant:true,bob:0,friendOrder:Math.max(...gathered.map(item=>item.friendOrder))});world.bigFriends=mission.bigFriends;}updateFriendCounter();writeSave();}
   function attackNearestEnemy(){const now=performance.now();if(scene!=='game-screen'||now-lastMagicTime<500)return;lastMagicTime=now;if(now>=abilityCooldownUntil){abilityCooldownUntil=now+2600;const actionNode=$('#attack-button');actionNode.classList.add('cooldown');setTimeout(()=>actionNode.classList.remove('cooldown'),2600);abilityUntil=now+800;triggerHeroAnimation('ability',activeHero==='filou'?850:650);if(activeHero==='ziggy'){player.vx=player.facing*390;for(let i=0;i<7;i++)sprinkle(player.x+player.w/2-player.facing*i*19,player.y+player.h-8);}else if(activeHero==='filou'){const x=Math.max(35,Math.min(world.width-190,player.x+player.facing*100));ropeBridge={x,y:world.floor-112,w:158,h:18,until:now+5500};player.vy=-640;player.grounded=false;player.jumping=true;sprinkle(x+75,world.floor-112);}else{const direction=player.facing;const broken=world.bumps.filter(b=>b.type===0&&Math.abs((b.x+b.w/2)-(player.x+player.w/2+direction*105))<90);world.bumps=world.bumps.filter(b=>!broken.includes(b));if(broken.length)mission.brokenBumps=[...(mission.brokenBumps||[]),...broken.map(b=>b.id)];broken.forEach(b=>{sprinkle(b.x+b.w/2,world.floor-b.h);mission.coins.push({id:`smash-${Date.now()}-${b.x}`,x:b.x+b.w/2,y:world.floor-b.h-25,collected:false,bob:0});});if(broken.length)writeSave();}}
     const nearby=world.enemies.filter(enemy=>!enemy.friendly&&Math.abs(enemy.x-(player.x+player.w/2))<175).sort((a,b)=>Math.abs(a.x-player.x)-Math.abs(b.x-player.x))[0];sound('magic');if(nearby)collectFriendlyEnemy(nearby);else sprinkle(player.x+player.w/2+player.facing*65,player.y+player.h/2);}
-  function finishMission(){if(scene==='ending-screen')return;save.activeMission=null;save.activeHero=null;save.activeDate=null;save.progress=0;save.sessionElapsed=sessionElapsed;save.stopAfterMission=stopAfterMission;writeSave();$('#ending-message').textContent=`${mission.outro} ${heroes[activeHero].message}`;$('#ending-hero').innerHTML=heroSvg(activeHero);const littleFriends=mission.enemies.filter(enemy=>enemy.friendly).sort((a,b)=>(a.friendOrder??0)-(b.friendOrder??0));const bigFriends=mission.bigFriends||[];const friendCount=friendScore();const parade=[...littleFriends,...bigFriends].sort((a,b)=>(a.friendOrder??0)-(b.friendOrder??0));$('#ending-friends').innerHTML=friendCount?`<strong>Toute la bande te suit !</strong><div class="friend-parade" aria-label="${friendCount} amis suivent le héros">${parade.map((friend,index)=>`<span class="parade-friend ${friend.giant?'parade-giant':''}" style="--friend-delay:${index*45}ms" aria-hidden="true"><i></i><b>♥</b></span>`).join('')}</div><small>${friendCount} ami${friendCount>1?'s':''} en tout. Le grand ami rouge compte pour 10.</small>`:'';$('#ending-friends').classList.toggle('hidden',friendCount===0);const found=mission.letters.filter(item=>item.collected).map(item=>item.letter);$('#alphabet-grid').innerHTML=ALPHABET.map(letter=>`<span class="alphabet-letter ${found.includes(letter)?'found':'missing'}" aria-label="${letter} ${found.includes(letter)?'récoltée':'pas encore récoltée'}">${letter}</span>`).join('');$('#alphabet-summary').textContent=`${found.length} lettre${found.length>1?'s':''} sur 26 récoltée${found.length>1?'s':''}.`;$('#new-mission-button').classList.toggle('hidden',stopAfterMission);$('#ending-rest-title').textContent=stopAfterMission?'Le héros va se reposer maintenant.':'Belle mission !';$('#ending-rest-copy').textContent=stopAfterMission?'Tu as terminé ta mission tranquillement.':'Tu peux repartir ou terminer la partie.';$('#finish-button').innerHTML=stopAfterMission?'Terminer, le héros se repose <span>♥</span>':'Terminer <span>♥</span>';setScreen('ending-screen');sound('finish');if(found.length)sayText(`À la fin de ta mission, tu as récolté les lettres : ${found.join(', ')}.`);}
+  function finishMission(){if(scene==='ending-screen')return;save.activeMission=null;save.activeHero=null;save.activeDate=null;save.progress=0;save.sessionElapsed=sessionElapsed;save.stopAfterMission=stopAfterMission;writeSave();$('#ending-message').textContent=`${mission.outro} ${heroes[activeHero].message}`;$('#ending-hero').innerHTML=`<span class="sprite" style="--col:2;--row:${HERO_ROW[activeHero]??0}"></span>`;const littleFriends=mission.enemies.filter(enemy=>enemy.friendly).sort((a,b)=>(a.friendOrder??0)-(b.friendOrder??0));const bigFriends=mission.bigFriends||[];const friendCount=friendScore();const parade=[...littleFriends,...bigFriends].sort((a,b)=>(a.friendOrder??0)-(b.friendOrder??0));$('#ending-friends').innerHTML=friendCount?`<strong>Toute la bande te suit !</strong><div class="friend-parade" aria-label="${friendCount} amis suivent le héros">${parade.map((friend,index)=>`<span class="parade-friend ${friend.giant?'parade-giant':''}" style="--friend-delay:${index*45}ms" aria-hidden="true"><i></i><b>♥</b></span>`).join('')}</div><small>${friendCount} ami${friendCount>1?'s':''} en tout. Le grand ami rouge compte pour 10.</small>`:'';$('#ending-friends').classList.toggle('hidden',friendCount===0);const won=mission.stickersWon||[];const stickerBox=$('#ending-stickers');stickerBox.classList.toggle('hidden',!won.length);stickerBox.innerHTML=won.length?`<span>Autocollants gagnés : ${won.length}</span><div class="sticker-row">${won.map((i,n)=>`<span style="--r:${n%2?5:-5}deg" aria-label="${escapeHtml(cap(STICKERS[i][1]))}">${STICKERS[i][0]}</span>`).join('')}</div>`:'';const found=mission.letters.filter(item=>item.collected).map(item=>item.letter);$('#alphabet-grid').innerHTML=ALPHABET.map(letter=>`<span class="alphabet-letter ${found.includes(letter)?'found':'missing'}" aria-label="${letter} ${found.includes(letter)?'récoltée':'pas encore récoltée'}">${letter}</span>`).join('');$('#alphabet-summary').textContent=`${found.length} lettre${found.length>1?'s':''} sur 26 récoltée${found.length>1?'s':''}.`;$('#new-mission-button').classList.toggle('hidden',stopAfterMission);$('#ending-rest-title').textContent=stopAfterMission?'Le héros va se reposer maintenant.':'Belle mission !';$('#ending-rest-copy').textContent=stopAfterMission?'Tu as terminé ta mission tranquillement.':'Tu peux repartir ou terminer la partie.';$('#finish-button').innerHTML=stopAfterMission?'Terminer, le héros se repose <span>♥</span>':'Terminer <span>♥</span>';setScreen('ending-screen');sound('finish');if(found.length)sayText(`À la fin de ta mission, tu as récolté les lettres : ${found.join(', ')}.`);}
+  function quitMission() {
+    cancelSpeech();
+    save.activeMission = null; save.activeHero = null; save.activeDate = null; save.progress = 0; writeSave();
+    mission = null; activeHero = null; puzzleTask = null; puzzleStation = null;
+    releaseControls();
+    startToday(); // propose de choisir une nouvelle mission (ou le repos si le minuteur est écoulé)
+  }
+  function renderAlbum() {
+    const owned = new Set(save.stickers || []);
+    $('#album-grid').innerHTML = STICKERS.map(([emoji, name], i) => owned.has(i)
+      ? `<div class="album-slot got" role="listitem" aria-label="${escapeHtml(cap(name))}"><span>${emoji}</span><small>${escapeHtml(cap(name))}</small></div>`
+      : `<div class="album-slot" role="listitem" aria-label="Autocollant à gagner">?</div>`).join('');
+    $('#album-count').textContent = `${owned.size} sur ${STICKERS.length}`;
+  }
+  // Récompense : un autocollant (nouveau de préférence) et quelques pièces.
+  function grantReward() {
+    const owned = new Set(save.stickers || []);
+    const all = STICKERS.map((_, i) => i);
+    const fresh = all.filter(i => !owned.has(i));
+    const pool = fresh.length ? fresh : all;
+    const index = pool[Math.floor(Math.random()*pool.length)];
+    const isNew = !owned.has(index);
+    owned.add(index); save.stickers = [...owned];
+    mission.stickersWon = [...(mission.stickersWon || []), index];
+    addCoins(REWARD_COINS); writeSave();
+    return { index, isNew };
+  }
+  function showReward(praise) {
+    const { index, isNew } = grantReward();
+    const [emoji, name] = STICKERS[index];
+    const panel = $('#puzzle-reward');
+    $('#puzzle-main').classList.add('hidden'); panel.classList.remove('hidden');
+    // relance les animations du cadeau
+    const stage = panel.querySelector('.reward-stage'); const clone = stage.cloneNode(true); stage.replaceWith(clone);
+    $('#reward-sticker').textContent = emoji;
+    $('#reward-name').textContent = cap(name);
+    $('#reward-extra').textContent = isNew ? `Nouveau dans ton album ! +${REWARD_COINS} pièces` : `Tu l’avais déjà, mais +${REWARD_COINS} pièces !`;
+    let advanced = false;
+    const go = () => { if (advanced) return; advanced = true; advanceAfterPuzzle(); };
+    rewardAdvance = go;
+    const started = sayText(`${praise} Du premier coup ! Tu gagnes un autocollant : ${name} !`, () => setTimeout(go, 1800));
+    if (!started) setTimeout(go, 4500);
+  }
   function endSession(){sessionActive=false;sessionElapsed=0;sessionTimerLimit=0;stopAfterMission=false;timerWarningSent=false;timerAnnouncementPending=false;timerNoticePlaying=false;save.sessionActive=false;save.sessionElapsed=0;save.sessionTimerLimit=0;save.stopAfterMission=false;save.timerWarningSent=false;save.timerAnnouncementPending=false;save.activeMission=null;save.activeHero=null;save.activeDate=null;save.progress=0;writeSave();$('#session-timer-row').classList.remove('hidden');setScreen('home');}
-  function heroSvg(id){const colors=heroes[id];const className=`${id}`;return `<svg class="${className}" viewBox="0 0 180 210" aria-hidden="true"><ellipse cx="90" cy="194" rx="53" ry="10" fill="#c5e7f5"/><path d="M48 110 17 145l37-7M132 110l31 35-37-7" fill="${colors.cape}" stroke="#76536e" stroke-width="5" stroke-linejoin="round"/><path d="M63 100h54l15 61H49z" fill="${colors.suit}" stroke="#76536e" stroke-width="5"/><path d="m90 111 6 12 13 2-10 9 2 13-11-7-11 7 2-13-10-9 13-2z" fill="${colors.accent}"/><path d="M58 157h27l-7 29H51zM96 157h27l9 29h-29z" fill="${colors.suit}" stroke="#76536e" stroke-width="4"/><path d="M46 187h36q6 0 6 6v6H45q-8 0-8-6t9-6zm49 0h38q8 0 8 7t-8 5h-35z" fill="#47b8eb" stroke="#386c9e" stroke-width="4"/><circle cx="90" cy="66" r="39" fill="${colors.skin}" stroke="#76536e" stroke-width="4"/><path d="M51 66Q48 23 90 22q40 0 40 45l-17-12-20-14-23 18z" fill="${colors.hair}" stroke="#76536e" stroke-width="5"/><path d="M57 68q33-24 66 0v19q-33 15-66 0z" fill="${colors.accent}" stroke="#76536e" stroke-width="4"/><ellipse cx="76" cy="76" rx="6" ry="8" fill="#293b5b"/><ellipse cx="104" cy="76" rx="6" ry="8" fill="#293b5b"/><path d="M79 96q11 10 22 0" fill="none" stroke="#9d4b40" stroke-width="4" stroke-linecap="round"/></svg>`;}
   function sprinkle(x,y){const rand=seeded(hash(`${performance.now()}-${x}`));for(let i=0;i<22;i++)particles.push({x:x+(rand()-.5)*60,y:y+(rand()-.5)*38,vx:(rand()-.5)*145,vy:-rand()*115-25,life:.6+rand()*.6,r:2+rand()*4,color:['#ffca56','#f2776f','#7abce7','#6bc487','#a991e6'][i%5]});}
   function showToast(message){const node=$('#toast');if(!node||!message)return;node.textContent=message;node.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.classList.remove('show'),3800);sound('soft');}
   function setAudioEnabled(value,silent=false){audioEnabled=value;save.audioEnabled=value;if(!silent)writeSave();$('#sound-button').textContent=value?'♫':'♪';$('#sound-button').setAttribute('aria-label',value?'Couper les sons':'Activer les sons');$('#home-sound-toggle').textContent=value?'♫':'♪';$('#home-sound-toggle').setAttribute('aria-label',value?'Couper les sons':'Activer les sons');$('#music-toggle').checked=value;if(value&&!silent)sound('success');}
-  function releaseControls(){keys={left:false,right:false,jump:false,jumpHeld:false,down:false};dpadPointer=null;Object.assign(dpadState,{left:false,right:false,up:false,down:false});document.querySelectorAll('.dpad-btn.pressed,.action-button.pressed').forEach(button=>button.classList.remove('pressed'));}
+  function releaseControls(){keys={left:false,right:false,jump:false,down:false};jumpBuffer=0;dpadPointer=null;Object.assign(dpadState,{left:false,right:false,up:false,down:false});document.querySelectorAll('.dpad-btn.pressed,.action-button.pressed,.jump-button.pressed').forEach(button=>button.classList.remove('pressed'));}
   function sound(kind){if(!audioEnabled||(!effectsEnabled&&['jump','open','soft','magic','coin'].includes(kind)))return;try{if(!audio)audio=new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();const notes={start:[523,659],jump:[440],open:[392],soft:[330],magic:[784,988],coin:[988,1318],success:[659,784,988],finish:[523,659,784]};const arr=notes[kind]||[440];arr.forEach((freq,i)=>{const osc=audio.createOscillator(),gain=audio.createGain();osc.type='sine';osc.frequency.value=freq;gain.gain.setValueAtTime(.0001,audio.currentTime+i*.07);gain.gain.exponentialRampToValueAtTime(kind==='finish'?.045:.025,audio.currentTime+i*.07+.02);gain.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+i*.07+.24);osc.connect(gain);gain.connect(audio.destination);osc.start(audio.currentTime+i*.07);osc.stop(audio.currentTime+i*.07+.25);});}catch{}}
   function escapeHtml(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
@@ -443,11 +546,14 @@
   $('#home-sound-toggle').addEventListener('click',()=>setAudioEnabled(!audioEnabled));
   $('#pause-button').addEventListener('click',()=>{if(scene==='game-screen'){pausedFrom='game-screen';setScreen('pause-screen');}});
   $('#resume-button').addEventListener('click',()=>{const target=pausedFrom;setScreen(target);lastActiveTick=performance.now();if(target==='game-screen'){startLoop();if(timerAnnouncementPending)speakTimerNotice();}else if(target==='puzzle-screen')readPuzzleAloud();});
-  function showStats(){const letters=mission?.letters?.filter(item=>item.collected).length||0;$('#stat-coins').textContent=String(mission?.coinCount||0);$('#stat-friends').textContent=String(friendScore());$('#stat-letters').textContent=String(letters);$('#stat-questions').textContent=`${save.progress||0}/${mission?.tasks?.length||3}`;setScreen('stats-screen');}
+  function showStats(){const letters=mission?.letters?.filter(item=>item.collected).length||0;$('#stat-coins').textContent=String(mission?.coinCount||0);$('#stat-friends').textContent=String(friendScore());$('#stat-letters').textContent=String(letters);$('#stat-stickers').textContent=String((mission?.stickersWon||[]).length);$('#stat-questions').textContent=`${save.progress||0}/${mission?.tasks?.length||3}`;setScreen('stats-screen');}
   $('#restart-button').addEventListener('click',()=>{if(!activeHero)return;mission=createMission(activeHero);save.activeMission=mission;save.activeHero=activeHero;save.progress=0;writeSave();beginGame(false);});
   $('#stats-button').addEventListener('click',showStats);$('#stats-back-button').addEventListener('click',()=>setScreen('pause-screen'));
   $('#stats-resume-button').addEventListener('click',()=>$('#resume-button').click());
   $('#puzzle-read-button').addEventListener('click',readPuzzleAloud);
+  $('#quit-button').addEventListener('click',quitMission);
+  $('#album-open').addEventListener('click',()=>{renderAlbum();setScreen('album-screen');});
+  $('#reward-continue').addEventListener('click',()=>{cancelSpeech();rewardAdvance?.();});
   $('#new-mission-button').addEventListener('click',()=>{if(!stopAfterMission)setScreen('hero-select');});
   $('#finish-button').addEventListener('click',endSession);
   $('#sound-button').addEventListener('click',()=>setAudioEnabled(!audioEnabled));
@@ -456,7 +562,7 @@
   $('#effects-toggle').addEventListener('change',e=>{effectsEnabled=e.target.checked;save.effectsEnabled=effectsEnabled;writeSave();});
   // Croix de déplacement : un seul doigt peut glisser d'une direction à l'autre (diagonale haut + côté = sauter en avançant).
   const dpad=$('#dpad');const dpadButtons=[...dpad.querySelectorAll('.dpad-btn')];
-  function setDpad(next){if(next.up&&!dpadState.up)keys.jump=true;if(next.down&&!dpadState.down)keys.down=true;Object.assign(dpadState,next);keys.left=next.left;keys.right=next.right;keys.jumpHeld=next.up;dpadButtons.forEach(button=>button.classList.toggle('pressed',!!dpadState[button.dataset.dir]));}
+  function setDpad(next){if(next.up&&!dpadState.up)keys.jump=true;if(next.down&&!dpadState.down)keys.down=true;Object.assign(dpadState,next);keys.left=next.left;keys.right=next.right;dpadButtons.forEach(button=>button.classList.toggle('pressed',!!dpadState[button.dataset.dir]));}
   function dpadFromPoint(e){const r=dpad.getBoundingClientRect();const nx=(e.clientX-(r.left+r.width/2))/(r.width/2),ny=(e.clientY-(r.top+r.height/2))/(r.height/2);if(Math.hypot(nx,ny)<.18)return {left:false,right:false,up:false,down:false};return {left:nx<-.3,right:nx>.3,up:ny<-.38,down:ny>.45&&Math.abs(nx)<.5};}
   dpad.addEventListener('pointerdown',e=>{e.preventDefault();if(dpadPointer!==null||scene!=='game-screen')return;dpadPointer=e.pointerId;dpad.setPointerCapture?.(e.pointerId);setDpad(dpadFromPoint(e));});
   dpad.addEventListener('pointermove',e=>{if(e.pointerId===dpadPointer)setDpad(dpadFromPoint(e));});
@@ -468,12 +574,18 @@
   ['pointerup','pointercancel','pointerleave'].forEach(type=>actionButton.addEventListener(type,()=>actionButton.classList.remove('pressed')));
   actionButton.addEventListener('click',e=>{if(e.detail===0)attackNearestEnemy();});
   actionButton.addEventListener('contextmenu',e=>e.preventDefault());
+  // Bouton SAUT : saute dès l'appui (un appui un peu avant l'atterrissage est mémorisé quelques instants).
+  const jumpButton=$('#jump-button');
+  jumpButton.addEventListener('pointerdown',e=>{e.preventDefault();jumpButton.classList.add('pressed');if(scene==='game-screen')keys.jump=true;});
+  ['pointerup','pointercancel','pointerleave'].forEach(type=>jumpButton.addEventListener(type,()=>jumpButton.classList.remove('pressed')));
+  jumpButton.addEventListener('click',e=>{if(e.detail===0&&scene==='game-screen')keys.jump=true;});
+  jumpButton.addEventListener('contextmenu',e=>e.preventDefault());
   // Clavier : flèches, ZQSD ou WASD ; espace / haut pour sauter, bas pour descendre, X ou E pour l'action.
   const KEY_LEFT=['ArrowLeft','a','A','q','Q'],KEY_RIGHT=['ArrowRight','d','D'],KEY_JUMP=[' ','ArrowUp','w','W','z','Z'],KEY_DOWN=['ArrowDown','s','S'],KEY_ACTION=['x','X','e','E'];
   const GAME_KEYS=[...KEY_LEFT,...KEY_RIGHT,...KEY_JUMP,...KEY_DOWN,...KEY_ACTION];
-  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&(scene==='game-screen'||scene==='puzzle-screen')){pausedFrom=scene;setScreen('pause-screen');return;}if(scene!=='game-screen')return;const k=e.key;if(GAME_KEYS.includes(k))e.preventDefault();if(KEY_LEFT.includes(k))keys.left=true;if(KEY_RIGHT.includes(k))keys.right=true;if(KEY_JUMP.includes(k)){if(!e.repeat)keys.jump=true;keys.jumpHeld=true;}if(KEY_DOWN.includes(k)&&!e.repeat)keys.down=true;if(KEY_ACTION.includes(k)&&!e.repeat)attackNearestEnemy();});
-  window.addEventListener('keyup',e=>{const k=e.key;if(KEY_LEFT.includes(k))keys.left=false;if(KEY_RIGHT.includes(k))keys.right=false;if(KEY_JUMP.includes(k))keys.jumpHeld=false;});
-  window.addEventListener('resize',resizeCanvas);document.addEventListener('visibilitychange',()=>{if(document.hidden&&(scene==='game-screen'||scene==='puzzle-screen')){pausedFrom=scene;setScreen('pause-screen');}});
+  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&(scene==='game-screen'||scene==='puzzle-screen')){pausedFrom=scene;setScreen('pause-screen');return;}if(scene!=='game-screen')return;const k=e.key;if(GAME_KEYS.includes(k))e.preventDefault();if(KEY_LEFT.includes(k))keys.left=true;if(KEY_RIGHT.includes(k))keys.right=true;if(KEY_JUMP.includes(k)){if(!e.repeat)keys.jump=true;}if(KEY_DOWN.includes(k)&&!e.repeat)keys.down=true;if(KEY_ACTION.includes(k)&&!e.repeat)attackNearestEnemy();});
+  window.addEventListener('keyup',e=>{const k=e.key;if(KEY_LEFT.includes(k))keys.left=false;if(KEY_RIGHT.includes(k))keys.right=false;});
+  window.addEventListener('resize',resizeCanvas);window.addEventListener('orientationchange',()=>setTimeout(resizeCanvas,250));if('ResizeObserver' in window)new ResizeObserver(()=>{if(scene==='game-screen')resizeCanvas();}).observe(canvas);document.addEventListener('visibilitychange',()=>{if(document.hidden&&(scene==='game-screen'||scene==='puzzle-screen')){pausedFrom=scene;setScreen('pause-screen');}});
   setAudioEnabled(audioEnabled,true);
   lastActiveTick=performance.now();setInterval(tickMissionClock,250);
   if('serviceWorker' in navigator && location.protocol!=='file:')navigator.serviceWorker.register('./sw.js').catch(()=>{});

@@ -14,14 +14,17 @@ Puis ouvrez `http://localhost:4173`. Le service worker et l'installation PWA né
 
 ## Fonctionnalités
 
-- Écran d'accueil utilisant l'illustration fournie.
-- Écran de sélection illustré et aide visuelle consultable depuis l'accueil.
+- Accueil, choix du héros, mode d'emploi et album dessinés en CSS/SVG avec les sprites des héros : aucun écran n'est une image figée, tout remplit n'importe quel support (téléphone en portrait ou en paysage, tablette, ordinateur, écran très large) et s'installe en plein écran comme une application.
 - Trois parcours longs adaptés aux pouvoirs de Ziggy, Filou et Titan, avec animations de sprites : marche rythmée par la distance parcourue, saut, réception, esquive en cas de choc, fête sur place, écrasement/étirement.
-- Manette calquée sur le mode d’emploi : croix verte sur socle bleu (gauche/droite pour avancer, haut pour sauter, bas pour descendre d’une plateforme ; on peut glisser le doigt en diagonale pour sauter en avançant) et grand bouton rouge **ACTION !** pour le pouvoir du héros (vitesse, laine ou force). Au clavier : flèches, ZQSD ou WASD, espace pour sauter, X ou E pour l’action, Échap pour la pause.
-- Les trois caisses peuvent être ouvertes dans n’importe quel ordre ; la mission se termine en rejoignant la maison 🏡 au bout du chemin.
+- Manette calquée sur le mode d’emploi : croix verte sur socle bleu à gauche (gauche/droite pour avancer, haut pour sauter, bas pour descendre d’une plateforme ; on peut glisser le doigt en diagonale), puis à droite le bouton rouge **ACTION !** (pouvoir du héros : vitesse, laine ou force) et, tout à droite, le bouton jaune **SAUT**. Les deux pouces peuvent agir en même temps. Au clavier : flèches, ZQSD ou WASD, espace pour sauter, X ou E pour l’action, Échap pour la pause.
+- Les trois caisses peuvent être ouvertes dans n’importe quel ordre, ou pas du tout : la mission se termine dès qu'on rejoint la maison 🏡 au bout du chemin.
+- « Quitter la mission » (dans la pause) efface la mission en cours et propose d'en choisir une nouvelle.
+- Questions et ordre des réponses tirés au hasard à chaque mission (trois thèmes différents, sans répéter les questions récentes).
+- On peut répondre à une énigme sans attendre la fin de la lecture vocale.
+- Récompense : une bonne réponse du premier coup ouvre un cadeau surprise avec un autocollant à collectionner (24 animaux et objets, album consultable depuis l'accueil) et 5 pièces.
 - Caisses de mission intégrées aux obstacles : un saut par-dessous lance la question vocale.
 - Pause avec reprise, redémarrage du parcours et statistiques de mission.
-- Trois petites énigmes tirées d'une banque de 1 000 questions ; la question et toutes les réponses sont lues en français avant d'activer les choix.
+- Trois petites énigmes tirées d'une banque de 1 000 questions ; la question et toutes les réponses sont lues en français.
 - Plusieurs missions à la suite, sans limite quotidienne ; après chacune, le joueur peut repartir ou terminer la partie.
 - Minuteur de 10 minutes facultatif et discret au choix du héros. À son expiration, une voix prévient l'enfant ; il termine sa mission en cours, puis le héros se repose. Le minuteur ne coupe jamais la partie.
 - Plateformes et obstacles à différentes hauteurs, pièces, lettres et petits farceurs à transformer en amis.
@@ -30,13 +33,14 @@ Puis ouvrez `http://localhost:4173`. Le service worker et l'installation PWA né
 
 ## Structure
 
-- `index.html` : écrans et interface.
+- `index.html` : écrans et interface (décor SVG commun aux écrans hors jeu).
 - `styles.css` : mise en page responsive et styles.
 - `app.js` : boucle Canvas, missions, commandes, sauvegarde et sons synthétiques.
 - `sw.js` : cache PWA hors ligne (réseau d’abord pour le code, cache d’abord pour les images).
 - `icons/` : icône SVG et icônes PNG (192, 512, Apple) pour l’installation.
 - `assets/home-art.jpg`, `assets/hero-select-art.jpg` et `assets/controls-art.jpg` : visuels des écrans d'accueil, de sélection et d'aide.
-- `assets/heroes-atlas.webp` : planche des héros (3 lignes × 6 poses : marcher ×2, éviter ×2, sauter, atterrir), détourée et alignée sur les pieds.
+- `assets/heroes-atlas.webp` : planche des héros pour l'animation en jeu (3 lignes × 6 poses : marcher ×2, éviter ×2, sauter, atterrir), détourée et alignée sur les pieds.
+- `assets/heroes-hd.webp` : mêmes héros en haute définition (4 poses) pour l'accueil, le choix du héros, le mode d'emploi et la fin de mission.
 
 Les niveaux restent bienveillants : aucun héros ne meurt ou ne subit de dégâts, et le minuteur ne force jamais l'arrêt d'une mission en cours.
 
