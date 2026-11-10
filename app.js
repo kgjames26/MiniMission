@@ -115,6 +115,7 @@
     world.stations = [0,1,2].map(i => ({x:620+i*780, i, done:i<(save.progress||0), bob:rnd()*6}));
     // Plusieurs petits obstacles à sauter, avec des plateformes basses et hautes pour varier le parcours.
     world.bumps = [250,355,465,535,830,945,1050,1160,1320,1510,1615,1740,1850,2040,2150,2290,2410,2535,2660,2790,2910].map((x,i)=>({x:x+rnd()*38,w:34+rnd()*31,h:19+rnd()*20,type:i%3}));
+    world.bumps.forEach(b=>{if(b.type===0&&world.stations.some(station=>Math.abs(b.x-station.x)<150))b.x+=190;});
     world.platforms = [
       {x:405,y:world.floor-92,w:112,h:18,type:0},{x:555,y:world.floor-154,w:104,h:18,type:1},
       {x:900,y:world.floor-118,w:126,h:18,type:1},{x:1115,y:world.floor-176,w:108,h:18,type:0},
