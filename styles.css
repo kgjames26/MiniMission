@@ -11,3 +11,4 @@
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 .choice-button.try-again{border-color:#f6d28f;background:#fff9e9}.choice-button.hint-answer{border-color:#72c58c;background:#eaffee;animation:answer-pulse .7s ease-in-out infinite alternate}@keyframes answer-pulse{to{transform:scale(1.035)}}
 .choice-button:disabled{cursor:default;opacity:.9}
+.read-aloud-button{display:inline-flex;align-items:center;gap:8px;margin:2px auto 12px;padding:9px 15px;border-radius:999px;background:#e5f5ff;color:#426e89;border:2px solid #cde8f5;font-weight:900;font-size:13px}.read-aloud-button:active{transform:translateY(2px)}.speech-status{min-height:18px;margin:0 auto 8px!important;color:#6391a3!important;font-size:12px!important;font-weight:800!important}

@@ -16,7 +16,7 @@ Puis ouvrez `http://localhost:4173`. Le service worker et l'installation PWA né
 
 - Écran d'accueil utilisant l'illustration fournie.
 - Choix du héros, niveau 2D à défilement et commandes tactiles/clavier.
-- Trois petites énigmes d'entraide avec essais sans pénalité.
+- Trois petites énigmes d'entraide avec essais sans pénalité ; la question et toutes les réponses sont lues en français par la synthèse vocale de l'appareil avant d'activer les choix.
 - Mission quotidienne choisie par date locale ; le jeu reprend la mission inachevée et marque la journée comme terminée après sa réussite.
 - Sauvegarde locale, réglages sonores et fonctionnement hors ligne après le premier chargement.
 - Aucun compte, publicité, collecte de données ni service externe.
