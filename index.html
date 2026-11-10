@@ -48,11 +48,11 @@
       </section>
 
       <section id="game-screen" class="screen game-screen" aria-label="Mission en cours">
-        <div class="game-topbar"><button id="pause-button" class="game-icon-button" aria-label="Pause">Ⅱ</button><div class="mission-label"><span class="mission-day">MISSION DU JOUR</span><strong id="mission-title">Le chaton a besoin d'aide</strong></div><div class="progress-wrap" aria-label="Progression"><div id="progress-dots" class="progress-dots"></div></div></div>
+        <div class="game-topbar"><button id="pause-button" class="game-icon-button" aria-label="Pause">Ⅱ</button><div class="mission-label"><span class="mission-day">MISSION DU JOUR</span><strong id="mission-title">Le chaton a besoin d'aide</strong></div><div class="coin-counter" aria-label="Pièces ramassées"><span aria-hidden="true">🪙</span><strong id="coin-count">0</strong></div><div class="progress-wrap" aria-label="Progression"><div id="progress-dots" class="progress-dots"></div></div></div>
         <div class="game-stage"><canvas id="game-canvas" width="960" height="540" aria-label="Jeu de plateforme 2D"></canvas>
           <div id="hint-bubble" class="hint-bubble"><span class="hint-icon">✦</span><span id="hint-text">Avance doucement vers le chaton.</span></div>
           <div id="interaction-prompt" class="interaction-prompt hidden"><span>Tu peux aider&nbsp;!</span><button id="help-button" class="help-button">AIDER <span>♥</span></button></div>
-          <div class="touch-controls" aria-label="Commandes de déplacement"><div class="move-pair"><button class="touch-button" data-control="left" aria-label="Aller à gauche">‹</button><button class="touch-button" data-control="right" aria-label="Aller à droite">›</button></div><button class="touch-button jump-button" data-control="jump" aria-label="Sauter">SAUT</button></div>
+          <div class="touch-controls" aria-label="Commandes de déplacement"><div class="move-pair"><button class="touch-button" data-control="left" aria-label="Aller à gauche">‹</button><button class="touch-button" data-control="right" aria-label="Aller à droite">›</button></div><div class="action-pair"><button id="attack-button" class="touch-button attack-button" aria-label="Lancer une étoile magique pour transformer un petit ennemi en ami"><span aria-hidden="true">✦</span><small>ÉTOILE</small></button><button class="touch-button jump-button" data-control="jump" aria-label="Sauter">SAUT</button></div></div>
         </div>
         <div class="game-bottom"><span class="safe-note"><span>♥</span> Ici, tout le monde est en sécurité.</span><button id="sound-button" class="sound-button" aria-label="Couper les sons">♫</button></div>
       </section>
