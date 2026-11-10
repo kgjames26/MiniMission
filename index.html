@@ -5,80 +5,206 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#68c9f5" />
     <meta name="description" content="Une petite mission d'entraide avec Ziggy, Filou ou Titan." />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Mini Mission" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
     <link rel="stylesheet" href="styles.css" />
     <title>Mini Mission</title>
   </head>
   <body>
     <main id="app" class="app">
+      <!-- Décor commun à l'accueil, au choix du héros, au mode d'emploi et à l'album : dessiné en vectoriel, il remplit tous les écrans. -->
+      <div class="scene" aria-hidden="true">
+        <svg class="scene-svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice">
+          <defs>
+            <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3fb4ee"/><stop offset=".5" stop-color="#9fe0fa"/><stop offset="1" stop-color="#e6f9ec"/></linearGradient>
+            <radialGradient id="sun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fffbe2" stop-opacity=".95"/><stop offset="1" stop-color="#fffbe2" stop-opacity="0"/></radialGradient>
+            <g id="cloud"><ellipse cx="0" cy="16" rx="78" ry="26"/><ellipse cx="-38" cy="4" rx="36" ry="30"/><ellipse cx="2" cy="-8" rx="44" ry="40"/><ellipse cx="42" cy="6" rx="36" ry="28"/></g>
+            <g id="tree"><rect x="-10" y="-6" width="20" height="130" rx="10" fill="#9b6f51"/><circle cx="0" cy="-44" r="68" fill="#58bd72"/><circle cx="-50" cy="-14" r="48" fill="#4cae67"/><circle cx="50" cy="-12" r="50" fill="#69c97c"/><circle cx="-20" cy="-72" r="22" fill="#fff" opacity=".2"/></g>
+            <g id="house"><rect x="-70" y="-100" width="140" height="100" rx="10" fill="currentColor"/><path d="M-84 -92 0 -160 84 -92z" fill="#e8756b"/><rect x="-48" y="-78" width="30" height="34" rx="7" fill="#fff" opacity=".9"/><rect x="18" y="-78" width="30" height="34" rx="7" fill="#fff" opacity=".9"/><rect x="-16" y="-52" width="32" height="52" rx="14" fill="#a97762"/></g>
+          </defs>
+          <rect width="1600" height="900" fill="url(#sky)"/>
+          <circle cx="800" cy="330" r="560" fill="url(#sun)"/>
+          <g fill="#fff" opacity=".88"><use href="#cloud" x="210" y="150"/><use href="#cloud" x="520" y="260" transform="translate(520 260) scale(.8) translate(-520 -260)"/><use href="#cloud" x="1130" y="130"/><use href="#cloud" x="1420" y="270" transform="translate(1420 270) scale(.9) translate(-1420 -270)"/><use href="#cloud" x="820" y="90" transform="translate(820 90) scale(.7) translate(-820 -90)"/></g>
+          <path d="M0 640C190 560 420 600 650 650S1090 590 1300 630 1520 610 1600 640V900H0z" fill="#93d89c"/>
+          <g><use href="#house" x="1180" y="650" style="color:#f6c985"/><use href="#house" x="1340" y="660" style="color:#a6d3ea" transform="translate(1340 660) scale(.9) translate(-1340 -660)"/><use href="#house" x="1480" y="650" style="color:#e9b5d8"/><use href="#house" x="190" y="660" style="color:#b9e2ae"/></g>
+          <path d="M0 735C280 670 560 715 860 745S1380 700 1600 730V900H0z" fill="#6fc58a"/>
+          <use href="#tree" x="110" y="690" transform="translate(110 690) scale(1.25) translate(-110 -690)"/>
+          <use href="#tree" x="1500" y="700" transform="translate(1500 700) scale(1.35) translate(-1500 -700)"/>
+          <use href="#tree" x="340" y="730" transform="translate(340 730) scale(.8) translate(-340 -730)"/>
+          <use href="#tree" x="1270" y="735" transform="translate(1270 735) scale(.75) translate(-1270 -735)"/>
+          <path d="M0 810C320 770 700 790 1010 830S1480 800 1600 790V900H0z" fill="#58b673"/>
+          <path d="M520 900C640 850 860 845 1080 900z" fill="#efd9a6"/>
+          <path d="M-20 900C200 860 360 872 470 900z" fill="#efd9a6"/>
+        </svg>
+        <i class="sparkle" style="--x:12%;--y:22%;--d:0s">✦</i><i class="sparkle" style="--x:84%;--y:30%;--d:1.1s">★</i><i class="sparkle" style="--x:30%;--y:14%;--d:.6s">✧</i><i class="sparkle" style="--x:68%;--y:12%;--d:1.7s">✦</i><i class="sparkle" style="--x:92%;--y:58%;--d:.3s">✧</i><i class="sparkle" style="--x:6%;--y:52%;--d:2s">★</i>
+      </div>
+
       <section id="home" class="screen home-screen active" aria-label="Accueil de Mini Mission">
-        <img class="home-art" src="assets/home-art.jpg" alt="" />
-        <div class="home-shade"></div>
-        <div class="home-top"><span class="eyebrow"><span class="sun-dot"></span> MINI MISSION</span><button class="icon-button settings-open" aria-label="Réglages pour l'adulte" title="Réglages">⚙</button><button id="home-sound-toggle" class="icon-button" aria-label="Activer ou couper les sons">♫</button><button id="help-art-button" class="manual-button" aria-label="Mode d’emploi"><span aria-hidden="true">📖</span><span>Mode d’emploi</span></button></div>
-        <div class="home-copy">
-          <p class="mini-kicker">Une aventure pour faire du bien</p>
-          <h1>Prêt pour<br /><span>Mini Mission&nbsp;?</span></h1>
-          <p class="home-description">Choisis ton héros. Ensemble, vous allez aider le quartier.</p>
-          <button id="start-button" class="primary-button">Commencer <span aria-hidden="true">➜</span></button>
-          <p class="home-footnote">Une aventure après l’autre, à ton rythme.</p>
+        <div class="home-top">
+          <button class="round-btn settings-open" type="button" aria-label="Réglages pour l'adulte" title="Réglages">⚙</button>
+          <span class="grow"></span>
+          <button id="album-open" class="pill-btn" type="button" aria-label="Mon album d’autocollants"><span aria-hidden="true">📒</span><span>Mon album</span></button>
+          <button id="help-art-button" class="pill-btn" type="button" aria-label="Mode d’emploi"><span aria-hidden="true">📖</span><span>Mode d’emploi</span></button>
+          <button id="home-sound-toggle" class="round-btn" type="button" aria-label="Activer ou couper les sons">♫</button>
         </div>
-        <div class="home-sticker sticker-heart" aria-hidden="true">♥</div>
-        <div class="home-sticker sticker-star" aria-hidden="true">★</div>
+        <h1 class="logo" aria-label="Mini Mission">
+          <span class="logo-line logo-mini" aria-hidden="true"><span style="--c:#3fa4ea;--r:-4deg">M</span><span style="--c:#ef4b43;--r:3deg">I</span><span style="--c:#ffb92e;--r:-2deg">N</span><span style="--c:#5fbf68;--r:4deg">I</span></span>
+          <span class="logo-line logo-mission" aria-hidden="true"><span style="--c:#ef4b43;--r:-3deg">M</span><span style="--c:#ffb92e;--r:2deg">I</span><span style="--c:#3fa4ea;--r:-2deg">S</span><span style="--c:#ef4b43;--r:3deg">S</span><span style="--c:#ffb92e;--r:-3deg">I</span><span style="--c:#3fa4ea;--r:2deg">O</span><span style="--c:#ef4b43;--r:-2deg">N</span></span>
+        </h1>
+        <div class="home-heroes" aria-hidden="true">
+          <span class="home-hero hh-ziggy"><span class="sprite" style="--col:0;--row:0"></span></span>
+          <span class="home-hero hh-filou"><span class="sprite" style="--col:2;--row:1"></span></span>
+          <span class="home-hero hh-titan"><span class="sprite" style="--col:2;--row:2"></span></span>
+        </div>
+        <button id="start-button" class="play-button" type="button">JOUER&nbsp;! <span aria-hidden="true">▶</span></button>
+        <span id="home-version" class="home-version" aria-hidden="true"></span>
       </section>
 
       <section id="hero-select" class="screen hero-screen" aria-label="Choisir un héros">
-        <img class="select-art" src="assets/hero-select-art.jpg" alt="Écran illustré de sélection de Ziggy, Filou et Titan." />
-        <button class="select-back-hotspot" data-go="home" aria-label="Retour à l’accueil"></button>
-        <header class="screen-header"><button class="back-button" data-go="home" aria-label="Retour">←</button><div><p class="eyebrow">NOUVELLE PARTIE</p><h2>Qui part aider&nbsp;?</h2></div><span class="header-spacer"></span></header>
-        <p class="screen-intro">Choisis ton héros. Il t'accompagne pour toute la mission.</p>
+        <header class="screen-top">
+          <button class="round-btn" type="button" data-go="home" aria-label="Retour à l’accueil">←</button>
+          <h2 class="screen-title"><span class="t-orange">Choisis ton</span> <span class="t-red">héros&nbsp;!</span></h2>
+          <span class="top-spacer"></span>
+        </header>
         <div class="hero-grid">
-          <button class="hero-card ziggy" data-hero="ziggy" aria-label="Choisir Ziggy, le héros rapide qui traverse les obstacles">
-            <span class="hero-art-wrap"><svg viewBox="0 0 180 210" class="hero-svg" aria-hidden="true"><ellipse cx="90" cy="194" rx="53" ry="10" fill="#c5e7f5"/><path d="M48 110 17 145l37-7M132 110l31 35-37-7" fill="#ffba42" stroke="#b85831" stroke-width="4" stroke-linejoin="round"/><path d="M63 100h54l15 61H49z" fill="#ffcf37" stroke="#bd6137" stroke-width="5"/><path d="m90 111 6 12 13 2-10 9 2 13-11-7-11 7 2-13-10-9 13-2z" fill="#ff6d62"/><path d="M58 157h27l-7 29H51zM96 157h27l9 29h-28z" fill="#ef514d" stroke="#b85831" stroke-width="4"/><path d="M46 187h36q6 0 6 6v6H45q-8 0-8-6t9-6zm49 0h38q8 0 8 7t-8 5h-35z" fill="#47b8eb" stroke="#386c9e" stroke-width="4"/><circle cx="90" cy="66" r="39" fill="#f3bf91" stroke="#7b4438" stroke-width="4"/><path d="M51 66Q48 23 90 22q40 0 40 45l-17-12-20-14-23 18z" fill="#f24e50" stroke="#8f353c" stroke-width="5"/><path d="M57 68q33-24 66 0v19q-33 15-66 0z" fill="#ffd13d" stroke="#b85831" stroke-width="4"/><ellipse cx="76" cy="76" rx="6" ry="8" fill="#293b5b"/><ellipse cx="104" cy="76" rx="6" ry="8" fill="#293b5b"/><path d="M79 96q11 10 22 0" fill="none" stroke="#9d4b40" stroke-width="4" stroke-linecap="round"/><path d="m70 48 6-9 7 9m19 0 7-9 6 9" fill="#fff7c9" stroke="#d68b32" stroke-width="2"/><circle cx="146" cy="42" r="13" fill="#fff2a6"/><path d="m146 32 3 7 8 1-6 5 2 8-7-4-7 4 2-8-6-5 8-1z" fill="#ff9f32"/></svg></span>
-            <span class="hero-name">Ziggy la Comète</span><span class="hero-power">Bond lumineux</span><span class="choose-pill">Choisir Ziggy</span>
+          <button class="hero-card ziggy" type="button" data-hero="ziggy" aria-label="Choisir Ziggy la Comète, le héros rapide qui traverse les obstacles">
+            <span class="hero-stage"><span class="sprite" style="--col:0;--row:0"></span></span>
+            <span class="hero-info"><span class="hero-name">Ziggy</span><span class="hero-power">Vitesse <b>★★★★☆</b></span><span class="choose-pill">CHOISIR</span></span>
           </button>
-          <button class="hero-card filou" data-hero="filou" aria-label="Choisir Filou, le héros agile qui tisse des ponts">
-            <span class="hero-art-wrap"><svg viewBox="0 0 180 210" class="hero-svg" aria-hidden="true"><ellipse cx="90" cy="194" rx="53" ry="10" fill="#c5e7f5"/><path d="M58 105 24 145l41-11M122 105l34 40-41-11" fill="#7b66d8" stroke="#50459a" stroke-width="5" stroke-linejoin="round"/><path d="M62 102h56l15 58H48z" fill="#397fc5" stroke="#315a96" stroke-width="5"/><path d="M72 113q18 16 36 0m-42 18q24 14 48 0" fill="none" stroke="#a9dfff" stroke-width="3"/><path d="M58 158h27l-5 29H50zM96 158h27l8 29h-29z" fill="#f58c4f" stroke="#76529b" stroke-width="4"/><path d="M47 187h35q7 0 7 7v5H44q-8 0-8-6t11-6zm52 0h37q8 0 8 7t-8 5h-34z" fill="#ffce64" stroke="#70529a" stroke-width="4"/><circle cx="90" cy="66" r="39" fill="#eeb993" stroke="#774e64" stroke-width="4"/><path d="M50 67Q50 26 90 23q41 0 41 46l-15-12-26 3-26 15z" fill="#3189cd" stroke="#315a96" stroke-width="5"/><path d="M61 68q29-20 58 0v20q-29 13-58 0z" fill="#fff8d7" stroke="#315a96" stroke-width="4"/><ellipse cx="77" cy="77" rx="6" ry="8" fill="#303756"/><ellipse cx="103" cy="77" rx="6" ry="8" fill="#303756"/><path d="M80 97q10 9 20 0" fill="none" stroke="#9c584c" stroke-width="4" stroke-linecap="round"/><path d="M49 63q-12 6-18 20m100-19q13 7 19 20M54 97l-15 14m85-14 16 14" fill="none" stroke="#b9eaff" stroke-width="3" stroke-linecap="round"/><circle cx="144" cy="45" r="14" fill="#fff"/><path d="M137 45h14m-7-7v14m-13-3 26-8" stroke="#8a6cdb" stroke-width="2"/></svg></span>
-            <span class="hero-name">Filou le Tisseur</span><span class="hero-power">Fil doux et pont sûr</span><span class="choose-pill">Choisir Filou</span>
+          <button class="hero-card filou" type="button" data-hero="filou" aria-label="Choisir Filou le Tisseur, le héros agile qui tisse des ponts">
+            <span class="hero-stage"><span class="sprite" style="--col:2;--row:1"></span></span>
+            <span class="hero-info"><span class="hero-name">Filou</span><span class="hero-power">Agilité <b>★★★★☆</b></span><span class="choose-pill">CHOISIR</span></span>
           </button>
-          <button class="hero-card titan" data-hero="titan" aria-label="Choisir Titan, le héros fort qui déplace les rochers">
-            <span class="hero-art-wrap"><svg viewBox="0 0 180 210" class="hero-svg" aria-hidden="true"><ellipse cx="90" cy="194" rx="53" ry="10" fill="#c5e7f5"/><path d="M61 103 24 141l39-7M119 103l36 38-37-7" fill="#ffcf44" stroke="#58834d" stroke-width="5" stroke-linejoin="round"/><path d="M62 102h56l16 59H46z" fill="#4eaf77" stroke="#397b57" stroke-width="5"/><path d="m69 111 21 19 21-19-8 36H78z" fill="#ffe16c"/><path d="M58 158h28l-8 29H49zM96 158h28l9 29h-31z" fill="#f0be50" stroke="#58834d" stroke-width="4"/><path d="M45 187h37q8 0 8 7v5H43q-8 0-8-6t10-6zm54 0h37q8 0 8 7t-8 5h-34z" fill="#456fbd" stroke="#42688c" stroke-width="4"/><circle cx="90" cy="64" r="39" fill="#a96542" stroke="#583d38" stroke-width="4"/><path d="M50 66Q50 27 90 24q42 0 41 46l-15-16-24-8-25 15z" fill="#352d34" stroke="#292833" stroke-width="5"/><path d="M58 66q32-21 64 0v21q-32 14-64 0z" fill="#ffe07a" stroke="#567d53" stroke-width="4"/><ellipse cx="76" cy="76" rx="6" ry="8" fill="#293b5b"/><ellipse cx="104" cy="76" rx="6" ry="8" fill="#293b5b"/><path d="M80 96q10 9 20 0" fill="none" stroke="#6c3f3b" stroke-width="4" stroke-linecap="round"/><path d="M55 109 34 145l25-11m66-24 23 35-27-11" fill="#f7cf45" stroke="#658f57" stroke-width="3"/><path d="M146 43q9-12 17-1-8 4-10 12" fill="#fff0a7"/><path d="m150 35 3 6 7 1-5 5 1 7-6-4-7 4 1-7-5-5 7-1z" fill="#77c784"/></svg></span>
-            <span class="hero-name">Titan Puce</span><span class="hero-power">Force douce</span><span class="choose-pill">Choisir Titan</span>
+          <button class="hero-card titan" type="button" data-hero="titan" aria-label="Choisir Titan Puce, le héros fort qui déplace les rochers">
+            <span class="hero-stage"><span class="sprite" style="--col:2;--row:2"></span></span>
+            <span class="hero-info"><span class="hero-name">Titan</span><span class="hero-power">Force <b>★★★★☆</b></span><span class="choose-pill">CHOISIR</span></span>
           </button>
         </div>
         <div id="session-timer-row" class="session-timer-row"><label for="session-timer-select">Minuteur de partie <span>(facultatif)</span></label><select id="session-timer-select"><option value="0">Désactivé</option><option value="600">10 minutes</option></select></div>
-        <div class="hero-footer"><span class="footer-spark">✦</span> Après une mission, tu peux repartir <span class="footer-spark">✦</span></div>
       </section>
 
-      <section id="howto-screen" class="screen howto-screen" aria-label="Comment jouer"><img src="assets/controls-art.jpg" alt="Déplacement avec les flèches, saut et attaque avec le grand bouton d'action." /><button class="back-button" data-go="home" aria-label="Retour à l'accueil">←</button></section>
+      <section id="howto-screen" class="screen howto-screen" aria-label="Comment jouer">
+        <header class="screen-top">
+          <button class="round-btn" type="button" data-go="home" aria-label="Retour à l’accueil">←</button>
+          <h2 class="screen-title"><span class="t-blue">Comment</span> <span class="t-orange">jouer&nbsp;?</span></h2>
+          <span class="top-spacer"></span>
+        </header>
+        <div class="howto-board">
+          <div class="howto-block">
+            <p class="howto-label"><span aria-hidden="true">👣</span> DÉPLACER&nbsp;!</p>
+            <div class="dpad dpad-demo" style="--pad:var(--demo-pad)" aria-hidden="true"><span class="dpad-base"></span><span class="dpad-btn dpad-up"></span><span class="dpad-btn dpad-left"></span><span class="dpad-center"></span><span class="dpad-btn dpad-right"></span><span class="dpad-btn dpad-down"></span></div>
+            
+          </div>
+          <div class="howto-block">
+            <p class="howto-label"><span aria-hidden="true">✨</span> SAUT ET ACTION&nbsp;!</p>
+            <div class="howto-buttons" aria-hidden="true">
+              <span class="action-button demo" style="--act:var(--demo-btn)"><span class="action-ring"></span><span class="action-power">☄️</span><strong>ACTION&nbsp;!</strong></span>
+              <span class="jump-button demo" style="--jump:var(--demo-btn)"><span class="jump-arrow">▲</span><strong>SAUT</strong></span>
+            </div>
+            <div class="power-row">
+              <span class="power-chip"><span class="sprite" style="--col:1;--row:0"></span><b>Ziggy</b><small>TURBO</small></span>
+              <span class="power-chip"><span class="sprite" style="--col:2;--row:1"></span><b>Filou</b><small>TOILE</small></span>
+              <span class="power-chip"><span class="sprite" style="--col:3;--row:2"></span><b>Titan</b><small>POING</small></span>
+            </div>
+            
+          </div>
+        </div>
+        <p class="howto-keys">⌨ ← → · Espace · X · Échap</p>
+      </section>
+
+      <section id="album-screen" class="screen album-screen" aria-label="Mon album d’autocollants">
+        <header class="screen-top">
+          <button class="round-btn" type="button" data-go="home" aria-label="Retour à l’accueil">←</button>
+          <h2 class="screen-title"><span class="t-orange">Mon</span> <span class="t-red">album</span></h2>
+          <span class="top-spacer"></span>
+        </header>
+        <div class="album-card">
+          <div id="album-tabs" class="album-tabs" role="tablist"></div>
+          <p id="album-page-title" class="album-page-title"></p>
+          <div id="album-grid" class="album-grid" role="list"></div>
+          <div class="album-legend" aria-hidden="true"><span>🥉 ❓</span><span>🥈 ⭐</span><span>🥇 🔤</span><b id="album-total">0/60</b></div>
+        </div>
+      </section>
 
       <section id="game-screen" class="screen game-screen" aria-label="Mission en cours">
-        <div class="game-topbar"><button id="pause-button" class="game-icon-button" aria-label="Pause">Ⅱ</button><div class="mission-label"><span class="mission-day">MISSION EN COURS</span><strong id="mission-title">Le chaton a besoin d'aide</strong></div><div class="coin-counter" aria-label="Pièces ramassées"><span aria-hidden="true">🪙</span><strong id="coin-count">0</strong></div><div class="friend-counter" aria-label="Amis recueillis, le grand ami rouge compte pour dix"><span aria-hidden="true">♥</span><strong id="friend-count">0</strong></div><div class="letter-counter" aria-label="Lettres de l’alphabet récoltées"><span aria-hidden="true">🔤</span><strong id="letter-count">0/26</strong></div><div class="progress-wrap" aria-label="Progression"><div id="progress-dots" class="progress-dots"></div></div></div>
-        <div class="game-stage"><canvas id="game-canvas" width="960" height="540" aria-label="Jeu de plateforme 2D"></canvas>
-          <div class="touch-controls" aria-label="Commandes de déplacement"><div class="move-pair"><button class="touch-button" data-control="left" aria-label="Aller à gauche">‹</button><button class="touch-button" data-control="right" aria-label="Aller à droite">›</button></div><div class="action-pair"><button id="attack-button" class="touch-button attack-button" aria-label="Lancer une étoile magique pour transformer un petit ennemi en ami"><span aria-hidden="true">✦</span><small>ÉTOILE</small></button><button class="touch-button jump-button" data-control="jump" aria-label="Sauter">SAUT</button></div></div>
+        <div class="game-stage"><canvas id="game-canvas" width="960" height="540" aria-label="Jeu de plateforme 2D"></canvas></div>
+        <div class="game-topbar">
+          <button id="pause-button" class="game-icon-button" type="button" aria-label="Pause">Ⅱ</button>
+          <div class="mission-label"><strong id="mission-title">Mission</strong></div>
+          <div class="coin-counter" aria-label="Étoiles ramassées"><span aria-hidden="true">⭐</span><strong id="coin-count">0/0</strong></div>
+          <div class="friend-counter" aria-label="Amis recueillis, le grand ami rouge compte pour dix"><span aria-hidden="true">♥</span><strong id="friend-count">0</strong></div>
+          <div class="letter-counter" aria-label="Lettres de l’alphabet récoltées"><span aria-hidden="true">🔤</span><strong id="letter-count">0/26</strong></div>
+          <div class="progress-wrap" aria-label="Progression"><div id="progress-dots" class="progress-dots"></div></div>
+          <button id="sound-button" class="game-icon-button" type="button" aria-label="Couper les sons">♫</button>
         </div>
-        <div class="game-bottom"><span class="safe-note"><span>♥</span> Ici, tout le monde est en sécurité.</span><button id="sound-button" class="sound-button" aria-label="Couper les sons">♫</button></div>
+        <div id="award-banner" class="award-banner hidden" role="status"><span class="award-medal"></span><span class="award-sticker"></span><span class="award-text"><b class="award-name"></b><i class="award-new">NOUVEAU</i></span></div>
+        <div id="home-hint" class="home-hint hidden" aria-hidden="true">🏡 ➜</div>
+        <div class="touch-controls">
+          <div id="dpad" class="dpad" role="group" aria-label="Croix de déplacement : gauche, droite, haut pour sauter, bas pour descendre">
+            <span class="dpad-base" aria-hidden="true"></span>
+            <button type="button" class="dpad-btn dpad-up" data-dir="up" aria-label="Sauter" tabindex="-1"></button>
+            <button type="button" class="dpad-btn dpad-left" data-dir="left" aria-label="Aller à gauche" tabindex="-1"></button>
+            <span class="dpad-center" aria-hidden="true"></span>
+            <button type="button" class="dpad-btn dpad-right" data-dir="right" aria-label="Aller à droite" tabindex="-1"></button>
+            <button type="button" class="dpad-btn dpad-down" data-dir="down" aria-label="Descendre d’une plateforme" tabindex="-1"></button>
+          </div>
+          <div class="action-cluster">
+            <button type="button" id="attack-button" class="action-button" aria-label="Action : utiliser le pouvoir du héros et transformer un farceur en ami" tabindex="-1"><span class="action-ring" aria-hidden="true"></span><span class="action-power" aria-hidden="true">☄️</span><strong aria-hidden="true">ACTION&nbsp;!</strong><small aria-hidden="true">TURBO</small></button>
+            <button type="button" id="jump-button" class="jump-button" aria-label="Sauter" tabindex="-1"><span class="jump-arrow" aria-hidden="true">▲</span><strong aria-hidden="true">SAUT</strong></button>
+          </div>
+        </div>
       </section>
 
       <section id="pause-screen" class="screen modal-screen" aria-label="Pause">
-        <div class="modal-card pause-card"><div class="modal-icon">☁</div><p class="eyebrow">PETIT REPOS</p><h2>Pause</h2><div class="pause-actions"><button id="resume-button" class="primary-button">▶ <span>Reprendre</span></button><button id="restart-button" class="secondary-button">↻ <span>Recommencer</span></button><button id="stats-button" class="secondary-button">★ <span>Statistiques</span></button></div><button class="text-button" data-go="home">Quitter la mission</button></div>
+        <div class="modal-card pause-card"><div class="modal-icon">Ⅱ</div><div class="pause-actions"><button id="resume-button" class="primary-button" type="button">▶ <span>Reprendre</span></button><button id="restart-button" class="secondary-button" type="button">↻ <span>Recommencer</span></button><button id="stats-button" class="secondary-button" type="button">★ <span>Statistiques</span></button></div><button id="quit-button" class="text-button" type="button">Quitter la mission</button></div>
       </section>
-      <section id="stats-screen" class="screen modal-screen" aria-label="Statistiques de la mission"><div class="modal-card stats-card"><button id="stats-back-button" class="close-settings" aria-label="Retour à la pause">←</button><div class="modal-icon">★</div><p class="eyebrow">TA MISSION</p><h2>Regarde tout ce que tu as trouvé !</h2><div class="stats-grid"><div><b id="stat-coins">0</b><span>pièces</span></div><div><b id="stat-friends">0</b><span>amis</span></div><div><b id="stat-letters">0</b><span>lettres</span></div><div><b id="stat-questions">0/3</b><span>coups de main</span></div></div><button id="stats-resume-button" class="primary-button">Reprendre <span>➜</span></button></div></section>
+      <section id="stats-screen" class="screen modal-screen" aria-label="Statistiques de la mission"><div class="modal-card stats-card"><button id="stats-back-button" class="close-settings" type="button" aria-label="Retour à la pause">←</button><div class="modal-icon">★</div><div class="stats-grid"><div><b id="stat-coins">0</b><span>⭐ étoiles</span></div><div><b id="stat-friends">0</b><span>♥ amis</span></div><div><b id="stat-letters">0</b><span>🔤 lettres</span></div><div><b id="stat-stickers">0</b><span>🏅 autocollants</span></div><div class="wide"><b id="stat-questions">0/3</b><span>❓ énigmes</span></div></div><button id="stats-resume-button" class="primary-button" type="button">Reprendre <span>➜</span></button></div></section>
 
       <section id="puzzle-screen" class="screen modal-screen" aria-label="Choisir comment aider">
-        <div class="modal-card puzzle-card"><div class="modal-icon" id="puzzle-icon">🐾</div><p class="eyebrow">ON RÉFLÉCHIT ENSEMBLE</p><h2 id="puzzle-question">Qu'est-ce qui aiderait le plus&nbsp;?</h2><p class="puzzle-subtitle">Écoute la question et les réponses, puis choisis.</p><button id="puzzle-read-button" class="read-aloud-button" type="button">🔊 Relire la question et les réponses</button><p id="speech-status" class="speech-status" aria-live="polite"></p><div id="choice-list" class="choice-list"></div><p id="puzzle-feedback" class="puzzle-feedback" aria-live="polite"></p></div>
+        <div class="modal-card puzzle-card">
+          <div id="puzzle-main">
+            <div class="puzzle-head"><button id="puzzle-read-button" class="speaker-button" type="button" aria-label="Écouter la question"><svg viewBox="0 0 64 64" aria-hidden="true"><path class="spk" d="M7 25h12l17-13v40L19 39H7z"/><path class="wave w1" d="M43 24c4.5 4.5 4.5 11.500 0 16"/><path class="wave w2" d="M50 16c8.500 8.500 8.500 23.500 0 32"/><path class="wave w3" d="M57 9c12.500 12.500 12.500 33.500 0 46"/></svg></button><h2 id="puzzle-question">Question</h2></div>
+            <div id="choice-list" class="choice-list"></div>
+            <p id="puzzle-feedback" class="puzzle-feedback" aria-live="polite"></p>
+            <span id="puzzle-icon" class="hidden"></span>
+          </div>
+          <div id="puzzle-reward" class="puzzle-reward hidden" aria-live="polite">
+            <div class="reward-stage" aria-hidden="true"><span class="reward-gift">🎁</span><span id="reward-sticker" class="reward-sticker bronze">🦁</span><i>✦</i><i>★</i><i>✧</i><i>✦</i><i>★</i><i>✧</i></div>
+            <p id="reward-name" class="reward-name">Le lion</p>
+            <span id="reward-new" class="reward-new">NOUVEAU</span>
+            <button id="reward-continue" class="primary-button" type="button">Super&nbsp;! <span>➜</span></button>
+          </div>
+        </div>
       </section>
 
       <section id="ending-screen" class="screen ending-screen" aria-label="Mission terminée">
         <div class="ending-confetti" aria-hidden="true"><i>✦</i><i>✧</i><i>★</i><i>✦</i><i>♥</i><i>✧</i></div>
-        <div id="ending-hero" class="ending-hero"></div><div class="ending-copy"><p class="eyebrow">MISSION ACCOMPLIE</p><h2>Tu as aidé<br />tout le quartier&nbsp;!</h2><p id="ending-message">Merci d'avoir fait équipe avec nous.</p><div id="ending-friends" class="ending-friends hidden" aria-live="polite"></div><section class="ending-alphabet" aria-label="Alphabet récolté"><strong>Les lettres de la mission</strong><div id="alphabet-grid" class="alphabet-grid" role="list"></div><p id="alphabet-summary">0 lettre sur 26 récoltée.</p></section><div class="rest-card"><span class="rest-stars">✦　✦　✦</span><strong id="ending-rest-title">Belle mission !</strong><span id="ending-rest-copy">Tu peux repartir ou terminer.</span></div><button id="new-mission-button" class="secondary-button">Nouvelle mission <span>➜</span></button><button id="finish-button" class="primary-button">Terminer <span>♥</span></button></div>
+        <div class="ending-inner">
+          <div id="ending-hero" class="ending-hero" aria-hidden="true"></div>
+          <div class="ending-copy"><h2>Bravo&nbsp;!</h2><p id="ending-stars" class="ending-stars">⭐ 0/0</p>
+            <div id="ending-stickers" class="ending-stickers hidden" aria-live="polite"></div>
+            <div id="ending-friends" class="ending-friends hidden" aria-live="polite"></div>
+            <section class="ending-alphabet" aria-label="Alphabet récolté"><div id="alphabet-grid" class="alphabet-grid" role="list"></div><p id="alphabet-summary">0/26</p></section>
+            <div class="rest-card"><span class="rest-stars">🌙 ✦ ✦</span></div>
+            <button id="new-mission-button" class="secondary-button" type="button">Nouvelle mission <span>➜</span></button>
+            <button id="finish-button" class="primary-button" type="button">Terminer <span>♥</span></button>
+          </div>
+        </div>
       </section>
 
       <section id="settings-screen" class="screen modal-screen" aria-label="Réglages adulte">
-        <div class="modal-card settings-card"><button class="close-settings" data-go="home" aria-label="Fermer">×</button><p class="eyebrow">POUR L'ADULTE</p><h2>Réglages</h2><label class="setting-row"><span>Sons du jeu</span><input id="music-toggle" type="checkbox" checked /></label><label class="setting-row"><span>Sons des actions</span><input id="effects-toggle" type="checkbox" /></label><p class="settings-note">Le héros peut repartir en mission autant de fois que tu le souhaites.</p></div>
+        <div class="modal-card settings-card"><button class="close-settings" type="button" data-go="home" aria-label="Fermer">×</button><h2>⚙ Réglages</h2><label class="setting-row"><span>🔊 Sons</span><input id="music-toggle" type="checkbox" checked /></label><label class="setting-row"><span>🎵 Musique</span><input id="music-bg-toggle" type="checkbox" checked /></label><label class="setting-row"><span>💥 Bruitages</span><input id="effects-toggle" type="checkbox" checked /></label><label class="setting-row"><span>📳 Vibrations</span><input id="haptics-toggle" type="checkbox" checked /></label></div>
       </section>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </main>
+    <script src="stickers.js" defer></script>
+    <script src="fx.js" defer></script>
+    <script src="levels.js" defer></script>
     <script src="app.js" defer></script>
   </body>
 </html>
