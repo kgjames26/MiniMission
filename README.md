@@ -32,3 +32,6 @@ Puis ouvrez `http://localhost:4173`. Le service worker et l'installation PWA né
 - `assets/mini-mission-start.jpg` : image d'accueil fournie.
 
 Les niveaux restent bienveillants : aucun héros ne meurt ou ne subit de dégâts, et le minuteur ne force jamais l'arrêt d'une mission en cours.
+
+
+Les parcours contiennent maintenant dix-huit petits ennemis colorés. Une étoile magique les transforme en compagnons inoffensifs : ils suivent le héros en file pendant le parcours et apparaissent dans la parade de fin de mission. Aucun ennemi n'est blessé ou éliminé.
