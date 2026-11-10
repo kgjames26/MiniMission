@@ -35,3 +35,5 @@ Les niveaux restent bienveillants : aucun héros ne meurt ou ne subit de dégât
 
 
 Les parcours contiennent maintenant dix-huit petits ennemis colorés. Une étoile magique les transforme en compagnons inoffensifs : ils suivent le héros en file pendant le parcours et apparaissent dans la parade de fin de mission. Aucun ennemi n'est blessé ou éliminé.
+
+Les petits amis restent derrière le héros. Quand dix petits amis se regroupent, ils sont remplacés par un grand compagnon rouge qui compte pour dix. Chaque parcours propose aussi les 26 lettres à ramasser ; le récapitulatif de fin distingue les lettres trouvées des lettres manquantes et annonce à voix haute celles qui ont été récoltées lorsque la lecture vocale est disponible.
