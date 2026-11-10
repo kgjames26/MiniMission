@@ -284,6 +284,16 @@
   $('#pause-button').addEventListener('click',()=>{if(scene==='game-screen'){pausedFrom='game-screen';setScreen('pause-screen');}});
   $('#resume-button').addEventListener('click',()=>{const target=pausedFrom;setScreen(target);lastActiveTick=performance.now();if(target==='game-screen'){lastTime=performance.now();requestAnimationFrame(loop);if(timerAnnouncementPending)speakTimerNotice();}else if(target==='puzzle-screen')readPuzzleAloud();});
   $('#help-button').addEventListener('click',openPuzzle);
+  canvas.addEventListener('click',(event)=>{
+    if(scene!=='game-screen')return;
+    const rect=canvas.getBoundingClientRect();
+    const canvasX=(event.clientX-rect.left)/rect.width*view.w;
+    const canvasY=(event.clientY-rect.top)/rect.height*view.h;
+    const station=world.stations.find(item=>!item.done&&Math.abs(canvasX+world.camera-item.x)<58&&canvasY>world.floor-135&&canvasY<world.floor-12);
+    if(!station)return;
+    if(Math.abs(player.x+player.w/2-station.x)<150&&player.grounded)openPuzzle();
+    else showToast('Approche-toi de la pancarte AIDER.');
+  });
   $('#puzzle-read-button').addEventListener('click',readPuzzleAloud);
   $('#new-mission-button').addEventListener('click',()=>{if(!stopAfterMission)setScreen('hero-select');});
   $('#finish-button').addEventListener('click',endSession);
