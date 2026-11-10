@@ -56,13 +56,13 @@
           <span class="logo-line logo-mini" aria-hidden="true"><span style="--c:#3fa4ea;--r:-4deg">M</span><span style="--c:#ef4b43;--r:3deg">I</span><span style="--c:#ffb92e;--r:-2deg">N</span><span style="--c:#5fbf68;--r:4deg">I</span></span>
           <span class="logo-line logo-mission" aria-hidden="true"><span style="--c:#ef4b43;--r:-3deg">M</span><span style="--c:#ffb92e;--r:2deg">I</span><span style="--c:#3fa4ea;--r:-2deg">S</span><span style="--c:#ef4b43;--r:3deg">S</span><span style="--c:#ffb92e;--r:-3deg">I</span><span style="--c:#3fa4ea;--r:2deg">O</span><span style="--c:#ef4b43;--r:-2deg">N</span></span>
         </h1>
-        <p class="home-tagline">Une aventure pour faire du bien&nbsp;!</p>
         <div class="home-heroes" aria-hidden="true">
           <span class="home-hero hh-ziggy"><span class="sprite" style="--col:0;--row:0"></span></span>
           <span class="home-hero hh-filou"><span class="sprite" style="--col:2;--row:1"></span></span>
           <span class="home-hero hh-titan"><span class="sprite" style="--col:2;--row:2"></span></span>
         </div>
         <button id="start-button" class="play-button" type="button">JOUER&nbsp;! <span aria-hidden="true">▶</span></button>
+        <span id="home-version" class="home-version" aria-hidden="true"></span>
       </section>
 
       <section id="hero-select" class="screen hero-screen" aria-label="Choisir un héros">
@@ -98,23 +98,23 @@
           <div class="howto-block">
             <p class="howto-label"><span aria-hidden="true">👣</span> DÉPLACER&nbsp;!</p>
             <div class="dpad dpad-demo" style="--pad:var(--demo-pad)" aria-hidden="true"><span class="dpad-base"></span><span class="dpad-btn dpad-up"></span><span class="dpad-btn dpad-left"></span><span class="dpad-center"></span><span class="dpad-btn dpad-right"></span><span class="dpad-btn dpad-down"></span></div>
-            <p class="howto-caption">La croix verte fait avancer le héros.<br />▲ le fait sauter, ▼ le fait descendre d’une plateforme.</p>
+            
           </div>
           <div class="howto-block">
             <p class="howto-label"><span aria-hidden="true">✨</span> SAUT ET ACTION&nbsp;!</p>
             <div class="howto-buttons" aria-hidden="true">
-              <span class="action-button demo" style="--act:var(--demo-btn)"><span class="action-ring"></span><span class="action-power">☄️</span><strong>ACTION&nbsp;!</strong><small>POUVOIR</small></span>
+              <span class="action-button demo" style="--act:var(--demo-btn)"><span class="action-ring"></span><span class="action-power">☄️</span><strong>ACTION&nbsp;!</strong></span>
               <span class="jump-button demo" style="--jump:var(--demo-btn)"><span class="jump-arrow">▲</span><strong>SAUT</strong></span>
             </div>
             <div class="power-row">
-              <span class="power-chip"><span class="sprite" style="--col:1;--row:0"></span><b>Ziggy</b><small>VITESSE</small></span>
-              <span class="power-chip"><span class="sprite" style="--col:2;--row:1"></span><b>Filou</b><small>LAINE</small></span>
-              <span class="power-chip"><span class="sprite" style="--col:3;--row:2"></span><b>Titan</b><small>FORCE</small></span>
+              <span class="power-chip"><span class="sprite" style="--col:1;--row:0"></span><b>Ziggy</b><small>TURBO</small></span>
+              <span class="power-chip"><span class="sprite" style="--col:2;--row:1"></span><b>Filou</b><small>TOILE</small></span>
+              <span class="power-chip"><span class="sprite" style="--col:3;--row:2"></span><b>Titan</b><small>POING</small></span>
             </div>
-            <p class="howto-caption">Le bouton jaune fait sauter. Le bouton rouge utilise le pouvoir du héros et transforme les petits farceurs en amis.</p>
+            
           </div>
         </div>
-        <p class="howto-keys">Au clavier&nbsp;: ← → pour avancer · Espace ou ↑ pour sauter · X pour l’action · Échap pour la pause</p>
+        <p class="howto-keys">⌨ ← → · Espace · X · Échap</p>
       </section>
 
       <section id="album-screen" class="screen album-screen" aria-label="Mon album d’autocollants">
@@ -124,9 +124,10 @@
           <span class="top-spacer"></span>
         </header>
         <div class="album-card">
-          <p id="album-count" class="album-count">0 sur 24</p>
+          <div id="album-tabs" class="album-tabs" role="tablist"></div>
+          <p id="album-page-title" class="album-page-title"></p>
           <div id="album-grid" class="album-grid" role="list"></div>
-          <p class="album-hint">Réponds juste du premier coup à une énigme pour gagner un autocollant&nbsp;!</p>
+          <div class="album-legend" aria-hidden="true"><span>🥉 ❓</span><span>🥈 ⭐</span><span>🥇 🔤</span><b id="album-total">0/60</b></div>
         </div>
       </section>
 
@@ -134,13 +135,15 @@
         <div class="game-stage"><canvas id="game-canvas" width="960" height="540" aria-label="Jeu de plateforme 2D"></canvas></div>
         <div class="game-topbar">
           <button id="pause-button" class="game-icon-button" type="button" aria-label="Pause">Ⅱ</button>
-          <div class="mission-label"><span class="mission-day">MISSION EN COURS</span><strong id="mission-title">Le chaton a besoin d'aide</strong></div>
-          <div class="coin-counter" aria-label="Pièces ramassées"><span aria-hidden="true">🪙</span><strong id="coin-count">0</strong></div>
+          <div class="mission-label"><strong id="mission-title">Mission</strong></div>
+          <div class="coin-counter" aria-label="Étoiles ramassées"><span aria-hidden="true">⭐</span><strong id="coin-count">0/0</strong></div>
           <div class="friend-counter" aria-label="Amis recueillis, le grand ami rouge compte pour dix"><span aria-hidden="true">♥</span><strong id="friend-count">0</strong></div>
           <div class="letter-counter" aria-label="Lettres de l’alphabet récoltées"><span aria-hidden="true">🔤</span><strong id="letter-count">0/26</strong></div>
           <div class="progress-wrap" aria-label="Progression"><div id="progress-dots" class="progress-dots"></div></div>
           <button id="sound-button" class="game-icon-button" type="button" aria-label="Couper les sons">♫</button>
         </div>
+        <div id="award-banner" class="award-banner hidden" role="status"><span class="award-medal"></span><span class="award-sticker"></span><span class="award-text"><b class="award-name"></b><i class="award-new">NOUVEAU</i></span></div>
+        <div id="home-hint" class="home-hint hidden" aria-hidden="true">🏡 ➜</div>
         <div class="touch-controls">
           <div id="dpad" class="dpad" role="group" aria-label="Croix de déplacement : gauche, droite, haut pour sauter, bas pour descendre">
             <span class="dpad-base" aria-hidden="true"></span>
@@ -151,28 +154,29 @@
             <button type="button" class="dpad-btn dpad-down" data-dir="down" aria-label="Descendre d’une plateforme" tabindex="-1"></button>
           </div>
           <div class="action-cluster">
-            <button type="button" id="attack-button" class="action-button" aria-label="Action : utiliser le pouvoir du héros et transformer un farceur en ami" tabindex="-1"><span class="action-ring" aria-hidden="true"></span><span class="action-power" aria-hidden="true">☄️</span><strong aria-hidden="true">ACTION&nbsp;!</strong><small aria-hidden="true">VITESSE</small></button>
+            <button type="button" id="attack-button" class="action-button" aria-label="Action : utiliser le pouvoir du héros et transformer un farceur en ami" tabindex="-1"><span class="action-ring" aria-hidden="true"></span><span class="action-power" aria-hidden="true">☄️</span><strong aria-hidden="true">ACTION&nbsp;!</strong><small aria-hidden="true">TURBO</small></button>
             <button type="button" id="jump-button" class="jump-button" aria-label="Sauter" tabindex="-1"><span class="jump-arrow" aria-hidden="true">▲</span><strong aria-hidden="true">SAUT</strong></button>
           </div>
         </div>
       </section>
 
       <section id="pause-screen" class="screen modal-screen" aria-label="Pause">
-        <div class="modal-card pause-card"><div class="modal-icon">☁</div><p class="eyebrow">PETIT REPOS</p><h2>Pause</h2><div class="pause-actions"><button id="resume-button" class="primary-button" type="button">▶ <span>Reprendre</span></button><button id="restart-button" class="secondary-button" type="button">↻ <span>Recommencer</span></button><button id="stats-button" class="secondary-button" type="button">★ <span>Statistiques</span></button></div><button id="quit-button" class="text-button" type="button">Quitter la mission et en choisir une autre</button></div>
+        <div class="modal-card pause-card"><div class="modal-icon">Ⅱ</div><div class="pause-actions"><button id="resume-button" class="primary-button" type="button">▶ <span>Reprendre</span></button><button id="restart-button" class="secondary-button" type="button">↻ <span>Recommencer</span></button><button id="stats-button" class="secondary-button" type="button">★ <span>Statistiques</span></button></div><button id="quit-button" class="text-button" type="button">Quitter la mission</button></div>
       </section>
-      <section id="stats-screen" class="screen modal-screen" aria-label="Statistiques de la mission"><div class="modal-card stats-card"><button id="stats-back-button" class="close-settings" type="button" aria-label="Retour à la pause">←</button><div class="modal-icon">★</div><p class="eyebrow">TA MISSION</p><h2>Regarde tout ce que tu as trouvé !</h2><div class="stats-grid"><div><b id="stat-coins">0</b><span>pièces</span></div><div><b id="stat-friends">0</b><span>amis</span></div><div><b id="stat-letters">0</b><span>lettres</span></div><div><b id="stat-stickers">0</b><span>autocollants</span></div><div class="wide"><b id="stat-questions">0/3</b><span>coups de main</span></div></div><button id="stats-resume-button" class="primary-button" type="button">Reprendre <span>➜</span></button></div></section>
+      <section id="stats-screen" class="screen modal-screen" aria-label="Statistiques de la mission"><div class="modal-card stats-card"><button id="stats-back-button" class="close-settings" type="button" aria-label="Retour à la pause">←</button><div class="modal-icon">★</div><div class="stats-grid"><div><b id="stat-coins">0</b><span>⭐ étoiles</span></div><div><b id="stat-friends">0</b><span>♥ amis</span></div><div><b id="stat-letters">0</b><span>🔤 lettres</span></div><div><b id="stat-stickers">0</b><span>🏅 autocollants</span></div><div class="wide"><b id="stat-questions">0/3</b><span>❓ énigmes</span></div></div><button id="stats-resume-button" class="primary-button" type="button">Reprendre <span>➜</span></button></div></section>
 
       <section id="puzzle-screen" class="screen modal-screen" aria-label="Choisir comment aider">
         <div class="modal-card puzzle-card">
           <div id="puzzle-main">
-            <div class="modal-icon" id="puzzle-icon">🐾</div><p class="eyebrow">ON RÉFLÉCHIT ENSEMBLE</p><h2 id="puzzle-question">Qu'est-ce qui aiderait le plus&nbsp;?</h2><p class="puzzle-subtitle">Tu peux répondre tout de suite, sans attendre la fin de la lecture.</p><button id="puzzle-read-button" class="read-aloud-button" type="button">🔊 Écouter la question</button><p id="speech-status" class="speech-status" aria-live="polite"></p><div id="choice-list" class="choice-list"></div><p id="puzzle-feedback" class="puzzle-feedback" aria-live="polite"></p>
+            <div class="puzzle-head"><button id="puzzle-read-button" class="speaker-button" type="button" aria-label="Écouter la question"><svg viewBox="0 0 64 64" aria-hidden="true"><path class="spk" d="M7 25h12l17-13v40L19 39H7z"/><path class="wave w1" d="M43 24c4.5 4.5 4.5 11.500 0 16"/><path class="wave w2" d="M50 16c8.500 8.500 8.500 23.500 0 32"/><path class="wave w3" d="M57 9c12.500 12.500 12.500 33.500 0 46"/></svg></button><h2 id="puzzle-question">Question</h2></div>
+            <div id="choice-list" class="choice-list"></div>
+            <p id="puzzle-feedback" class="puzzle-feedback" aria-live="polite"></p>
+            <span id="puzzle-icon" class="hidden"></span>
           </div>
           <div id="puzzle-reward" class="puzzle-reward hidden" aria-live="polite">
-            <p class="eyebrow">DU PREMIER COUP&nbsp;!</p>
-            <div class="reward-stage" aria-hidden="true"><span class="reward-gift">🎁</span><span id="reward-sticker" class="reward-sticker">🦁</span><i>✦</i><i>★</i><i>✧</i><i>✦</i><i>★</i><i>✧</i></div>
-            <h2>Tu gagnes un autocollant&nbsp;!</h2>
+            <div class="reward-stage" aria-hidden="true"><span class="reward-gift">🎁</span><span id="reward-sticker" class="reward-sticker bronze">🦁</span><i>✦</i><i>★</i><i>✧</i><i>✦</i><i>★</i><i>✧</i></div>
             <p id="reward-name" class="reward-name">Le lion</p>
-            <p id="reward-extra" class="reward-extra">+5 pièces</p>
+            <span id="reward-new" class="reward-new">NOUVEAU</span>
             <button id="reward-continue" class="primary-button" type="button">Super&nbsp;! <span>➜</span></button>
           </div>
         </div>
@@ -182,11 +186,11 @@
         <div class="ending-confetti" aria-hidden="true"><i>✦</i><i>✧</i><i>★</i><i>✦</i><i>♥</i><i>✧</i></div>
         <div class="ending-inner">
           <div id="ending-hero" class="ending-hero" aria-hidden="true"></div>
-          <div class="ending-copy"><p class="eyebrow">MISSION ACCOMPLIE</p><h2>Tu as aidé<br />tout le quartier&nbsp;!</h2><p id="ending-message">Merci d'avoir fait équipe avec nous.</p>
+          <div class="ending-copy"><h2>Bravo&nbsp;!</h2><p id="ending-stars" class="ending-stars">⭐ 0/0</p>
             <div id="ending-stickers" class="ending-stickers hidden" aria-live="polite"></div>
             <div id="ending-friends" class="ending-friends hidden" aria-live="polite"></div>
-            <section class="ending-alphabet" aria-label="Alphabet récolté"><strong>Les lettres de la mission</strong><div id="alphabet-grid" class="alphabet-grid" role="list"></div><p id="alphabet-summary">0 lettre sur 26 récoltée.</p></section>
-            <div class="rest-card"><span class="rest-stars">✦　✦　✦</span><strong id="ending-rest-title">Belle mission !</strong><span id="ending-rest-copy">Tu peux repartir ou terminer.</span></div>
+            <section class="ending-alphabet" aria-label="Alphabet récolté"><div id="alphabet-grid" class="alphabet-grid" role="list"></div><p id="alphabet-summary">0/26</p></section>
+            <div class="rest-card"><span class="rest-stars">🌙 ✦ ✦</span></div>
             <button id="new-mission-button" class="secondary-button" type="button">Nouvelle mission <span>➜</span></button>
             <button id="finish-button" class="primary-button" type="button">Terminer <span>♥</span></button>
           </div>
@@ -194,10 +198,13 @@
       </section>
 
       <section id="settings-screen" class="screen modal-screen" aria-label="Réglages adulte">
-        <div class="modal-card settings-card"><button class="close-settings" type="button" data-go="home" aria-label="Fermer">×</button><p class="eyebrow">POUR L'ADULTE</p><h2>Réglages</h2><label class="setting-row"><span>Sons du jeu</span><input id="music-toggle" type="checkbox" checked /></label><label class="setting-row"><span>Sons des actions</span><input id="effects-toggle" type="checkbox" /></label><p class="settings-note">Le héros peut repartir en mission autant de fois que tu le souhaites.</p></div>
+        <div class="modal-card settings-card"><button class="close-settings" type="button" data-go="home" aria-label="Fermer">×</button><h2>⚙ Réglages</h2><label class="setting-row"><span>🔊 Sons</span><input id="music-toggle" type="checkbox" checked /></label><label class="setting-row"><span>🎵 Musique</span><input id="music-bg-toggle" type="checkbox" checked /></label><label class="setting-row"><span>💥 Bruitages</span><input id="effects-toggle" type="checkbox" checked /></label><label class="setting-row"><span>📳 Vibrations</span><input id="haptics-toggle" type="checkbox" checked /></label></div>
       </section>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </main>
+    <script src="stickers.js" defer></script>
+    <script src="fx.js" defer></script>
+    <script src="levels.js" defer></script>
     <script src="app.js" defer></script>
   </body>
 </html>
