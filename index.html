@@ -75,7 +75,10 @@
       </section>
 
       <section id="settings-screen" class="screen modal-screen" aria-label="Réglages adulte">
-        <div class="modal-card settings-card"><button class="close-settings" data-go="home" aria-label="Fermer">×</button><p class="eyebrow">POUR L'ADULTE</p><h2>Réglages</h2><label class="setting-row"><span>Sons du jeu</span><input id="music-toggle" type="checkbox" checked /></label><label class="setting-row"><span>Sons des actions</span><input id="effects-toggle" type="checkbox" checked /></label><p class="settings-note">La mission est courte et se termine quand le héros rentre à la base.</p><button id="reset-day-button" class="text-button reset-day">Maintenir pour réinitialiser la mission du jour</button></div>
+        <div class="modal-card settings-card"><button class="close-settings" data-go="home" aria-label="Fermer">×</button><p class="eyebrow">POUR L'ADULTE</p><h2>Réglages</h2><label class="setting-row"><span>Sons du jeu</span><input id="music-toggle" type="checkbox" checked /></label><label class="setting-row"><span>Sons des actions</span><input id="effects-toggle" type="checkbox" checked /></label><p class="settings-note">La mission est courte et se termine quand le héros rentre à la base.</p><button id="reset-day-button" class="reset-day" type="button">Réinitialiser la mission du jour</button></div>
+      </section>
+      <section id="reset-confirm-screen" class="screen modal-screen" aria-label="Confirmer la remise à zéro">
+        <div class="modal-card reset-confirm-card"><div class="modal-icon">↻</div><p class="eyebrow">RECOMMENCER</p><h2>Préparer une nouvelle mission&nbsp;?</h2><p>La mission du jour sera remise à zéro.</p><button id="confirm-reset-button" class="primary-button" type="button">Oui, recommencer</button><button id="cancel-reset-button" class="text-button" type="button">Garder ma mission</button></div>
       </section>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </main>

@@ -58,7 +58,7 @@
   let effectsEnabled = save.effectsEnabled !== false;
   let keys = { left: false, right: false, jump: false };
   let view = { scale: 1, ox: 0, oy: 0, w: 960, h: 540 };
-  let world = { width: 3100, floor: 426, camera: 0, checkpoint: 60, stations: [], bumps: [] };
+  let world = { width: 3100, floor: 426, camera: 0, checkpoint: 60, stations: [], bumps: [], platforms: [] };
   let player = { x: 70, y: 0, vx: 0, vy: 0, w: 58, h: 86, grounded: true, jumping: false, facing: 1, bob: 0 };
   let particles = [];
   let lastPromptStation = -1;
@@ -113,7 +113,15 @@
     world.width = 3100; world.floor = 426; world.camera = 0; world.checkpoint = 60;
     const rnd = seeded(mission.seed);
     world.stations = [0,1,2].map(i => ({x:620+i*780, i, done:i<(save.progress||0), bob:rnd()*6}));
-    world.bumps = [350, 470, 910, 1080, 1330, 1670, 1830, 2110, 2340, 2630, 2820].map((x,i)=>({x:x+rnd()*70,w:34+rnd()*35,h:18+rnd()*24,type:i%3}));
+    // Plusieurs petits obstacles à sauter, avec des plateformes basses et hautes pour varier le parcours.
+    world.bumps = [250,355,465,535,830,945,1050,1160,1320,1510,1615,1740,1850,2040,2150,2290,2410,2535,2660,2790,2910].map((x,i)=>({x:x+rnd()*38,w:34+rnd()*31,h:19+rnd()*20,type:i%3}));
+    world.platforms = [
+      {x:405,y:world.floor-92,w:112,h:18,type:0},{x:555,y:world.floor-154,w:104,h:18,type:1},
+      {x:900,y:world.floor-118,w:126,h:18,type:1},{x:1115,y:world.floor-176,w:108,h:18,type:0},
+      {x:1480,y:world.floor-96,w:120,h:18,type:0},{x:1685,y:world.floor-158,w:112,h:18,type:1},
+      {x:2010,y:world.floor-122,w:128,h:18,type:1},{x:2225,y:world.floor-180,w:108,h:18,type:0},
+      {x:2570,y:world.floor-100,w:128,h:18,type:0},{x:2775,y:world.floor-160,w:110,h:18,type:1}
+    ];
     player = {x: Math.max(70, (save.progress||0)*770+120), y:world.floor-86, vx:0, vy:0, w:58,h:86,grounded:true,jumping:false,facing:1,bob:0};
     particles=[]; lastPromptStation=-1; elapsed=0; timeWarningSent=false; lastActiveTick=performance.now(); lastTime=performance.now();
     $('#interaction-prompt').classList.add('hidden');
@@ -138,11 +146,18 @@
     player.vx = move*235; if(move) player.facing=move;
     if(keys.jump && player.grounded) { player.vy=-600; player.grounded=false; player.jumping=true; sound('jump'); }
     keys.jump=false;
-    const previousX=player.x; player.x += player.vx*dt; player.x=Math.max(18,Math.min(world.width-player.w,player.x));
-    player.vy += 1450*dt; player.y += player.vy*dt;
-    for(const b of world.bumps){if(b.type!==0)continue;const overlap=player.x+player.w>b.x&&player.x<b.x+b.w;const stillBeside=player.y+player.h>world.floor-b.h+4;if(overlap&&stillBeside&&player.y+player.h>world.floor-b.h){player.x=previousX;player.vx=0;if(player.x>world.checkpoint)world.checkpoint=player.x;}}
-    const feet=player.y+player.h;
-    if(feet>=world.floor) { if(!player.grounded && player.vy>100) { player.y=world.floor-player.h; player.vy=0; player.grounded=true; player.jumping=false; if(player.x>world.checkpoint) world.checkpoint=player.x; } else if(player.grounded){player.y=world.floor-player.h;player.vy=0;} }
+    const previousX=player.x, previousY=player.y, previousFeet=previousY+player.h;
+    player.x += player.vx*dt; player.x=Math.max(18,Math.min(world.width-player.w,player.x));
+    // Les petits obstacles au sol bloquent seulement si le héros ne les a pas sautés.
+    for(const b of world.bumps){if(b.type!==0)continue;const overlap=player.x+player.w>b.x&&player.x<b.x+b.w;const crossesSide=(previousX+player.w<=b.x&&player.x+player.w>b.x)||(previousX>=b.x+b.w&&player.x<b.x+b.w);if(overlap&&crossesSide&&player.y+player.h>world.floor-b.h+3){player.x=previousX;player.vx=0;}}
+    player.vy += 1450*dt; player.y += player.vy*dt; player.grounded=false;
+    // Les plateformes sont traversables par-dessous et attrapent le héros pendant sa descente.
+    let landingY=Infinity;
+    if(player.vy>=0){
+      if(previousFeet<=world.floor&&player.y+player.h>=world.floor)landingY=world.floor;
+      for(const platform of world.platforms){const overlaps=player.x+player.w>platform.x&&player.x<platform.x+platform.w;if(overlaps&&previousFeet<=platform.y&&player.y+player.h>=platform.y&&platform.y<landingY)landingY=platform.y;}
+    }
+    if(landingY!==Infinity){player.y=landingY-player.h;player.vy=0;player.grounded=true;player.jumping=false;if(landingY===world.floor&&player.x>world.checkpoint)world.checkpoint=player.x;}
     if(player.y>650) { player.x=world.checkpoint; player.y=world.floor-player.h; player.vy=0; player.grounded=true; showToast('On reprend juste ici. Tout va bien !'); }
     world.camera=Math.max(0,Math.min(world.width-view.w,player.x-view.w*.34));
     const current=world.stations.find(s=>!s.done);
@@ -163,7 +178,8 @@
     for(let i=0;i<Math.ceil(W/600)+2;i++){const x=i*600+230-world.camera*.75;if(x<-70||x>W+70)continue;ctx.fillStyle='#946b53';roundRect(x-7,326,14,100,7,true);ctx.fillStyle=['#69c57c','#82d58d','#60b978'][i%3];ctx.beginPath();ctx.arc(x,310,43,0,Math.PI*2);ctx.arc(x-26,321,30,0,Math.PI*2);ctx.arc(x+25,320,31,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(255,255,255,.23)';ctx.beginPath();ctx.arc(x-13,291,14,0,Math.PI*2);ctx.fill();}}
   function drawWorld(){const W=view.w,p=mission?.palette||[];const floorY=world.floor;ctx.fillStyle=p[1]||'#76c78d';ctx.fillRect(0,floorY,W,120);ctx.fillStyle='#8ed49c';ctx.fillRect(0,floorY+13,W,7);ctx.fillStyle=p[0]||'#d6b785';ctx.fillRect(0,floorY+25,W,145);ctx.fillStyle='#c5a577';for(let i=-1;i<Math.ceil(W/80)+2;i++){const x=((i*80-world.camera*.9)%(W+80));ctx.fillRect(x,floorY+42,48,3);}
     for(let i=0;i<Math.ceil(W/120)+2;i++){const x=(i*120+35-world.camera*.9)%(W+120);flower(x,world.floor+7,i%4);}
-    world.bumps.forEach((b,i)=>{const x=b.x-world.camera;if(x<-80||x>W+80)return;if(b.type===0){ctx.fillStyle='#d2ab79';roundRect(x,world.floor-b.h,b.w,b.h,10,true);ctx.fillStyle='#eccd9b';roundRect(x+4,world.floor-b.h+3,b.w-8,7,5,true);}else if(b.type===1){ctx.fillStyle='#69bc7d';ctx.beginPath();ctx.ellipse(x+b.w/2,world.floor-b.h/2,b.w/2,b.h/2,0,Math.PI,0);ctx.fill();ctx.fillStyle='#8cd491';ctx.beginPath();ctx.arc(x+b.w*.35,world.floor-b.h*.48,6,0,Math.PI*2);ctx.fill();}else{ctx.fillStyle='#f2ca5d';roundRect(x,world.floor-b.h,b.w,b.h,8,true);ctx.fillStyle='#fff0ad';ctx.beginPath();ctx.arc(x+b.w/2,world.floor-b.h,6,0,Math.PI*2);ctx.fill();}});
+    world.bumps.forEach((b,i)=>{const x=b.x-world.camera;if(x<-80||x>W+80)return;if(b.type===0){ctx.fillStyle='#c78c62';roundRect(x,world.floor-b.h,b.w,b.h,10,true);ctx.fillStyle='#efd0a0';roundRect(x+4,world.floor-b.h+3,b.w-8,7,5,true);}else if(b.type===1){ctx.fillStyle='#69bc7d';ctx.beginPath();ctx.ellipse(x+b.w/2,world.floor-b.h/2,b.w/2,b.h/2,0,Math.PI,0);ctx.fill();ctx.fillStyle='#8cd491';ctx.beginPath();ctx.arc(x+b.w*.35,world.floor-b.h*.48,6,0,Math.PI*2);ctx.fill();}else{ctx.fillStyle='#f2ca5d';roundRect(x,world.floor-b.h,b.w,b.h,8,true);ctx.fillStyle='#fff0ad';ctx.beginPath();ctx.arc(x+b.w/2,world.floor-b.h,6,0,Math.PI*2);ctx.fill();}});
+    world.platforms.forEach((platform,i)=>{const x=platform.x-world.camera;if(x<-150||x>W+150)return;const top=platform.y;ctx.fillStyle=platform.type===0?'#9c755a':'#73be84';roundRect(x,top,platform.w,platform.h,8,true);ctx.fillStyle=platform.type===0?'#e4bd83':'#b8e5a5';roundRect(x+4,top+2,platform.w-8,6,5,true);ctx.fillStyle=platform.type===0?'#fff0c2':'#fff4b2';for(let j=0;j<3;j++){const dotX=x+18+j*34;if(dotX<x+platform.w-8){ctx.beginPath();ctx.arc(dotX,top-2,3,0,Math.PI*2);ctx.fill();}}if(i%2===1){ctx.fillStyle='rgba(255,255,255,.65)';ctx.beginPath();ctx.arc(x+platform.w/2,top-14,8,0,Math.PI*2);ctx.fill();}});
     world.stations.forEach((station)=>{const x=station.x-world.camera;if(x<-100||x>W+100)return;const bob=Math.sin(performance.now()/650+station.bob)*5;ctx.fillStyle=station.done?'#a7dfad':'rgba(255,255,255,.45)';ctx.beginPath();ctx.ellipse(x,world.floor-9,51,15,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=station.done?'#5fb983':'#fff6c8';ctx.beginPath();ctx.arc(x,world.floor-92+bob,37,0,Math.PI*2);ctx.fill();ctx.strokeStyle=station.done?'#47a76d':'#f1c44f';ctx.lineWidth=4;ctx.stroke();ctx.textAlign='center';ctx.font='27px sans-serif';ctx.fillText(station.done?'✓':mission.icon,x,world.floor-82+bob);if(!station.done){ctx.fillStyle='#fff';roundRect(x-30,world.floor-45+bob,60,25,12,true);ctx.fillStyle='#557b8e';ctx.font='bold 12px Nunito, sans-serif';ctx.fillText('AIDER',x,world.floor-28+bob);}});
     const finishX=world.width-world.camera-90;ctx.fillStyle='#fff7cd';ctx.beginPath();ctx.arc(finishX,world.floor-58,32,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#f1bd45';ctx.lineWidth=4;ctx.stroke();ctx.font='25px sans-serif';ctx.textAlign='center';ctx.fillText('🏡',finishX,world.floor-49);}
   function flower(x,y,i){ctx.fillStyle='#438f5d';ctx.fillRect(x,y-10,2,13);ctx.fillStyle=['#ff7e77','#fff0a5','#8b79d8','#fff'][i];for(let j=0;j<5;j++){const a=j*Math.PI*2/5;ctx.beginPath();ctx.arc(x+Math.cos(a)*4,y-11+Math.sin(a)*4,3,0,Math.PI*2);ctx.fill();}ctx.fillStyle='#f7be43';ctx.beginPath();ctx.arc(x,y-11,2.3,0,Math.PI*2);ctx.fill();}
@@ -197,8 +213,9 @@
   $('#music-toggle').checked=audioEnabled;$('#effects-toggle').checked=effectsEnabled;
   $('#music-toggle').addEventListener('change',e=>{audioEnabled=e.target.checked;save.audioEnabled=audioEnabled;writeSave();});
   $('#effects-toggle').addEventListener('change',e=>{effectsEnabled=e.target.checked;save.effectsEnabled=effectsEnabled;writeSave();});
-  let resetTimer=0;$('#reset-day-button').addEventListener('pointerdown',()=>{resetTimer=setTimeout(()=>{save.completedDate=null;save.activeDate=null;save.activeHero=null;save.activeMission=null;save.progress=0;writeSave();showToast('La mission du jour est prête.');},1800);});
-  ['pointerup','pointercancel','pointerleave'].forEach(e=>$('#reset-day-button').addEventListener(e,()=>clearTimeout(resetTimer)));
+  $('#reset-day-button').addEventListener('click',()=>setScreen('reset-confirm-screen'));
+  $('#cancel-reset-button').addEventListener('click',()=>setScreen('settings-screen'));
+  $('#confirm-reset-button').addEventListener('click',()=>{save.completedDate=null;save.activeDate=null;save.activeHero=null;save.activeMission=null;save.completedHero=null;save.progress=0;writeSave();setScreen('home');showToast('La mission du jour est prête.');});
   document.querySelectorAll('.touch-button').forEach(button=>{const key=button.dataset.control;button.addEventListener('pointerdown',e=>{e.preventDefault();button.setPointerCapture?.(e.pointerId);keys[key]=true;button.classList.add('pressed');});['pointerup','pointercancel','pointerleave'].forEach(type=>button.addEventListener(type,()=>{keys[key]=false;button.classList.remove('pressed');}));});
   window.addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight','ArrowUp',' ','a','d','A','D'].includes(e.key))e.preventDefault();if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')keys.left=true;if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')keys.right=true;if(e.key===' '||e.key==='ArrowUp')keys.jump=true;if(e.key==='Escape'&&(scene==='game-screen'||scene==='puzzle-screen')){pausedFrom=scene;setScreen('pause-screen');}if(e.key==='Enter'&&scene==='game-screen'&&!$('#interaction-prompt').classList.contains('hidden'))openPuzzle();});
   window.addEventListener('keyup',e=>{if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')keys.left=false;if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')keys.right=false;});
