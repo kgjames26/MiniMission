@@ -218,7 +218,7 @@
     world.coins=mission.coins;world.enemies=mission.enemies;world.bigFriends=mission.bigFriends;world.letters=mission.letters;
     save.coinTotal=Number(save.coinTotal)||0;$('#coin-count').textContent=String(save.coinTotal);
     updateFriendCounter();updateLetterCounter();
-    const startX=save.progress?world.stations[save.progress]?.x-460:70;
+    const startX=save.progress?world.stations[save.progress]?.x-460:140;
     player = {x:Math.max(70,startX), y:world.floor-86, vx:0, vy:0, w:58,h:86,grounded:true,jumping:false,facing:1,bob:0};
     world.checkpoint=player.x;
     particles=[]; lastPromptStation=-1; ropeBridge=null;abilityUntil=0;abilityCooldownUntil=0;heroAnimation={state:'idle',previous:null,changedAt:performance.now(),override:'',overrideUntil:0};lastActiveTick=performance.now(); lastTime=performance.now();
@@ -244,6 +244,7 @@
     if(move)player.facing=move;player.vx=performance.now()<abilityUntil&&activeHero==='ziggy'?player.facing*390:move*235;
     if(keys.jump && player.grounded) { player.vy=-600; player.grounded=false; player.jumping=true; triggerHeroAnimation('jump',360); sound('jump'); }
     keys.jump=false;
+    const wasGrounded=player.grounded;
     const previousX=player.x, previousY=player.y, previousFeet=previousY+player.h;
     player.x += player.vx*dt; player.x=Math.max(18,Math.min(world.width-player.w,player.x));
     // Les petits obstacles au sol bloquent seulement si le héros ne les a pas sautés.
@@ -257,7 +258,7 @@
       for(const platform of world.platforms){const overlaps=player.x+player.w>platform.x&&player.x<platform.x+platform.w;if(overlaps&&previousFeet<=platform.y&&player.y+player.h>=platform.y&&platform.y<landingY)landingY=platform.y;}
       if(ropeBridge&&performance.now()<ropeBridge.until&&player.x+player.w>ropeBridge.x&&player.x<ropeBridge.x+ropeBridge.w&&previousFeet<=ropeBridge.y&&player.y+player.h>=ropeBridge.y&&ropeBridge.y<landingY)landingY=ropeBridge.y;
     }
-    if(landingY!==Infinity){const wasAirborne=!player.grounded;player.y=landingY-player.h;player.vy=0;player.grounded=true;player.jumping=false;if(wasAirborne)triggerHeroAnimation('land',300);if(landingY===world.floor&&player.x>world.checkpoint)world.checkpoint=player.x;}
+    if(landingY!==Infinity){player.y=landingY-player.h;player.vy=0;player.grounded=true;player.jumping=false;if(!wasGrounded)triggerHeroAnimation('land',300);if(landingY===world.floor&&player.x>world.checkpoint)world.checkpoint=player.x;}
     if(player.vy<0){const box=world.stations.find(station=>!station.done&&!station.hit&&player.x+player.w>station.x-39&&player.x<station.x+39&&previousY>=station.y+54&&player.y<=station.y+54);if(box){box.hit=true;player.y=box.y+54;player.vy=100;triggerHeroAnimation('question',700);sprinkle(box.x,box.y+54);sound('open');openPuzzle();return;}}
     if(player.y>650) { player.x=world.checkpoint; player.y=world.floor-player.h; player.vy=0; player.grounded=true; }
     let leaderX=player.x+player.w/2-player.facing*56;
