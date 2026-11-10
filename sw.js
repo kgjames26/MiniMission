@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mini-mission-v10';
+const CACHE_NAME = 'mini-mission-v11';
 const CORE = ['./', './index.html', './styles.css', './app.js', './manifest.webmanifest', './icons/icon.svg', './assets/home-art.jpg', './assets/hero-select-art.jpg', './assets/controls-art.jpg', './assets/ziggy-small.png', './assets/filou-titan-small.png'];
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE)).then(() => self.skipWaiting()));
