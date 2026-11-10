@@ -7,6 +7,7 @@
     <meta name="description" content="Une petite mission d'entraide avec Ziggy, Filou ou Titan." />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
     <link rel="stylesheet" href="styles.css" />
     <title>Mini Mission</title>
   </head>
@@ -50,12 +51,22 @@
         <div class="hero-footer"><span class="footer-spark">✦</span> Après une mission, tu peux repartir <span class="footer-spark">✦</span></div>
       </section>
 
-      <section id="howto-screen" class="screen howto-screen" aria-label="Comment jouer"><img src="assets/controls-art.jpg" alt="Déplacement avec les flèches, saut et attaque avec le grand bouton d'action." /><button class="back-button" data-go="home" aria-label="Retour à l'accueil">←</button></section>
+      <section id="howto-screen" class="screen howto-screen" aria-label="Comment jouer"><img src="assets/controls-art.jpg" alt="Mode d’emploi : la croix verte déplace le héros (gauche, droite, haut pour sauter, bas pour descendre d’une plateforme) ; le grand bouton rouge Action utilise le pouvoir du héros : vitesse pour Ziggy, laine pour Filou, force pour Titan. Au clavier : flèches ou ZQSD, espace pour sauter, X pour l’action." /><button class="back-button" data-go="home" aria-label="Retour à l'accueil">←</button></section>
 
       <section id="game-screen" class="screen game-screen" aria-label="Mission en cours">
         <div class="game-topbar"><button id="pause-button" class="game-icon-button" aria-label="Pause">Ⅱ</button><div class="mission-label"><span class="mission-day">MISSION EN COURS</span><strong id="mission-title">Le chaton a besoin d'aide</strong></div><div class="coin-counter" aria-label="Pièces ramassées"><span aria-hidden="true">🪙</span><strong id="coin-count">0</strong></div><div class="friend-counter" aria-label="Amis recueillis, le grand ami rouge compte pour dix"><span aria-hidden="true">♥</span><strong id="friend-count">0</strong></div><div class="letter-counter" aria-label="Lettres de l’alphabet récoltées"><span aria-hidden="true">🔤</span><strong id="letter-count">0/26</strong></div><div class="progress-wrap" aria-label="Progression"><div id="progress-dots" class="progress-dots"></div></div></div>
         <div class="game-stage"><canvas id="game-canvas" width="960" height="540" aria-label="Jeu de plateforme 2D"></canvas>
-          <div class="touch-controls" aria-label="Commandes de déplacement"><div class="move-pair"><button class="touch-button" data-control="left" aria-label="Aller à gauche">‹</button><button class="touch-button" data-control="right" aria-label="Aller à droite">›</button></div><div class="action-pair"><button id="attack-button" class="touch-button attack-button" aria-label="Lancer une étoile magique pour transformer un petit ennemi en ami"><span aria-hidden="true">✦</span><small>ÉTOILE</small></button><button class="touch-button jump-button" data-control="jump" aria-label="Sauter">SAUT</button></div></div>
+          <div class="touch-controls">
+            <div id="dpad" class="dpad" role="group" aria-label="Croix de déplacement : gauche, droite, haut pour sauter, bas pour descendre">
+              <span class="dpad-base" aria-hidden="true"></span>
+              <button type="button" class="dpad-btn dpad-up" data-dir="up" aria-label="Sauter" tabindex="-1"></button>
+              <button type="button" class="dpad-btn dpad-left" data-dir="left" aria-label="Aller à gauche" tabindex="-1"></button>
+              <span class="dpad-center" aria-hidden="true"></span>
+              <button type="button" class="dpad-btn dpad-right" data-dir="right" aria-label="Aller à droite" tabindex="-1"></button>
+              <button type="button" class="dpad-btn dpad-down" data-dir="down" aria-label="Descendre d’une plateforme" tabindex="-1"></button>
+            </div>
+            <button type="button" id="attack-button" class="action-button" aria-label="Action : utiliser le pouvoir du héros et transformer un farceur en ami" tabindex="-1"><span class="action-ring" aria-hidden="true"></span><span class="action-power" aria-hidden="true">☄️</span><strong aria-hidden="true">ACTION&nbsp;!</strong><small aria-hidden="true">VITESSE</small></button>
+          </div>
         </div>
         <div class="game-bottom"><span class="safe-note"><span>♥</span> Ici, tout le monde est en sécurité.</span><button id="sound-button" class="sound-button" aria-label="Couper les sons">♫</button></div>
       </section>
