@@ -13,9 +13,9 @@
   <body>
     <main id="app" class="app">
       <section id="home" class="screen home-screen active" aria-label="Accueil de Mini Mission">
-        <img class="home-art" src="assets/mini-mission-start.jpg" alt="Ziggy la Comète, Filou le Tisseur et Titan Puce aident le quartier" />
+        <img class="home-art" src="assets/home-art.jpg" alt="" />
         <div class="home-shade"></div>
-        <div class="home-top"><span class="eyebrow"><span class="sun-dot"></span> MINI MISSION</span><button class="icon-button settings-open" aria-label="Réglages pour l'adulte" title="Réglages">⚙</button></div>
+        <div class="home-top"><span class="eyebrow"><span class="sun-dot"></span> MINI MISSION</span><button class="icon-button settings-open" aria-label="Réglages pour l'adulte" title="Réglages">⚙</button><button id="home-sound-toggle" class="icon-button" aria-label="Activer ou couper les sons">♫</button><button id="help-art-button" class="icon-button" aria-label="Comment jouer">?</button></div>
         <div class="home-copy">
           <p class="mini-kicker">Une aventure pour faire du bien</p>
           <h1>Prêt pour<br /><span>Mini Mission&nbsp;?</span></h1>
@@ -28,6 +28,7 @@
       </section>
 
       <section id="hero-select" class="screen hero-screen" aria-label="Choisir un héros">
+        <img class="select-art" src="assets/hero-select-art.jpg" alt="" />
         <header class="screen-header"><button class="back-button" data-go="home" aria-label="Retour">←</button><div><p class="eyebrow">NOUVELLE PARTIE</p><h2>Qui part aider&nbsp;?</h2></div><span class="header-spacer"></span></header>
         <p class="screen-intro">Choisis ton héros. Il t'accompagne pour toute la mission.</p>
         <div class="hero-grid">
@@ -48,19 +49,20 @@
         <div class="hero-footer"><span class="footer-spark">✦</span> Après une mission, tu peux repartir <span class="footer-spark">✦</span></div>
       </section>
 
+      <section id="howto-screen" class="screen howto-screen" aria-label="Comment jouer"><img src="assets/controls-art.jpg" alt="Déplacement avec les flèches, saut et attaque avec le grand bouton d'action." /><button class="back-button" data-go="home" aria-label="Retour à l'accueil">←</button></section>
+
       <section id="game-screen" class="screen game-screen" aria-label="Mission en cours">
         <div class="game-topbar"><button id="pause-button" class="game-icon-button" aria-label="Pause">Ⅱ</button><div class="mission-label"><span class="mission-day">MISSION EN COURS</span><strong id="mission-title">Le chaton a besoin d'aide</strong></div><div class="coin-counter" aria-label="Pièces ramassées"><span aria-hidden="true">🪙</span><strong id="coin-count">0</strong></div><div class="friend-counter" aria-label="Amis recueillis, le grand ami rouge compte pour dix"><span aria-hidden="true">♥</span><strong id="friend-count">0</strong></div><div class="letter-counter" aria-label="Lettres de l’alphabet récoltées"><span aria-hidden="true">🔤</span><strong id="letter-count">0/26</strong></div><div class="progress-wrap" aria-label="Progression"><div id="progress-dots" class="progress-dots"></div></div></div>
         <div class="game-stage"><canvas id="game-canvas" width="960" height="540" aria-label="Jeu de plateforme 2D"></canvas>
-          <div id="hint-bubble" class="hint-bubble"><span class="hint-icon">✦</span><span id="hint-text">Avance doucement vers le chaton.</span></div>
-          <div id="interaction-prompt" class="interaction-prompt hidden"><span>Tu peux aider&nbsp;!</span><button id="help-button" class="help-button">AIDER <span>♥</span></button></div>
           <div class="touch-controls" aria-label="Commandes de déplacement"><div class="move-pair"><button class="touch-button" data-control="left" aria-label="Aller à gauche">‹</button><button class="touch-button" data-control="right" aria-label="Aller à droite">›</button></div><div class="action-pair"><button id="attack-button" class="touch-button attack-button" aria-label="Lancer une étoile magique pour transformer un petit ennemi en ami"><span aria-hidden="true">✦</span><small>ÉTOILE</small></button><button class="touch-button jump-button" data-control="jump" aria-label="Sauter">SAUT</button></div></div>
         </div>
         <div class="game-bottom"><span class="safe-note"><span>♥</span> Ici, tout le monde est en sécurité.</span><button id="sound-button" class="sound-button" aria-label="Couper les sons">♫</button></div>
       </section>
 
       <section id="pause-screen" class="screen modal-screen" aria-label="Pause">
-        <div class="modal-card pause-card"><div class="modal-icon">☁</div><p class="eyebrow">PETIT REPOS</p><h2>On reprend quand tu veux.</h2><p>Ta mission t'attend juste ici.</p><button id="resume-button" class="primary-button">Reprendre <span>➜</span></button><button class="text-button" data-go="home">Quitter la mission</button></div>
+        <div class="modal-card pause-card"><div class="modal-icon">☁</div><p class="eyebrow">PETIT REPOS</p><h2>Pause</h2><div class="pause-actions"><button id="resume-button" class="primary-button">▶ <span>Reprendre</span></button><button id="restart-button" class="secondary-button">↻ <span>Recommencer</span></button><button id="stats-button" class="secondary-button">★ <span>Statistiques</span></button></div><button class="text-button" data-go="home">Quitter la mission</button></div>
       </section>
+      <section id="stats-screen" class="screen modal-screen" aria-label="Statistiques de la mission"><div class="modal-card stats-card"><button id="stats-back-button" class="close-settings" aria-label="Retour à la pause">←</button><div class="modal-icon">★</div><p class="eyebrow">TA MISSION</p><h2>Regarde tout ce que tu as trouvé !</h2><div class="stats-grid"><div><b id="stat-coins">0</b><span>pièces</span></div><div><b id="stat-friends">0</b><span>amis</span></div><div><b id="stat-letters">0</b><span>lettres</span></div><div><b id="stat-questions">0/3</b><span>coups de main</span></div></div><button id="stats-resume-button" class="primary-button">Reprendre <span>➜</span></button></div></section>
 
       <section id="puzzle-screen" class="screen modal-screen" aria-label="Choisir comment aider">
         <div class="modal-card puzzle-card"><div class="modal-icon" id="puzzle-icon">🐾</div><p class="eyebrow">ON RÉFLÉCHIT ENSEMBLE</p><h2 id="puzzle-question">Qu'est-ce qui aiderait le plus&nbsp;?</h2><p class="puzzle-subtitle">Écoute la question et les réponses, puis choisis.</p><button id="puzzle-read-button" class="read-aloud-button" type="button">🔊 Relire la question et les réponses</button><p id="speech-status" class="speech-status" aria-live="polite"></p><div id="choice-list" class="choice-list"></div><p id="puzzle-feedback" class="puzzle-feedback" aria-live="polite"></p></div>

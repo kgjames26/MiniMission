@@ -15,11 +15,14 @@ Puis ouvrez `http://localhost:4173`. Le service worker et l'installation PWA né
 ## Fonctionnalités
 
 - Écran d'accueil utilisant l'illustration fournie.
-- Choix du héros, niveau 2D à défilement et commandes tactiles/clavier.
+- Écran de sélection illustré et aide visuelle consultable depuis l'accueil.
+- Trois parcours longs adaptés aux pouvoirs de Ziggy, Filou et Titan, avec animations de sprites, commande tactile et clavier.
+- Caisses de mission intégrées aux obstacles : un saut par-dessous lance la question vocale.
+- Pause avec reprise, redémarrage du parcours et statistiques de mission.
 - Trois petites énigmes tirées d'une banque de 1 000 questions ; la question et toutes les réponses sont lues en français avant d'activer les choix.
 - Plusieurs missions à la suite, sans limite quotidienne ; après chacune, le joueur peut repartir ou terminer la partie.
 - Minuteur de 10 minutes facultatif et discret au choix du héros. À son expiration, une voix prévient l'enfant ; il termine sa mission en cours, puis le héros se repose. Le minuteur ne coupe jamais la partie.
-- Plateformes à différentes hauteurs, pièces à collecter et petits farceurs que le héros transforme en amis avec une étoile magique.
+- Plateformes et obstacles à différentes hauteurs, pièces, lettres et petits farceurs à transformer en amis.
 - Sauvegarde locale, réglages sonores et fonctionnement hors ligne après le premier chargement.
 - Aucun compte, publicité, collecte de données ni service externe.
 
@@ -29,7 +32,8 @@ Puis ouvrez `http://localhost:4173`. Le service worker et l'installation PWA né
 - `styles.css` : mise en page responsive et styles.
 - `app.js` : boucle Canvas, missions, commandes, sauvegarde et sons synthétiques.
 - `sw.js` : cache PWA hors ligne.
-- `assets/mini-mission-start.jpg` : image d'accueil fournie.
+- `assets/home-art.jpg`, `assets/hero-select-art.jpg` et `assets/controls-art.jpg` : visuels des écrans d'accueil, de sélection et d'aide.
+- `assets/ziggy-small.png` et `assets/filou-titan-small.png` : planches de sprites utilisées pour les animations en jeu.
 
 Les niveaux restent bienveillants : aucun héros ne meurt ou ne subit de dégâts, et le minuteur ne force jamais l'arrêt d'une mission en cours.
 
