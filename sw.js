@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mini-mission-v27';
+const CACHE_NAME = 'mini-mission-v28';
 const CORE = ['./', './index.html', './styles.css', './app.js', './levels.js', './cities.js', './fx.js', './stickers.js', './stickers-cities.js', './assets/friend-leaf.webp', './minigames.js', './version.json', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './assets/heroes-atlas.webp', './assets/heroes-hd.webp', './assets/hero-moves.webp', './assets/monsters.webp', './assets/sprites2.webp', './assets/sprites2.json', './assets/music.mp3'];
 // Le code passe d'abord par le réseau pour que les mises à jour arrivent sans attendre ; les images et la musique
 // restent servies depuis le cache. Hors ligne, tout vient du cache.

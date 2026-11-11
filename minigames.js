@@ -10,6 +10,24 @@
   const seeded = (seed) => { let s = seed || 1; return () => { s += 0x6D2B79F5; let t = s; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; };
   const PICS = ["🦁", "🐘", "🚀", "🐙", "🦄", "🏰", "🐢", "🚂", "🌈", "🦋", "🐬", "🐼", "🦊", "🐸", "🐵", "🐧", "🦉", "🐞", "🐝", "🦀", "🐳", "🦒", "🦓", "🐯", "🐻", "🐨", "🐰", "🐶", "🐱", "🐭", "🐹", "🐷", "🐮", "🐔", "🦆", "🦜", "🐠", "🐡", "🦈", "🐌", "🦖", "🦕", "🐉", "🚜", "🚒", "🚓", "🚑", "🚌", "🚲", "✈️", "🚁", "⛵", "🚢", "🛸", "🌙", "☀️", "⭐", "☁️", "⛄", "🌻", "🌷", "🌹", "🌲", "🌴", "🍄", "🍎", "🍌", "🍓", "🍒", "🍇", "🍉", "🍍", "🥕", "🌽", "🍕", "🍔", "🍦", "🍩", "🍪", "🎂", "🧁", "🎈", "🎁", "🎸", "🥁", "🎺", "⚽", "🏀", "🎨", "🧸", "🪁", "🚪", "🏠", "🗼", "🎡", "🏝️", "🌋", "🗻", "🦩", "🦔", "🍋", "🥝", "🌵", "🐾"];
   const MAZE_PAIRS = [["🐭", "🧀"], ["🐰", "🥕"], ["🐻", "🍯"], ["🐱", "🐟"], ["🐶", "🦴"], ["🐢", "🥬"], ["🐿️", "🌰"], ["🐝", "🌻"], ["🦊", "🍇"], ["🐸", "🪰"], ["🐵", "🍌"], ["🐼", "🎋"], ["🐮", "🌾"], ["🐴", "🍎"], ["🐷", "🍄"], ["🐔", "🌽"], ["🦆", "🍞"], ["🐧", "🐟"], ["🐨", "🌿"], ["🦒", "🍃"], ["🐘", "🥜"], ["🦕", "🌴"], ["🧒", "🍦"], ["👧", "🎈"], ["👦", "⚽"], ["🚀", "🌙"], ["🚂", "🏠"], ["🚜", "🌾"], ["⛵", "🏝️"], ["🚒", "🔥"], ["🚑", "🏥"], ["🚲", "🌳"], ["🦋", "🌷"], ["🐞", "🌹"], ["🐌", "🥬"], ["🐙", "💎"], ["🐠", "🪸"], ["🦀", "🐚"], ["🐬", "⭐"], ["🐳", "🌊"], ["🦄", "🌈"], ["🧚", "🪄"], ["🤖", "🔋"], ["👽", "🛸"], ["🦖", "🍖"], ["🐉", "💰"], ["🏴‍☠️", "🗝️"], ["🎅", "🎁"], ["🧑‍🚀", "🪐"], ["🦉", "🌙"]];
+  /* Mémoire silencieuse : pour chaque sorte de mini-jeu, ce qui a déjà servi ; on repart de zéro quand tout est passé. */
+  G.state = {};
+  const seenOf = (kind) => { const s = (G.state.seen = G.state.seen || {}); return (s[kind] = s[kind] || []); };
+  function fresh(kind, pool, key = (x) => String(x)) {
+    const seen = seenOf(kind); let cand = pool.filter((x) => !seen.includes(key(x)));
+    if (!cand.length) { seen.length = 0; cand = pool.slice(); }
+    const x = pick(cand); seen.push(key(x)); return x;
+  }
+  function freshMany(kind, pool, n) {
+    const seen = seenOf(kind), out = []; let cand = pool.filter((x) => !seen.includes(x));
+    while (out.length < n) {
+      if (!cand.length) { seen.length = 0; cand = pool.filter((x) => !out.includes(x)); }
+      const x = pick(cand); out.push(x); seen.push(x); cand = cand.filter((y) => y !== x);
+    }
+    return out;
+  }
+  const SIMON_POOL = {};
+  const simonSeq = (len) => { const pool = SIMON_POOL[len] || (SIMON_POOL[len] = Array.from({ length: 100 }, (_, i) => { const r = seeded(len * 7919 + i * 31 + 1); return Array.from({ length: len }, () => Math.floor(r() * 4)); })); return fresh('simon' + len, pool, (s) => s.join('')); };
   const NUM_WORDS = ['zéro', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf', 'dix'];
 
   /* ---------- Questions ---------- */
@@ -58,20 +76,28 @@
     () => { const w = pick(WEARS); return withAnswer(w[0], '🧑', [w[1], w[2]], sample(WEAR_OTHERS, 2)); },
     () => { const n = 1 + Math.floor(rand() * 8); const wrong = sample([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter((k) => k !== n + 1), 2); return withAnswer(`Quel nombre vient après ${NUM_WORDS[n]} ?`, String(n), [String(n + 1), NUM_WORDS[n + 1]], wrong.map((k) => [String(k), NUM_WORDS[k]])); }
   ];
-  G.makeQuiz = () => pick(FAMILIES)();
+  G.makeQuiz = () => {
+    const seen = seenOf('quiz'); let q = null;
+    for (let i = 0; i < 40; i++) { q = pick(FAMILIES)(); const key = q.prompt + '|' + q.options.map((o) => o[1]).join(','); if (!seen.includes(key)) { seen.push(key); if (seen.length > 600) seen.shift(); return q; } }
+    seen.length = 0; return q;          // tout a été vu : on recommence
+  };
 
   /* ---------- Choix des trois jeux d'une mission ---------- */
   G.makeTasks = (legacyQuiz, level = 0) => {
     const lv = Math.max(0, Math.min(9, level));
     const makeOne = (kind) => {
-      if (kind === 'maze') { const [seeker, goal] = pick(MAZE_PAIRS); return { kind: 'maze', size: 4 + Math.floor(lv / 3) + (rand() < .35 ? 1 : 0), seed: Math.floor(rand() * 4e9) + 1, seeker, goal, say: `Aide ${seeker} à trouver ${goal} !` }; }
-      if (kind === 'jigsaw') return { kind: 'jigsaw', emoji: pick(PICS), cols: lv < 3 ? 2 : 3, rows: lv < 3 ? 2 : lv < 6 ? 2 : 3, say: 'Remets l’image dans le bon ordre !' };
-      if (kind === 'pairs') return { kind: 'pairs', cards: sample(PICS, Math.min(6, 3 + Math.floor(lv / 3) + (rand() < .3 ? 1 : 0))), say: 'Retrouve les paires !' };
-      if (kind === 'simon') return { kind: 'simon', length: 3 + Math.floor(lv / 3), say: 'Écoute la musique et regarde les couleurs, puis refais comme moi !' };
+      if (kind === 'maze') { const [seeker, goal] = fresh('maze', MAZE_PAIRS, (p) => p.join('')); return { kind: 'maze', size: 4 + Math.floor(lv / 3) + (rand() < .35 ? 1 : 0), seed: Math.floor(rand() * 4e9) + 1, seeker, goal, say: `Aide ${seeker} à trouver ${goal} !` }; }
+      if (kind === 'jigsaw') return { kind: 'jigsaw', emoji: fresh('jigsaw', PICS), cols: lv < 3 ? 2 : 3, rows: lv < 3 ? 2 : lv < 6 ? 2 : 3, say: 'Remets l’image dans le bon ordre !' };
+      if (kind === 'pairs') return { kind: 'pairs', cards: freshMany('pairs', PICS, Math.min(6, 3 + Math.floor(lv / 3) + (rand() < .3 ? 1 : 0))), say: 'Retrouve les paires !' };
+      if (kind === 'simon') return { kind: 'simon', length: 3 + Math.floor(lv / 3), seq: simonSeq(3 + Math.floor(lv / 3)), say: 'Écoute la musique et regarde les couleurs, puis refais comme moi !' };
       return rand() < .18 && legacyQuiz ? { ...legacyQuiz(), kind: 'quiz' } : G.makeQuiz();
     };
     // trois jeux différents tirés au hasard parmi : puzzle, labyrinthe, paires, rythme, énigme
-    return sample(['maze', 'jigsaw', 'pairs', 'simon', 'quiz'], 3).map(makeOne);
+    // on prend toujours les sortes les moins servies : aucune n'est plus fréquente qu'une autre
+    const counts = (G.state.count = G.state.count || {});
+    const kinds = shuffle(['maze', 'jigsaw', 'pairs', 'simon', 'quiz']).sort((a, b) => (counts[a] || 0) - (counts[b] || 0)).slice(0, 3);
+    kinds.forEach((k) => { counts[k] = (counts[k] || 0) + 1; });
+    return shuffle(kinds).map(makeOne);
   };
   G.icon = (kind) => ({ maze: '🐭', jigsaw: '🧩', simon: '🎵', pairs: '🃏' }[kind] || '❓');
 
@@ -220,7 +246,7 @@
 
   function startSimon(task, host, api) {
     const COLS = [['#ef4b43', 262], ['#3fa4ea', 330], ['#ffd23f', 392], ['#4cc36a', 523]];
-    const seq = Array.from({ length: task.length || 3 }, () => Math.floor(rand() * 4));
+    const seq = task.seq || Array.from({ length: task.length || 3 }, () => Math.floor(rand() * 4));
     const wrap = document.createElement('div'); wrap.className = 'simon';
     const status = document.createElement('div'); status.className = 'simon-status'; status.textContent = '👀';
     const pads = COLS.map(([color], i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'simon-pad'; b.style.setProperty('--c', color); b.setAttribute('aria-label', 'Couleur ' + (i + 1)); b.addEventListener('click', () => press(i)); return b; });
