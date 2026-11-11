@@ -21,7 +21,7 @@ Après le choix du héros, on choisit une ville (`cities.js`) : Paris, New York,
 À la fin d'un niveau, une feuille de statistiques résume ce qui a été réussi et ce qu'il reste à faire, avec un bouton « Menu ».
 
 ## Le diablotin de feu (le seul ennemi)
-Les 20 petits monstres de chaque niveau sont des diablotins de feu, avec des attaques variées : boule de feu, double tir (dont un tir en cloche), flèche de feu (arc), tornade de feu (avec avertissement au sol) et grand saut. S'il touche le héros 3 fois en 14 secondes, celui-ci revient au dernier drapeau (point de passage). On les capture en les touchant : Ziggy et Filou avec leur tir, Titan avec son coup de poing de près ou son poing projeté à distance (qui casse aussi les obstacles). Un diablotin capturé devient un ami.
+Les 20 petits monstres de chaque niveau : 10 diablotins de feu (lanceurs) et 10 petits monstres tranquilles (hérisson, limon, chauve-souris, golem). Les diablotins ont des attaques variées : boule de feu, double tir (dont un tir en cloche), flèche de feu (arc), tornade de feu (avec avertissement au sol) et grand saut. S'il touche le héros 3 fois en 14 secondes, celui-ci revient au dernier drapeau (point de passage). On les capture en les touchant : Ziggy et Filou avec leur tir, Titan avec son coup de poing de près ou son poing projeté à distance (qui casse aussi les obstacles). Un diablotin capturé devient un ami.
 
 ## Ziggy
 Le turbo ne démarre que sur ACTION ; il s'arrête tout seul après ~1 s, en changeant de direction ou en rappuyant sur ACTION.

@@ -188,7 +188,7 @@
     const created = todaysMission(heroId), city = MM.cities[index] || MM.cities[0];
     created.title = `${city.flag} ${city.name}`; created.city = index; created.level = { hero: heroId, index };
     created.seed = hash(`${heroId}-${index}-v5`) || 1;      // la ville est toujours la même : on peut la rejouer pour trouver ce qui manque
-    created.palette = [city.sky[0], city.grass, city.sky[1]]; created.levelVersion = 5; return created;
+    created.palette = [city.sky[0], city.grass, city.sky[1]]; created.levelVersion = 6; return created;
   }
   /* ----- progression par ville : 10 niveaux par héros, le suivant s'ouvre quand on arrive au bout ----- */
   const BLANK_LEVEL = { done: false, stars: [], letters: [], monsters: [], q: 0, silver: false, gold: false, mon: false, tot: null };
@@ -271,7 +271,7 @@
   function beginGame(resume) {
     if (!mission || !activeHero) return;
     // missions sauvegardées avant les nouveaux niveaux : on repart sur une mission neuve
-    if (mission.levelVersion !== 5) { mission = createMission(activeHero); save.activeMission = mission; save.progress = 0; resume = false; }
+    if (mission.levelVersion !== 6) { mission = createMission(activeHero); save.activeMission = mission; save.progress = 0; resume = false; }
     if (!Array.isArray(mission.stationsDone)) mission.stationsDone = [false, false, false];
     save.progress = mission.stationsDone.filter(Boolean).length;
     $('#mission-title').textContent = mission.title;
@@ -1150,8 +1150,12 @@
     return `width:${Math.round(w * s)}px;height:${Math.round(sh * s)}px;background:url(assets/monsters.webp) no-repeat;background-size:${MON_CELL.w * 5 * s}px ${MON_CELL.h * 2 * s}px;background-position:${-(col * MON_CELL.w + (MON_CELL.w - w) / 2) * s}px ${-(row * MON_CELL.h + (MON_CELL.h - MON_CELL.pad - sh)) * s}px`;
   }
   function initMonsters(level, rnd) {
-    if (!Array.isArray(mission.monsters)) mission.monsters = level.monsters.map(m => ({ id: m.id, type: m.type, x: m.x, y: m.y, homeX: m.x, homeY: m.y, hp: m.hp, friendly: false, order: 0 }));
-    mission.monsters.forEach(m => { m.dir = rnd() < .5 ? 1 : -1; m.pd = m.dir; m.phase = rnd() * 6; m.cool = 1.2 + rnd() * 2.2; m.st = 'walk'; m.stT = 0; m.jy = 0; m.jv = 0; m.flash = 0; m.wrap = 0; m.hitT = 0; m.moving = false; patrolRange(m); if (m.friendly) { m.x = player ? player.x : m.x; } });
+    if (!Array.isArray(mission.monsters)) mission.monsters = level.monsters.map(m => {
+      // moitié diablotins de feu (lanceurs), moitié petits monstres tranquilles : hérisson, limon, chauve-souris, golem
+      const imp = m.id % 2 === 0, type = imp ? (m.id / 2) % 5 : ((m.id - 1) / 2) % 4, y = !imp && type === 2 ? m.y - 150 - rnd() * 100 : m.y;
+      return { id: m.id, imp, type, x: m.x, y, homeX: m.x, homeY: y, hp: type === 3 ? 2 : 1, friendly: false, order: 0 };
+    });
+    mission.monsters.forEach(m => { m.dir = rnd() < .5 ? 1 : -1; m.pd = m.dir; m.phase = rnd() * 6; m.hop = 0; m.cool = 1.2 + rnd() * 2.2; m.st = 'walk'; m.stT = 0; m.jy = 0; m.jv = 0; m.flash = 0; m.wrap = 0; m.hitT = 0; m.moving = false; if (m.imp) patrolRange(m); if (m.friendly) { m.x = player ? player.x : m.x; } });
     world.monsters = mission.monsters;
   }
   function capturedCount() { return (mission?.monsters || []).filter(m => m.friendly).length; }
@@ -1175,7 +1179,7 @@
     if (timerNoticePlaying) return;
     sayText(n === 10 ? 'Dix ! Bravo, une dizaine !' : n === 20 ? 'Vingt ! Tous les monstres sont gentils !' : COUNT_WORDS[n]);
   }
-  function monsterBox(m) { const big = m.type === 3 ? 1.27 : 1; return { cx: m.x, cy: m.y - (m.jy || 0) - 44 * big, hw: 30 * big + 4, hh: 46 * big }; }
+  function monsterBox(m) { if (!m.imp) { const [hw, ratio] = MON[m.type]; return { cx: m.x, cy: m.y - hw / 2, hw: hw * ratio * .42 + 6, hh: hw * .5 + 4 }; } const big = m.type === 3 ? 1.27 : 1; return { cx: m.x, cy: m.y - (m.jy || 0) - 44 * big, hw: 30 * big + 4, hh: 46 * big }; }
   function patrolRange(m) {
     const def = [90, 0, 45, 60, 75][m.type] ?? 60; let lo = m.x - def, hi = m.x + def;
     if (m.y >= world.floor - 4) {
@@ -1216,7 +1220,14 @@
       if (m.friendly) { m.flash = Math.max(0, m.flash - dt); m.wrap = Math.max(0, m.wrap - dt); continue; }
       m.flash = Math.max(0, m.flash - dt); m.hitT = Math.max(0, (m.hitT || 0) - dt);
       if (!onScreen(m.x, 140)) continue;
-      m.phase += dt; m.stT += dt;
+      m.phase += dt;
+      if (!m.imp) {                                                  // petits monstres tranquilles : ils se promènent
+        if (m.type === 0 || m.type === 3) { const sp = m.type === 0 ? 46 : 24, rg = m.type === 0 ? 90 : 55; m.x += (m.dir || 1) * sp * dt; if (Math.abs(m.x - m.homeX) > rg) m.dir = -(m.dir || 1); }
+        else if (m.type === 1) { m.hop = Math.abs(Math.sin(m.phase * 3.2)) * 44; m.x = m.homeX + Math.sin(m.phase * .9) * 40; }
+        else if (m.type === 2) { m.x = m.homeX + Math.sin(m.phase * .8) * 110; m.y = m.homeY + Math.sin(m.phase * 1.7) * 55; }
+        continue;
+      }
+      m.stT += dt;
       const dist = Math.abs(px - m.x), toward = Math.sign(px - m.x) || 1;
       switch (m.st) {
         case 'walk': {
@@ -1349,7 +1360,7 @@
     if (!mission.monGiven && n >= MON_TOTAL) { mission.monGiven = true; setTimeout(() => { if (scene === 'game-screen') { awardSticker('silver'); commitProgress(false); } }, 2400); }
   }
   function drawMonster(m, time) {
-    if (m.friendly || !s2ok()) return drawFriend(m, time);
+    if (m.friendly || !m.imp || !s2ok()) return drawFriend(m, time);
     const cam = world.camera, x = m.x - cam; if (x < -160 || x > view.w + 160) return;
     let name;
     if (m.hitT > 0) name = 'imp_hit';
@@ -1393,7 +1404,7 @@
     const index = m.type + (m.friendly ? 5 : 0), [hw, , sh] = MON[index];
     const scale = m.friendly ? .8 : 1, k = hw * scale / sh;
     let feet = m.y;
-    if (m.friendly) feet += Math.sin(time * 4 + m.id) * 2; 
+    if (m.friendly) feet += Math.sin(time * 4 + m.id) * 2; else if (m.type === 1) feet -= m.hop; else if (m.type === 2) feet += Math.sin(time * 6 + m.id) * 2;
     if (!monsterImg.complete || !monsterImg.naturalWidth) return;
     ctx.save();
     if (m.type !== 2 && !m.friendly) { ctx.fillStyle = 'rgba(40,60,80,.2)'; ctx.beginPath(); ctx.ellipse(x, m.y + 1, hw * .45, 6, 0, 0, Math.PI * 2); ctx.fill(); }
