@@ -1,5 +1,5 @@
-const CACHE_NAME = 'mini-mission-v9';
-const CORE = ['./', './index.html', './styles.css', './app.js', './levels.js', './fx.js', './stickers.js', './version.json', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './assets/heroes-atlas.webp', './assets/heroes-hd.webp', './assets/music.mp3'];
+const CACHE_NAME = 'mini-mission-v10';
+const CORE = ['./', './index.html', './styles.css', './app.js', './levels.js', './fx.js', './stickers.js', './minigames.js', './version.json', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './assets/heroes-atlas.webp', './assets/heroes-hd.webp', './assets/hero-moves.webp', './assets/monsters.webp', './assets/music.mp3'];
 // Le code passe d'abord par le réseau pour que les mises à jour arrivent sans attendre ; les images et la musique
 // restent servies depuis le cache. Hors ligne, tout vient du cache.
 const NETWORK_FIRST = /\.(?:html|js|css|json|webmanifest)$/;

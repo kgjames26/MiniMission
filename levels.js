@@ -1,23 +1,23 @@
 /* Niveaux de Mini Mission : un parcours différent par héros, généré à partir d'une graine.
-   - Filou  : une ville. Ravins et immeubles à franchir en se balançant au bout de sa toile.
-   - Ziggy  : une piste de vitesse. Grands ravins à sauter en pleine course, barrières à défoncer.
-   - Titan  : un chantier. Gros rochers et murs à briser à coups de poing.
-   Chaque balancement de Filou est vérifié par simulation : il atterrit toujours là où le niveau l'attend. */
+   - Filou  : une ville en hauteur. Ravins et immeubles de plus en plus hauts, à gravir en se balançant au bout de sa toile.
+   - Ziggy  : une piste de vitesse. Grands ravins à sauter en pleine course, barrières à défoncer, plateformes hautes.
+   - Titan  : un chantier. Gros rochers et murs à briser à coups de poing, lave à franchir de toit en toit.
+   Chaque balancement de Filou est vérifié par simulation : il atterrit toujours là où le niveau l'attend.
+   Chaque niveau contient 20 petits monstres à capturer (pour apprendre à compter en jouant). */
 (() => {
   const MM = (window.MM = window.MM || {});
-  const W = 11000, F = 426, PW = 58, PH = 86, GRAV = 1450;
+  const W = 11000, F = 506, H = 620, PW = 58, PH = 86, GRAV = 1450;
   const STATIONS = [1900, 5300, 8700];
-  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
   /* ---------- Physique de la toile (partagée avec le jeu) ---------- */
   // Le balancement est normalisé : quelle que soit la position d'accroche, Filou est lâché à la même vitesse (vr) quand il
-  // atteint l'angle thr, ce qui rend les sauts prévisibles et fiables.
+  // atteint l'angle thr, ce qui rend les sauts prévisibles et fiables. Il peut aussi relancer une toile à tout moment.
   const SWING = { G: 1900, vr: 580, thr: 1.2, damp: .1, maxT: 2.6 };
   const swing = {
-    // l'ancre est-elle à portée depuis la main (hx, hy) en regardant dans la direction dir ?
+    // l'ancre est-elle à portée depuis la main (hx, hy) ? dir = côté de l'ancre
     canReach(a, hx, hy, dir) {
       const dx = (a.x - hx) * dir, dy = hy - a.y;
-      return dy >= 150 && dy <= 480 && dx >= 40 && dx <= 380 && Math.hypot(a.x - hx, a.y - hy) <= 520;
+      return dy >= 90 && dy <= 520 && dx >= 20 && dx <= 400 && Math.hypot(a.x - hx, a.y - hy) <= 540;
     },
     start(ax, ay, hx, hy, dir) {
       const L = Math.hypot(hx - ax, hy - ay), theta = Math.atan2(hx - ax, hy - ay), thr = SWING.thr * dir;
@@ -35,12 +35,13 @@
     },
     hand(s) { return { x: s.ax + s.L * Math.sin(s.theta), y: s.ay + s.L * Math.cos(s.theta) }; },
     velocity(s) { return { vx: s.L * Math.cos(s.theta) * s.omega, vy: -s.L * Math.sin(s.theta) * s.omega }; },
-    // simule le balancement puis le vol ; renvoie le chemin (centre du héros) et l'endroit d'atterrissage
+    // simule le balancement puis le vol ; renvoie le chemin (centre du héros), l'indice du lâcher et l'atterrissage
     simulate(ax, ay, hx, hy, dir, surfaces) {
       const dt = 1 / 120, s = swing.start(ax, ay, hx, hy, dir), path = [];
       let n = 0;
       const mid = PH / 2 - 12;
       while (n++ < 400) { const done = swing.step(s, dt); const h = swing.hand(s); if (n % 12 === 0) path.push({ x: h.x, y: h.y + mid }); if (done) break; }
+      const split = path.length;
       const h = swing.hand(s), v = swing.velocity(s);
       let x = h.x, y = h.y + (PH - 12), vx = v.vx, vy = v.vy, land = null;
       for (let i = 0; i < 700; i++) {
@@ -49,15 +50,23 @@
         if (vy > 0) for (const sf of surfaces) if (x >= sf.x0 && x <= sf.x1 && py <= sf.y && y >= sf.y) { land = { x, y: sf.y, surface: sf }; break; }
         if (land || y > F + 200) break;
       }
-      return { path, land };
+      return { path, split, land };
     }
   };
+
+  /* ---------- Petits monstres ---------- */
+  // 0 hérisson (marche), 1 limon (rebondit), 2 chauve-souris (vole), 3 golem (costaud : 2 tirs), 4 lutin de feu (lance des boules de feu)
+  const MONSTER_TYPES = [
+    { name: 'herisson', hp: 1, h: 66 }, { name: 'limon', hp: 1, h: 62 }, { name: 'chauve', hp: 1, h: 72 },
+    { name: 'golem', hp: 2, h: 104 }, { name: 'lutin', hp: 1, h: 104 }
+  ];
 
   /* ---------- Génération ---------- */
   function build(hero, rnd) {
     const r = (a, b) => a + rnd() * (b - a);
     const ri = (a, b) => Math.floor(r(a, b + 1));
-    const c = { width: W, floor: F, stations: STATIONS.slice(), gaps: [], platforms: [], bumps: [], anchors: [], pads: [], stars: [], spots: [], blocks: [], log: [] };
+    const shuffle = (list) => { const a = list.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    const c = { width: W, floor: F, height: H, stations: STATIONS.slice(), gaps: [], platforms: [], bumps: [], anchors: [], pads: [], stars: [], spots: [], monsters: [], log: [] };
     const HAND_Y = F - PH + 12;
 
     const starLine = (x0, y, n, dx = 46) => { for (let i = 0; i < n; i++) c.stars.push({ x: x0 + i * dx, y }); };
@@ -66,31 +75,27 @@
     const platform = (x, h, w, extra = {}) => { const p = { x, y: F - h, w, h: 18, type: ri(0, 1), ...extra }; c.platforms.push(p); return p; };
     const bump = (x, w, h, kind, hp = 0) => { const b = { id: 'b' + c.bumps.length, x, w, h, kind, hp, maxHp: hp, type: ri(0, 2) }; c.bumps.push(b); return b; };
     const building = (x, h, w) => platform(x, h, w, { bld: { color: ['#ffb36b', '#ff8fa3', '#74d3a0', '#ffd45c', '#a994f2', '#ff9a7a'][ri(0, 5)], roof: ['#e8564b', '#5a6fcf', '#3f9d6e', '#c9742f'][ri(0, 3)] } });
-    const floorSurfaces = () => {
-      const gaps = c.gaps.slice().sort((a, b) => a.x - b.x), out = []; let x = -400;
-      for (const g of gaps) { out.push({ x0: x, x1: g.x, y: F }); x = g.x + g.w; }
-      out.push({ x0: x, x1: W + 400, y: F }); return out;
-    };
     const rooftopSurface = (p) => ({ x0: p.x - 6, x1: p.x + p.w + 6, y: p.y });
 
     // Cherche une ancre telle que, depuis tous les points de départ plausibles, la toile atterrisse sur la surface visée.
-    function findAnchor({ starts, ayList, axList, surfaces, target }) {
+    function findAnchor({ starts, hy = HAND_Y, ayList, axList, surfaces, target }) {
       for (const ay of ayList) for (const ax of axList) {
-        const a = { x: ax, y: ay }; let ok = true, n = 0, path = null;
+        const a = { x: ax, y: ay }; let ok = true, n = 0, res0 = null;
         for (const sx of starts) {
-          if (!swing.canReach(a, sx, HAND_Y, 1)) continue;
+          if (!swing.canReach(a, sx, hy, 1)) continue;
           n++;
-          const res = swing.simulate(ax, ay, sx, HAND_Y, 1, surfaces);
+          const res = swing.simulate(ax, ay, sx, hy, 1, surfaces);
           if (!res.land || res.land.surface !== target) { ok = false; break; }
-          if (!path) path = res.path;
+          if (!res0) res0 = res;
         }
-        if (ok && n >= 3) return { ax, ay, path };
+        if (ok && n >= 3) return { ax, ay, path: res0.path, split: res0.split };
       }
       return null;
     }
     const swingStars = (path, from = 1, every = 2) => { path.forEach((p, i) => { if (i >= from && i % every === 0 && p.y < F - 30) c.stars.push({ x: p.x, y: p.y }); }); };
+    const AYS = [F - 440, F - 420, F - 400, F - 380, F - 360, F - 340];
 
-    /* ----- Segments communs ----- */
+    /* ----- Segments ----- */
     const SEG = {
       street(x, fixedLen) {
         const len = fixedLen || r(360, 520);
@@ -103,51 +108,68 @@
       swingGap(x) {
         const approach = r(170, 230), gx = x + approach;
         for (let attempt = 0; attempt < 6; attempt++) {
-          const w = attempt < 4 ? r(310, 400) : r(260, 300);
+          const w = attempt < 4 ? r(310, 420) : r(260, 300);
           const right = { x0: gx + w, x1: gx + w + 520, y: F }, left = { x0: gx - 800, x1: gx, y: F };
           const found = findAnchor({
-            starts: [gx - 250, gx - 190, gx - 130, gx - 70, gx - 12], ayList: [F - 360, F - 380, F - 340, F - 400],
+            starts: [gx - 250, gx - 190, gx - 130, gx - 70, gx - 12], ayList: [F - 360, F - 380, F - 340, F - 400, F - 420],
             axList: [gx + w * .5, gx + w * .42, gx + w * .58], surfaces: [left, right], target: right
           });
           if (!found) continue;
           c.gaps.push({ x: gx, w }); c.anchors.push({ x: found.ax, y: found.ay }); c.log.push('swingGap');
           swingStars(found.path, 2, 2);
-          spot(gx + w * .5, found.ay + 150, 'hard');
+          // lettres sur la toile, puis après le lâcher
+          const pa = found.path[Math.max(0, found.split - 2)], pb = found.path[Math.min(found.path.length - 1, found.split + 2)];
+          spot(pa.x, pa.y, 'hard'); spot(pb.x, pb.y, 'hard');
           return approach + w + 470;
         }
         c.log.push('swingGap!'); c.gaps.push({ x: gx, w: 140 }); starArc(gx - 20, gx + 160, F - 70, 90, 5);
         return approach + 140 + 400;
       },
-      // un immeuble de l'autre côté d'un ravin : on n'y accède qu'en se balançant
-      tower(x) {
-        const approach = r(170, 220), gx = x + approach;
-        const heights = [110, 140, 170].sort(() => rnd() - .5);
-        for (const h of heights) for (const w of [r(300, 340), r(280, 300)]) {
-          const rw = r(260, 300), tx = gx + w, roof = { x: tx, y: F - h, w: rw };
-          const surfaces = [{ x0: -400, x1: gx, y: F }, rooftopSurface(roof), { x0: tx + rw + 6, x1: W + 400, y: F }];
-          const found = findAnchor({
-            starts: [gx - 230, gx - 170, gx - 110, gx - 50, gx - 12], ayList: [F - 366, F - 350, F - 330],
-            axList: [gx + w * .1, gx + w * .2, gx + w * .3, gx + w * .4, gx + w * .5, gx + w * .6], surfaces, target: surfaces[1]
-          });
-          if (!found) continue;
-          c.gaps.push({ x: gx, w }); building(tx, h, rw);
-          c.anchors.push({ x: found.ax, y: found.ay }); c.log.push('tower');
-          swingStars(found.path, 2, 2);
-          starLine(tx + 40, F - h - 34, Math.floor((rw - 40) / 54), 54);
-          spot(tx + rw * .6, F - h - 36, 'hard');
-          return approach + w + rw + 330;
+      // une échelle d'immeubles de plus en plus hauts : on monte de toit en toit en relançant la toile
+      ladder(x) {
+        const approach = r(170, 220), nSteps = ri(2, 3);
+        const plan = [[130, 160], [205, 245], [285, 325]];
+        let cursor = x + approach, prev = null, built = 0;
+        for (let i = 0; i < nSteps; i++) {
+          let done = false;
+          for (let attempt = 0; attempt < 14 && !done; attempt++) {
+            const h = r(plan[i][0], plan[i][1]), w = i === 0 ? r(300, 340) : r(230, 300), rw = r(250, 300);
+            const chasmStart = prev ? prev.x + prev.w : cursor, tx = chasmStart + w;
+            const roof = { x: tx, y: F - h, w: rw }, roofS = rooftopSurface(roof);
+            let surfaces, starts, hy;
+            if (prev) {
+              const left = rooftopSurface(prev);
+              surfaces = [left, roofS, { x0: -400, x1: W + 400, y: F }];
+              const right = prev.x + prev.w; hy = prev.y - PH + 12;
+              starts = [230, 170, 110, 50, 12].map((d) => right - d).filter((sx) => sx > prev.x + 10);
+            } else {
+              surfaces = [{ x0: -400, x1: chasmStart, y: F }, roofS, { x0: tx + rw + 6, x1: W + 400, y: F }];
+              hy = HAND_Y; starts = [230, 170, 110, 50, 12].map((d) => chasmStart - d);
+            }
+            const found = findAnchor({ starts, hy, ayList: AYS, axList: [.1, .2, .3, .4, .5, .6].map((f) => chasmStart + w * f), surfaces, target: roofS });
+            if (!found) continue;
+            if (!prev) c.gaps.push({ x: chasmStart, w });
+            const p = building(tx, h, rw);
+            c.anchors.push({ x: found.ax, y: found.ay }); c.log.push('ladder');
+            swingStars(found.path, 2, 2);
+            starLine(tx + 40, F - h - 34, Math.floor((rw - 40) / 54), 54);
+            const pb = found.path[Math.min(found.path.length - 1, found.split + 2)];
+            if (i % 2 === 0) spot(pb.x, pb.y, 'hard');                      // lettre en plein vol, après le lâcher
+            spot(tx + rw * .6, F - h - 36, i === nSteps - 1 ? 'hard' : 'medium');
+            prev = p; built++; done = true;
+          }
+          if (!done) break;
         }
-        c.log.push('tower!');
-        starLine(gx, F - 44, 5, 60);
-        return approach + 300;
+        if (!built) { c.log.push('ladder!'); starLine(cursor, F - 44, 5, 60); return approach + 300; }
+        return prev.x + prev.w + 380 - x;
       },
       rooftops(x) {
-        const heights = [100, 160, 120, 90], n = ri(3, 4); let cx = x + 180;
+        const heights = [110, 170, 225, 160], n = ri(3, 4); let cx = x + 180;
         for (let i = 0; i < n; i++) {
           const w = r(180, 210), h = heights[i];
           building(cx, h, w);
           starLine(cx + 30, F - h - 34, 3, 52);
-          if (i === 1) spot(cx + w * .5, F - h - 36, 'medium');
+          if (i === 1 || i === 2) spot(cx + w * .5, F - h - 36, 'medium');
           if (i < n - 1) starArc(cx + w - 10, cx + w + 110, F - h - 34, 70, 3);
           cx += w + 100;
         }
@@ -185,12 +207,12 @@
         return cx - x + 140;
       },
       highTrack(x) {
-        const hs = [150, 205, 140]; let cx = x + 260;
+        const hs = [150, 215, 275, 205]; let cx = x + 260;
         c.pads.push({ x: x + 70, w: 96 });
         hs.forEach((h, i) => {
           platform(cx, h, 170, { type: i % 2 });
           starLine(cx + 22, F - h - 36, 3, 52);
-          if (i === 1) spot(cx + 85, F - h - 38, 'hard');
+          if (i === 1 || i === 2) spot(cx + 85, F - h - 38, 'hard');
           cx += 170 + 125;
         });
         return cx - x + 160;
@@ -242,14 +264,30 @@
         spot(cx - 200, F - 112 - 40, 'medium');
         c.gaps.push({ x: cx + 80, w: 140 }); starArc(cx + 60, cx + 240, F - 80, 90, 4);
         return cx - x + 400;
+      },
+      // de la lave partout : on traverse en sautant d'immeuble en immeuble
+      lavaRoofs(x) {
+        const approach = r(150, 200), gx = x + approach, n = ri(3, 4);
+        const heights = [100, 160, 215, 150].slice(0, n), gapW = 120;
+        const widths = heights.map(() => r(170, 200));
+        const total = widths.reduce((s, w) => s + w + gapW, gapW);
+        c.gaps.push({ x: gx, w: total });
+        let cx = gx + gapW;
+        heights.forEach((h, i) => {
+          building(cx, h, widths[i]);
+          starLine(cx + 28, F - h - 36, 3, 52);
+          if (i === 1 || i === n - 1) spot(cx + widths[i] / 2, F - h - 38, i === n - 1 ? 'hard' : 'medium');
+          if (i < n - 1) starArc(cx + widths[i] - 12, cx + widths[i] + gapW + 12, F - h - 36, 70, 3);
+          cx += widths[i] + gapW;
+        });
+        return approach + total + 330;
       }
     };
     const DECKS = {
-      filou: ['street', 'swingGap', 'tower', 'rooftops', 'swingGap', 'tower', 'street', 'swingGap', 'rooftops', 'tower', 'swingGap'],
+      filou: ['street', 'swingGap', 'ladder', 'rooftops', 'swingGap', 'ladder', 'street', 'swingGap', 'ladder', 'rooftops', 'swingGap'],
       ziggy: ['sprint', 'bigGap', 'fenceRun', 'highTrack', 'bigGap', 'hurdles', 'fenceRun', 'bigGap', 'highTrack', 'sprint', 'fenceRun'],
-      titan: ['rubble', 'boulder', 'wall', 'double', 'crates', 'boulder', 'ledge', 'wall', 'double', 'boulder', 'crates']
+      titan: ['rubble', 'boulder', 'lavaRoofs', 'wall', 'double', 'crates', 'lavaRoofs', 'ledge', 'boulder', 'wall', 'lavaRoofs']
     };
-    const REST = { filou: 'street', ziggy: 'sprint', titan: 'rubble' };
 
     // zone de repos : terrain dégagé autour des caisses à énigme
     const rest = (x0, x1) => {
@@ -261,7 +299,6 @@
     for (let k = deck.length - 1; k > 2; k--) { if (rnd() < .3) { const j = k - 1; [deck[k], deck[j]] = [deck[j], deck[k]]; } }
     const snap = () => ({ g: c.gaps.length, p: c.platforms.length, b: c.bumps.length, a: c.anchors.length, pd: c.pads.length, s: c.stars.length, sp: c.spots.length });
     const rollback = (q) => { c.gaps.length = q.g; c.platforms.length = q.p; c.bumps.length = q.b; c.anchors.length = q.a; c.pads.length = q.pd; c.stars.length = q.s; c.spots.length = q.sp; };
-    // fenêtres libres entre les zones dégagées autour des caisses à énigme
     const ZONE = 260;
     const windows = [[440, STATIONS[0] - ZONE], ...STATIONS.slice(0, -1).map((st, k) => [st + ZONE, STATIONS[k + 1] - ZONE]), [STATIONS[2] + ZONE, W - 700]];
     STATIONS.forEach((st) => rest(st - ZONE, st + ZONE));
@@ -280,15 +317,45 @@
       if (b - x > 150) SEG.street(x, b - x);
     }
     rest(W - 700, W - 120);
-    void REST;
+    if (hero === 'titan') c.gaps.forEach((g) => { g.lava = true; });
+
+    /* ----- 20 petits monstres, répartis sur tout le parcours (sol, toits, airs) ----- */
+    {
+      const blockedRanges = [
+        ...c.gaps.map((g) => [g.x - 30, g.x + g.w + 30]),
+        ...c.bumps.filter((b) => b.kind !== 'small').map((b) => [b.x - 60, b.x + b.w + 60]),
+        ...STATIONS.map((s) => [s - 150, s + 150])
+      ].sort((p, q) => p[0] - q[0]);
+      const ground = []; let cur = 700;
+      for (const [a, b] of blockedRanges) { if (a - cur >= 150) ground.push({ x0: cur + 30, x1: a - 30, y: F, roof: false }); cur = Math.max(cur, b); }
+      if (W - 800 - cur >= 150) ground.push({ x0: cur + 30, x1: W - 830, y: F, roof: false });
+      const roofs = c.platforms.filter((p) => p.w >= 130 && !STATIONS.some((s) => Math.abs(p.x + p.w / 2 - s) < 200)).map((p) => ({ x0: p.x + 40, x1: p.x + p.w - 40, y: p.y, roof: true }));
+      const surfaces = ground.concat(roofs);
+      const order = shuffle([0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4]);
+      const lo = 850, hi = W - 1000, step = (hi - lo) / 20, used = [];
+      for (let i = 0; i < 20; i++) {
+        const type = order[i], s0 = lo + i * step, s1 = s0 + step;
+        let x, y;
+        if (type === 2) { x = r(s0 + 40, s1 - 40); y = F - r(190, 320); }
+        else {
+          const cand = surfaces.map((sf) => ({ sf, a: Math.max(sf.x0, s0 - 120), b: Math.min(sf.x1, s1 + 120) })).filter((q) => q.b - q.a >= 70 && !used.some((u) => Math.abs(u - (q.a + q.b) / 2) < 150));
+          const pool = (type === 4 || rnd() < .45) && cand.some((q) => q.sf.roof) ? cand.filter((q) => q.sf.roof) : cand;
+          const pickFrom = pool.length ? pool : cand;
+          if (!pickFrom.length) { const sf = surfaces.reduce((best, q) => Math.abs((q.x0 + q.x1) / 2 - s0) < Math.abs((best.x0 + best.x1) / 2 - s0) ? q : best, surfaces[0]); x = (sf.x0 + sf.x1) / 2; y = sf.y; }
+          else { const q = pickFrom[Math.floor(rnd() * pickFrom.length)]; x = r(q.a, q.b); y = q.sf.y; }
+        }
+        used.push(x);
+        c.monsters.push({ id: i, type, x, y, hp: MONSTER_TYPES[type].hp });
+      }
+    }
 
     /* ----- Lettres : 26 emplacements, les plus difficiles d'abord ----- */
     const taken = [];
-    const blocked = (s) => c.gaps.some((g) => s.x > g.x - 24 && s.x < g.x + g.w + 24 && s.diff !== 'hard')
+    const blocked = (s) => c.gaps.some((g) => s.x > g.x - 24 && s.x < g.x + g.w + 24 && s.diff !== 'hard' && s.y > F - 120)
       || c.bumps.some((b) => s.x > b.x - 24 && s.x < b.x + b.w + 24 && s.y > F - b.h - 30);
     const rank = { hard: 0, medium: 1, easy: 2 };
     c.spots.filter((s) => !blocked(s)).sort((a, b) => rank[a.diff] - rank[b.diff]).forEach((s) => {
-      if (taken.length < 26 && taken.every((t) => Math.abs(t.x - s.x) > 150)) taken.push(s);
+      if (taken.length < 26 && taken.every((t) => Math.abs(t.x - s.x) > 150 || Math.abs(t.y - s.y) > 120)) taken.push(s);
     });
     for (let fx = 300; taken.length < 26 && fx < W - 300; fx += 170) {
       const s = { x: fx, y: F - 58, diff: 'easy' };
@@ -299,21 +366,8 @@
       if (!blocked(s) && taken.every((t) => Math.abs(t.x - s.x) > 110)) taken.push(s);
     }
     c.letterSpots = taken.sort((a, b) => a.x - b.x).slice(0, 26);
-
-    /* ----- Ennemis (petits farceurs) : au sol, jamais dans un ravin ni dans un obstacle ----- */
-    c.enemyXs = Array.from({ length: 32 }, (_, k) => {
-      let ex = 330 + k * 330;
-      for (let tries = 0; tries < 12; tries++) {
-        const bad = c.gaps.some((g) => ex > g.x - 70 && ex < g.x + g.w + 70) || c.bumps.some((b) => ex > b.x - 50 && ex < b.x + b.w + 50)
-          || STATIONS.some((s) => Math.abs(ex - s) < 90) || c.platforms.some((p) => p.bld && ex > p.x - 30 && ex < p.x + p.w + 30 && false);
-        if (!bad) break; ex += 70;
-      }
-      return Math.min(ex, W - 400);
-    });
-    // doublons éventuels écartés
-    for (let k = 1; k < c.enemyXs.length; k++) if (c.enemyXs[k] - c.enemyXs[k - 1] < 120) c.enemyXs[k] = c.enemyXs[k - 1] + 120;
     return c;
   }
 
-  MM.level = { W, F, PW, PH, GRAV, STATIONS, SWING, swing, build };
+  MM.level = { W, F, H, PW, PH, GRAV, STATIONS, SWING, swing, build, MONSTER_TYPES };
 })();
