@@ -6,7 +6,7 @@
    Chaque niveau contient 20 petits monstres à capturer (pour apprendre à compter en jouant). */
 (() => {
   const MM = (window.MM = window.MM || {});
-  const W = 11000, F = 506, H = 690, LIQ = 120, PW = 58, PH = 86, GRAV = 1450;
+  const W = 11000, F = 506, H = 715, LIQ = 140, PW = 58, PH = 86, GRAV = 1450;
   const STATIONS = [1900, 5300, 8700];
 
   /* ---------- Physique de la toile (partagée avec le jeu) ---------- */
@@ -96,7 +96,7 @@
       return null;
     }
     const swingStars = (path, from = 1, every = 2) => { path.forEach((p, i) => { if (i >= from && i % every === 0 && p.y < F - 30) c.stars.push({ x: p.x, y: p.y }); }); };
-    const AYS = [F - 560, F - 540, F - 520, F - 500, F - 480, F - 460, F - 440, F - 420, F - 400, F - 380, F - 360, F - 340];
+    const AYS = [F - 440, F - 430, F - 420, F - 410, F - 400, F - 390, F - 380, F - 370, F - 360, F - 350, F - 340];
 
     /* ----- Segments ----- */
     const SEG = {
@@ -141,7 +141,7 @@
           const tw = r(120, 150);
           const right = { x0: gx + tw, x1: gx + tw + 520, y: F }, left = { x0: gx - 900, x1: gx, y: F };
           let best = null;
-          for (const ay of [F - 560, F - 540, F - 520, F - 500, F - 480]) for (const ax of [gx - 380, gx - 350, gx - 320, gx - 290, gx - 260]) {
+          for (const ay of [F - 520, F - 510, F - 500, F - 490, F - 480, F - 470]) for (const ax of [gx - 380, gx - 350, gx - 320, gx - 290, gx - 260]) {
             const a = { x: ax, y: ay }; let ok = true, n = 0, res0 = null;
             for (const sx of [gx - 520, gx - 470, gx - 420, gx - 370, gx - 320]) {
               if (!swing.canReach(a, sx, HAND_Y, 1)) continue;
@@ -236,7 +236,7 @@
           const w = attempt < 4 ? r(310, 420) : r(260, 300);
           const right = { x0: gx + w, x1: gx + w + 520, y: F }, left = { x0: gx - 800, x1: gx, y: F };
           const found = findAnchor({
-            starts: [gx - 250, gx - 190, gx - 130, gx - 70, gx - 12].filter((st) => !opts || st >= gx - approach + 12), ayList: [F - 540, F - 520, F - 500, F - 560, F - 480, F - 460, F - 440, F - 420],
+            starts: [gx - 250, gx - 190, gx - 130, gx - 70, gx - 12].filter((st) => !opts || st >= gx - approach + 12), ayList: [F - 480, F - 470, F - 460, F - 450, F - 440, F - 430, F - 420],
             axList: [gx + w * .5, gx + w * .42, gx + w * .58], surfaces: [left, right], target: right, gap: { x: gx, w }
           });
           if (!found) continue;
