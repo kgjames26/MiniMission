@@ -6,7 +6,7 @@
    Chaque niveau contient 20 petits monstres à capturer (pour apprendre à compter en jouant). */
 (() => {
   const MM = (window.MM = window.MM || {});
-  const W = 11000, F = 506, H = 620, PW = 58, PH = 86, GRAV = 1450;
+  const W = 11000, F = 506, H = 690, LIQ = 120, PW = 58, PH = 86, GRAV = 1450;
   const STATIONS = [1900, 5300, 8700];
 
   /* ---------- Physique de la toile (partagée avec le jeu) ---------- */
@@ -26,12 +26,12 @@
       return { ax, ay, L, theta, omega, dir, t: 0 };
     },
     // avance d'un pas ; renvoie true quand il est temps de lâcher
-    step(s, dt) {
+    step(s, dt, hold) {
       s.omega += -(SWING.G / s.L) * Math.sin(s.theta) * dt;
       s.omega *= 1 - SWING.damp * dt;
       s.theta += s.omega * dt; s.t += dt;
       const far = s.dir > 0 ? (s.theta >= SWING.thr && s.omega > 0) : (s.theta <= -SWING.thr && s.omega < 0);
-      return far || s.t >= SWING.maxT;
+      return !hold && (far || s.t >= SWING.maxT);
     },
     hand(s) { return { x: s.ax + s.L * Math.sin(s.theta), y: s.ay + s.L * Math.cos(s.theta) }; },
     velocity(s) { return { vx: s.L * Math.cos(s.theta) * s.omega, vy: -s.L * Math.sin(s.theta) * s.omega }; },
@@ -78,14 +78,16 @@
     const rooftopSurface = (p) => ({ x0: p.x - 6, x1: p.x + p.w + 6, y: p.y });
 
     // Cherche une ancre telle que, depuis tous les points de départ plausibles, la toile atterrisse sur la surface visée.
-    function findAnchor({ starts, hy = HAND_Y, ayList, axList, surfaces, target }) {
+    // le héros ne doit jamais frôler l'eau ou la lave : au-dessus d'un trou, ses pieds restent bien plus haut que le liquide
+    const clearOfLiquid = (path, extra) => path.every((p) => p.y + PH / 2 <= F + LIQ - 36 || ![...c.gaps, ...(extra ? [extra] : [])].some((g) => p.x > g.x - 10 && p.x < g.x + g.w + 10));
+    function findAnchor({ starts, hy = HAND_Y, ayList, axList, surfaces, target, gap }) {
       for (const ay of ayList) for (const ax of axList) {
         const a = { x: ax, y: ay }; let ok = true, n = 0, res0 = null;
         for (const sx of starts) {
           if (!swing.canReach(a, sx, hy, 1)) continue;
           n++;
           const res = swing.simulate(ax, ay, sx, hy, 1, surfaces);
-          if (!res.land || res.land.surface !== target) { ok = false; break; }
+          if (!res.land || res.land.surface !== target || !clearOfLiquid(res.path, gap)) { ok = false; break; }
           if (!res0) res0 = res;
         }
         if (ok && n >= 3) return { ax, ay, path: res0.path, split: res0.split };
@@ -93,7 +95,7 @@
       return null;
     }
     const swingStars = (path, from = 1, every = 2) => { path.forEach((p, i) => { if (i >= from && i % every === 0 && p.y < F - 30) c.stars.push({ x: p.x, y: p.y }); }); };
-    const AYS = [F - 440, F - 420, F - 400, F - 380, F - 360, F - 340];
+    const AYS = [F - 560, F - 540, F - 520, F - 500, F - 480, F - 460, F - 440, F - 420, F - 400, F - 380, F - 360, F - 340];
 
     /* ----- Segments ----- */
     const SEG = {
@@ -178,6 +180,38 @@
         c.log.push('trampTower');
         return approach + 110 + 140 + tw + 380;
       },
+      // « saute-mouton » dans les airs : une suite d'anneaux qui montent, pour aller chercher un trésor visible tout en haut
+      skyHop(x) {
+        const approach = r(210, 250), gx = x + approach;
+        const rises = [250, 325, 395, 465];
+        for (let attempt = 0; attempt < 8; attempt++) {
+          const anchors = []; let ax = gx + r(90, 130);
+          rises.forEach((h, i) => { anchors.push({ x: ax, y: F - h + r(-12, 12) }); ax += r(300, 360); });
+          // vérifie par simulation que chaque anneau est atteignable depuis le vol précédent
+          let hx = gx - 20, hy = HAND_Y, ok = true; const pts = [];
+          for (let k = 0; k < anchors.length && ok; k++) {
+            const a = anchors[k];
+            if (!swing.canReach(a, hx, hy, 1)) { ok = false; break; }
+            const res = swing.simulate(a.x, a.y, hx, hy, 1, []);
+            const flight = res.path.slice(res.split);
+            if (k === anchors.length - 1) { pts.push(...res.path.filter((_, i) => i % 2 === 0)); break; }
+            const next = anchors[k + 1];
+            const cand = flight.map((p) => ({ x: p.x, y: p.y - PH / 2 + 12 })).filter((q) => swing.canReach(next, q.x, q.y, 1));
+            if (cand.length < 2) { ok = false; break; }
+            const q = cand[Math.floor(cand.length / 2)]; pts.push(...res.path.filter((_, i) => i % 3 === 0));
+            hx = q.x; hy = q.y;
+          }
+          if (!ok) continue;
+          anchors.forEach((a) => c.anchors.push(a));
+          pts.forEach((p, i) => { if (i % 2 === 1 && p.y < F - 60) c.stars.push({ x: p.x, y: p.y }); });
+          const top = anchors[anchors.length - 1];
+          spot(top.x + 40, top.y - 50, 'hard'); spot(anchors[1].x + 30, anchors[1].y - 40, 'hard');
+          starLine(top.x - 30, top.y - 60, 3, 50);
+          c.log.push('skyHop');
+          return anchors[anchors.length - 1].x + 520 - x;
+        }
+        return SEG.swingGap(x);
+      },
       // plusieurs balancements d'affilée : on se pose à peine, puis on repart sur la toile
       swingChain(x, avail) {
         let want = [2, 3, 3, 4, 4][ri(0, 4)];
@@ -201,8 +235,8 @@
           const w = attempt < 4 ? r(310, 420) : r(260, 300);
           const right = { x0: gx + w, x1: gx + w + 520, y: F }, left = { x0: gx - 800, x1: gx, y: F };
           const found = findAnchor({
-            starts: [gx - 250, gx - 190, gx - 130, gx - 70, gx - 12].filter((st) => !opts || st >= gx - approach + 12), ayList: [F - 360, F - 380, F - 340, F - 400, F - 420],
-            axList: [gx + w * .5, gx + w * .42, gx + w * .58], surfaces: [left, right], target: right
+            starts: [gx - 250, gx - 190, gx - 130, gx - 70, gx - 12].filter((st) => !opts || st >= gx - approach + 12), ayList: [F - 540, F - 520, F - 500, F - 560, F - 480, F - 460, F - 440, F - 420],
+            axList: [gx + w * .5, gx + w * .42, gx + w * .58], surfaces: [left, right], target: right, gap: { x: gx, w }
           });
           if (!found) continue;
           c.gaps.push({ x: gx, w }); c.anchors.push({ x: found.ax, y: found.ay }); c.log.push('swingGap');
@@ -237,7 +271,7 @@
               surfaces = [{ x0: -400, x1: chasmStart, y: F }, roofS, { x0: tx + rw + 6, x1: W + 400, y: F }];
               hy = HAND_Y; starts = [230, 170, 110, 50, 12].map((d) => chasmStart - d);
             }
-            const found = findAnchor({ starts, hy, ayList: tall && prev ? [hy - 250, hy - 290, hy - 330, hy - 370, hy - 220, hy - 410] : AYS, axList: [.1, .2, .3, .4, .5, .6].map((f) => chasmStart + w * f), surfaces, target: roofS });
+            const found = findAnchor({ starts, hy, ayList: tall && prev ? [hy - 250, hy - 290, hy - 330, hy - 370, hy - 220, hy - 410] : AYS, axList: [.1, .2, .3, .4, .5, .6].map((f) => chasmStart + w * f), surfaces, target: roofS, gap: prev ? null : { x: chasmStart, w } });
             if (!found) continue;
             if (!prev) c.gaps.push({ x: chasmStart, w });
             const p = building(tx, h, rw);
@@ -375,7 +409,7 @@
       }
     };
     const DECKS = {
-      filou: ['swingChain', 'swingOver', 'swingGap', 'swingChain', 'ladderTall', 'swingOver', 'swingChain', 'ladder', 'swingChain', 'hopStones', 'swingGap', 'swingOver', 'swingChain', 'ladderTall', 'rooftops'],
+      filou: ['swingChain', 'skyHop', 'swingOver', 'swingGap', 'swingChain', 'ladderTall', 'skyHop', 'swingOver', 'swingChain', 'ladder', 'swingChain', 'hopStones', 'skyHop', 'swingGap', 'swingOver', 'swingChain', 'ladderTall', 'rooftops'],
       ziggy: ['sprint', 'hopStones', 'trampTower', 'bigGap', 'towerHop', 'fenceRun', 'highTrack', 'hopStones', 'bigGap', 'hurdles', 'towerHop', 'fenceRun', 'hopStones', 'trampTower', 'highTrack'],
       titan: ['rubble', 'hopStones', 'boulder', 'lavaRoofs', 'towerHop', 'wall', 'double', 'hopStones', 'crates', 'lavaRoofs', 'towerHop', 'ledge', 'boulder', 'hopStones', 'wall', 'lavaRoofs']
     };
@@ -465,5 +499,5 @@
     return c;
   }
 
-  MM.level = { W, F, H, PW, PH, GRAV, STATIONS, SWING, swing, build, MONSTER_TYPES };
+  MM.level = { LIQ, W, F, H, PW, PH, GRAV, STATIONS, SWING, swing, build, MONSTER_TYPES };
 })();

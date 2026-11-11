@@ -69,3 +69,6 @@ Quand tout a été attrapé dans une ville (étoiles, lettres, 20 monstres, ques
 - Filou : grands escaliers d'immeubles à gravir en se balançant (jusqu'à ~500 px de haut), plus de balanciers ; la caméra suit en hauteur.
 - Titan : un grand trou par niveau avec un pilier devant ; 3 coups de poing le font tomber en pont de pierre.
 - Ziggy : parfois un grand immeuble avec un trampoline puissant devant ; la caméra monte avec lui.
+
+## Balancement de Filou (v0.22)
+Filou reste accroché à sa toile tant qu'on ne saute pas (le bouton SAUT clignote au meilleur moment ; maintenir ← ou → donne de l'élan). Les anneaux sont placés plus haut et le liquide des trous (eau avec requin, lave) est plus profond : Filou ne les touche jamais en se balançant. Nouveaux « saute-mouton » : une suite de 4 anneaux qui montent vers un trésor visible en haut de l'écran.

@@ -150,7 +150,7 @@
   let hapticsEnabled = save.hapticsEnabled !== false;
   MM.setHaptics(hapticsEnabled);
   let shots = [], fireballs = [], tornados = [], hitTimes = [], rewindAt = 0, litShown = -1;
-  let airTurnUntil = 0, shootReady = 0, flipUntil = 0, flipDir = 1, hurtUntil = 0;
+  let swingCue = false, airTurnUntil = 0, shootReady = 0, flipUntil = 0, flipDir = 1, hurtUntil = 0;
   let gameCtl = null;
   let view = { scale: 1, ox: 0, oy: 0, w: 960, h: 540 };
   let world = { tramps: [], topples: [], camY: 0, passPts: [200], passX: 200, width: 6200, floor: 426, camera: 0, checkpoint: 60, stations: [], gaps: [], bumps: [], platforms: [], coins: [], letters: [], enemies: [], bigFriends: [] };
@@ -516,6 +516,8 @@
   const gapLava = (g) => (hash('g' + Math.round(g.x)) & 1) === 0;
   function drawWater(gap, x, t) {
     const F = world.floor, gw = gap.w, surf = (px) => F + 18 + Math.sin(t * 2 + (gap.x + px) * .05) * 3 + Math.sin(t * 1.1 + (gap.x + px) * .13) * 1.5;
+    ctx.fillStyle = '#4a3a2c'; ctx.fillRect(x, F, gw, 270);
+    ctx.save(); ctx.translate(0, LV.LIQ - 18);
     ctx.fillStyle = '#2d6f93'; ctx.fillRect(x, F, gw, 170);
     const g = ctx.createLinearGradient(0, F + 14, 0, F + 150); g.addColorStop(0, '#7fe0f6'); g.addColorStop(.35, '#3fb0dc'); g.addColorStop(1, '#1f6f9e');
     ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x, F + 170); for (let px = 0; px <= gw; px += 8) ctx.lineTo(x + px, surf(px)); ctx.lineTo(x + gw, F + 170); ctx.closePath(); ctx.fill();
@@ -542,7 +544,7 @@
       ctx.beginPath(); ctx.moveTo(-14, 2); ctx.quadraticCurveTo(-8, -26, 6, -34); ctx.quadraticCurveTo(8, -12, 16, 2); ctx.closePath(); ctx.fill(); ctx.stroke();
       ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(-26, 4); ctx.quadraticCurveTo(-34, 7, -42, 4); ctx.moveTo(22, 4); ctx.quadraticCurveTo(30, 8, 38, 4); ctx.stroke();
     }
-    ctx.restore();
+    ctx.restore(); ctx.restore();
   }
   function drawWorld(time) {
     const W = view.w, p = mission?.palette || [], F = world.floor, cam = world.camera;
@@ -556,7 +558,8 @@
       const x = gap.x - cam; if (x + gap.w < 0 || x > W) return;
       if (gapLava(gap)) {
         const gw = gap.w, t = time;
-        ctx.fillStyle = '#4a1c14'; ctx.fillRect(x, F, gw, 160);
+        ctx.fillStyle = '#4a1c14'; ctx.fillRect(x, F, gw, 260);
+        ctx.save(); ctx.translate(0, LV.LIQ - 16);
         const lg = ctx.createLinearGradient(0, F + 14, 0, F + 150); lg.addColorStop(0, '#ffd23a'); lg.addColorStop(.25, '#ff7a1f'); lg.addColorStop(1, '#b81f0c');
         ctx.fillStyle = lg; ctx.beginPath(); ctx.moveTo(x, F + 150);
         for (let px = 0; px <= gw; px += 8) ctx.lineTo(x + px, F + 16 + Math.sin(t * 2.4 + (x + px) * .045) * 4 + Math.sin(t * 1.3 + (x + px) * .11) * 2);
@@ -577,6 +580,7 @@
           ctx.fillStyle = 'rgba(255,170,40,.75)'; ctx.beginPath(); ctx.moveTo(fx0 - 9, F + 14); ctx.quadraticCurveTo(fx0 - 4, F + 14 - h * .6, fx0 + Math.sin(t * 9 + i) * 4, F + 14 - h); ctx.quadraticCurveTo(fx0 + 6, F + 14 - h * .5, fx0 + 9, F + 14); ctx.closePath(); ctx.fill();
         }
         ctx.globalCompositeOperation = 'source-over';
+        ctx.restore();
         return;
       }
       drawWater(gap, x, time);
@@ -1072,11 +1076,16 @@
   function updateSwing(dt) {
     const s = swing, steps = Math.max(1, Math.ceil(dt / (1/120)));
     let release = false;
-    for (let i = 0; i < steps && !release; i++) release = SW.step(s, dt / steps);
+    const move = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+    if (move) s.omega = clamp(s.omega + move * 2.4 * dt, -4.2, 4.2);          // on peut se donner de l'élan comme sur une balançoire
+    for (let i = 0; i < steps; i++) SW.step(s, dt / steps, true);
+    s.omega *= 1 + .072 * dt;                                             // presque pas d'amortissement : le balancement dure          // il reste accroché tant qu'on ne saute pas
+    s.theta = clamp(s.theta, -1.7, 1.7);
+    const cue = s.dir > 0 ? (s.theta >= 1.12 && s.omega > 0) : (s.theta <= -1.12 && s.omega < 0);
+    if (cue !== swingCue) { swingCue = cue; $('#jump-button').classList.toggle('cue', cue); }
     const h = SW.hand(s);
     player.x = h.x - player.w/2; player.y = h.y - 12; player.vy = 0; player.grounded = false;
     if (Math.abs(s.omega) > .4) player.facing = s.omega > 0 ? 1 : -1;
-    if (release) releaseSwing(false);
   }
   function useAbility() {
     if (scene !== 'game-screen') return;
@@ -1177,7 +1186,7 @@
     renderAlbum(); setScreen('album-screen');
   }
   function renderAlbum() {
-    const S = MM.stickers, album = save.album || {}, mode = save.albumMode === 'city' ? 'city' : 'hero';
+    const S = MM.stickers, album = save.album || {}, mode = 'city';
     const nA = mode === 'hero' ? 3 : S.CITIES_N, nB = mode === 'hero' ? S.CITIES_N : 3;
     const A = Math.max(0, Math.min(nA - 1, save.albumA ?? 0)), B = Math.max(0, Math.min(nB - 1, save.albumB ?? 0)); save.albumA = A; save.albumB = B;
     const heroOf = (a, b) => mode === 'hero' ? a : b, cityOf = (a, b) => mode === 'hero' ? b : a;
@@ -1189,7 +1198,6 @@
     $('#album-tabs').innerHTML = Array.from({ length: nA }, (_, i) => mk('a', i, tabA(i), i === A, tabA(i).of)).join('');
     $('#album-subtabs').innerHTML = Array.from({ length: nB }, (_, i) => mk('b', i, tabB(i), i === B, S.PER_PAGE)).join('');
     const h = heroOf(A, B), c = cityOf(A, B), pg = S.PAGES[S.CITY_BASE + c];
-    $('#album-switch').textContent = mode === 'hero' ? '🏙️' : '🦸'; $('#album-switch').setAttribute('aria-label', mode === 'hero' ? 'Classer par ville' : 'Classer par personnage');
     $('#album-page-title').innerHTML = `<span style="--c:${pg.color}">${S.HERO_NAMES[h]} · ${MM.cities[c].flag} ${escapeHtml(MM.cities[c].name)}</span>`;
     const grid = $('#album-grid'); grid.className = 'album-grid'; grid.style.setProperty('--c', pg.color);
     grid.innerHTML = pg.slots.map((slot, si) => {
@@ -1695,7 +1703,7 @@
     sound('web'); MM.haptic('tap');
   }
   function releaseSwing(manual, flip) {
-    const s = swing; if (!s) return;
+    const s = swing; if (!s) return; swingCue = false; $('#jump-button').classList.remove('cue');
     const v = SW.velocity(s);
     player.carryVx = v.vx; player.vx = v.vx; player.vy = v.vy - (manual ? 140 : 0);
     if (Math.abs(player.carryVx) < 120) player.carryVx = 120 * s.dir;
@@ -1847,10 +1855,6 @@
   $('#haptics-toggle').addEventListener('change', e => { hapticsEnabled = e.target.checked; save.hapticsEnabled = hapticsEnabled; writeSave(); MM.setHaptics(hapticsEnabled); if (hapticsEnabled) MM.haptic('good'); });
   const albumTab = (lvl) => (e) => { const t = e.target.closest('.album-tab'); if (!t) return; save[lvl === 'a' ? 'albumA' : 'albumB'] = Number(t.dataset.i); renderAlbum(); MM.haptic('tap'); };
   $('#album-tabs').addEventListener('click', albumTab('a')); $('#album-subtabs').addEventListener('click', albumTab('b'));
-  $('#album-switch').addEventListener('click', () => {      // bascule : 3 albums de personnages ⇄ 10 albums de villes
-    const S = MM.stickers, mode = save.albumMode === 'city' ? 'city' : 'hero', A = save.albumA ?? 0, B = save.albumB ?? 0;
-    save.albumMode = mode === 'hero' ? 'city' : 'hero'; save.albumA = B; save.albumB = A; writeSave(); renderAlbum(); MM.haptic('good');
-  });
   document.addEventListener('visibilitychange', updateMusic);
   fetch('version.json', { cache: 'no-store' }).then(r => r.json()).then(v => { $('#home-version').textContent = `v${v.version}`; }).catch(() => {});
   $('#new-mission-button').addEventListener('click',()=>{if(stopAfterMission)endSession();else setScreen('home');});
