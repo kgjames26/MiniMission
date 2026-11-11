@@ -66,7 +66,7 @@
     const r = (a, b) => a + rnd() * (b - a);
     const ri = (a, b) => Math.floor(r(a, b + 1));
     const shuffle = (list) => { const a = list.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-    const c = { width: W, floor: F, height: H, stations: STATIONS.slice(), gaps: [], platforms: [], bumps: [], anchors: [], pads: [], stars: [], spots: [], monsters: [], log: [] };
+    const c = { width: W, floor: F, height: H, stations: STATIONS.slice(), gaps: [], platforms: [], bumps: [], anchors: [], pads: [], tramps: [], stars: [], spots: [], monsters: [], log: [] };
     const HAND_Y = F - PH + 12;
 
     const starLine = (x0, y, n, dx = 46) => { for (let i = 0; i < n; i++) c.stars.push({ x: x0 + i * dx, y }); };
@@ -158,6 +158,26 @@
         }
         return SEG.swingGap(x);
       },
+      // Titan : un grand trou, et devant lui un pilier à faire tomber à coups de poing pour s'en faire un pont
+      pillarBridge(x) {
+        const pw = 64, approach = r(210, 250), x0 = x + approach, gapW = r(320, 360), gx = x0 + pw + 40, L = 40 + gapW + 70;
+        bump(x0, pw, L, 'pillar', 3);
+        c.gaps.push({ x: gx, w: gapW });
+        starLine(gx + 40, F - pw - 38, 4, (gapW - 80) / 3);
+        spot(gx + gapW / 2, F - pw - 42, 'hard');
+        c.log.push('pillarBridge');
+        return approach + pw + 40 + gapW + 330;
+      },
+      // Ziggy : un grand immeuble, et un trampoline puissant en bas pour passer par-dessus
+      trampTower(x) {
+        const approach = r(220, 260), tx0 = x + approach, tw = r(170, 200), th = r(320, 350), bx = tx0 + 110 + 140;
+        c.tramps.push({ x: tx0, w: 110 });
+        bump(bx, tw, th, 'tower', 0);
+        spot(bx + tw / 2, F - th - 44, 'hard'); starLine(bx + 30, F - th - 40, 3, 55);
+        starArc(tx0 + 40, bx + tw + 90, F - th - 80, 170, 6);
+        c.log.push('trampTower');
+        return approach + 110 + 140 + tw + 380;
+      },
       // plusieurs balancements d'affilée : on se pose à peine, puis on repart sur la toile
       swingChain(x) {
         const n = rnd() < .45 ? 3 : 2; let end = x, first = true;
@@ -191,9 +211,10 @@
         return approach + 140 + 400;
       },
       // une échelle d'immeubles de plus en plus hauts : on monte de toit en toit en relançant la toile
-      ladder(x) {
-        const approach = r(170, 220), nSteps = ri(2, 3);
-        const plan = [[130, 160], [205, 245], [285, 325]];
+      ladderTall(x) { return SEG.ladder(x, true); },
+      ladder(x, tall) {
+        const approach = r(170, 220), nSteps = tall ? ri(3, 5) : ri(2, 3);
+        const plan = tall ? [[150, 180], [255, 290], [365, 400], [470, 505], [575, 610]] : [[130, 160], [205, 245], [285, 325]];
         let cursor = x + approach, prev = null, built = 0;
         for (let i = 0; i < nSteps; i++) {
           let done = false;
@@ -211,7 +232,7 @@
               surfaces = [{ x0: -400, x1: chasmStart, y: F }, roofS, { x0: tx + rw + 6, x1: W + 400, y: F }];
               hy = HAND_Y; starts = [230, 170, 110, 50, 12].map((d) => chasmStart - d);
             }
-            const found = findAnchor({ starts, hy, ayList: AYS, axList: [.1, .2, .3, .4, .5, .6].map((f) => chasmStart + w * f), surfaces, target: roofS });
+            const found = findAnchor({ starts, hy, ayList: tall && prev ? [hy - 250, hy - 290, hy - 330, hy - 370, hy - 220, hy - 410] : AYS, axList: [.1, .2, .3, .4, .5, .6].map((f) => chasmStart + w * f), surfaces, target: roofS });
             if (!found) continue;
             if (!prev) c.gaps.push({ x: chasmStart, w });
             const p = building(tx, h, rw);
@@ -349,8 +370,8 @@
       }
     };
     const DECKS = {
-      filou: ['street', 'swingGap', 'hopStones', 'swingOver', 'swingChain', 'ladder', 'towerHop', 'swingChain', 'rooftops', 'swingOver', 'hopStones', 'swingGap', 'swingChain', 'ladder'],
-      ziggy: ['sprint', 'hopStones', 'bigGap', 'towerHop', 'fenceRun', 'highTrack', 'hopStones', 'bigGap', 'hurdles', 'towerHop', 'fenceRun', 'hopStones', 'highTrack'],
+      filou: ['street', 'swingGap', 'ladderTall', 'hopStones', 'swingOver', 'swingChain', 'ladder', 'towerHop', 'swingChain', 'ladderTall', 'rooftops', 'swingOver', 'hopStones', 'swingGap', 'swingChain', 'ladder', 'swingChain'],
+      ziggy: ['sprint', 'hopStones', 'trampTower', 'bigGap', 'towerHop', 'fenceRun', 'highTrack', 'hopStones', 'bigGap', 'hurdles', 'towerHop', 'fenceRun', 'hopStones', 'trampTower', 'highTrack'],
       titan: ['rubble', 'hopStones', 'boulder', 'lavaRoofs', 'towerHop', 'wall', 'double', 'hopStones', 'crates', 'lavaRoofs', 'towerHop', 'ledge', 'boulder', 'hopStones', 'wall', 'lavaRoofs']
     };
 
@@ -362,14 +383,15 @@
 
     const deck = DECKS[hero].concat(DECKS[hero]);
     for (let k = deck.length - 1; k > 2; k--) { if (rnd() < .3) { const j = k - 1; [deck[k], deck[j]] = [deck[j], deck[k]]; } }
-    const snap = () => ({ g: c.gaps.length, p: c.platforms.length, b: c.bumps.length, a: c.anchors.length, pd: c.pads.length, s: c.stars.length, sp: c.spots.length });
-    const rollback = (q) => { c.gaps.length = q.g; c.platforms.length = q.p; c.bumps.length = q.b; c.anchors.length = q.a; c.pads.length = q.pd; c.stars.length = q.s; c.spots.length = q.sp; };
+    const snap = () => ({ g: c.gaps.length, p: c.platforms.length, b: c.bumps.length, a: c.anchors.length, pd: c.pads.length, tr: c.tramps.length, s: c.stars.length, sp: c.spots.length });
+    const rollback = (q) => { c.gaps.length = q.g; c.platforms.length = q.p; c.bumps.length = q.b; c.anchors.length = q.a; c.pads.length = q.pd; c.tramps.length = q.tr; c.stars.length = q.s; c.spots.length = q.sp; };
     const ZONE = 260;
     const windows = [[440, STATIONS[0] - ZONE], ...STATIONS.slice(0, -1).map((st, k) => [st + ZONE, STATIONS[k + 1] - ZONE]), [STATIONS[2] + ZONE, W - 700]];
     STATIONS.forEach((st) => rest(st - ZONE, st + ZONE));
-    let di = 0;
+    let di = 0, wi = -1, pillarDone = hero !== 'titan';
     for (const [a, b] of windows) {
-      let x = a;
+      let x = a; wi++;
+      if (!pillarDone && wi === 1 && b - x > 1200) { const q0 = snap(), len0 = SEG.pillarBridge(x); if (x + len0 <= b) { x += len0 + 60; pillarDone = true; } else rollback(q0); }
       while (b - x > 330) {
         let placed = false;
         for (let t = 0; t < deck.length && !placed; t++) {

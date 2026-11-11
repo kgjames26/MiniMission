@@ -48,7 +48,7 @@
         <div class="home-top">
           <button class="round-btn settings-open" type="button" aria-label="Réglages pour l'adulte" title="Réglages">⚙</button>
           <span class="grow"></span>
-          <button id="album-open" class="pill-btn" type="button" aria-label="Mon album d’autocollants"><span aria-hidden="true">📒</span><span>Mon album</span></button>
+          <button id="album-open" class="pill-btn" type="button" aria-label="Mon album d’autocollants"><span aria-hidden="true" class="album-ico">📒</span><span>Mes albums</span><b id="album-badge" class="album-badge">0</b></button>
           <button id="help-art-button" class="pill-btn" type="button" aria-label="Mode d’emploi"><span aria-hidden="true">📖</span><span>Mode d’emploi</span></button>
           <button id="home-sound-toggle" class="round-btn" type="button" aria-label="Activer ou couper les sons">♫</button>
         </div>
@@ -61,6 +61,7 @@
           <span class="home-hero hh-filou"><span class="sprite" style="--col:2;--row:1"></span></span>
           <span class="home-hero hh-titan"><span class="sprite" style="--col:2;--row:2"></span></span>
         </div>
+        <p class="home-tagline">Trouve tous les autocollants pour remplir tes albums&nbsp;! 📒</p>
         <button id="start-button" class="play-button" type="button">JOUER&nbsp;! <span aria-hidden="true">▶</span></button>
         <span id="home-version" class="home-version" aria-hidden="true"></span>
       </section>
@@ -131,10 +132,11 @@
         <header class="screen-top">
           <button class="round-btn" type="button" data-go="home" aria-label="Retour à l’accueil">←</button>
           <h2 class="screen-title"><span class="t-orange">Mon</span> <span class="t-red">album</span></h2>
-          <span class="top-spacer"></span>
+          <button id="album-switch" class="round-btn" type="button" aria-label="Changer le classement des albums"></button>
         </header>
         <div class="album-card">
           <div id="album-tabs" class="album-tabs" role="tablist"></div>
+          <div id="album-subtabs" class="album-tabs sub" role="tablist"></div>
           <p id="album-page-title" class="album-page-title"></p>
           <div id="album-grid" class="album-grid" role="list"></div>
           <div id="sticker-detail" class="sticker-detail hidden" role="dialog" aria-modal="true" aria-label="Détail de l’autocollant">

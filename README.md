@@ -53,8 +53,8 @@ Le turbo ne démarre que sur ACTION ; il s'arrête tout seul après ~1 s, en cha
 - `stickers.js` : pages et règles de l'album. `fx.js` : particules, vibrations, musique. `minigames.js` : questions, labyrinthe, puzzle, Simon.
 - `sw.js` : cache hors ligne. `assets/` : sprites des héros (`heroes-atlas.webp` marche/saut, `hero-moves.webp` coups de poing/course rapide/balancement, `heroes-hd.webp` pour les écrans), `monsters.webp` (10 monstres), musique.
 
-## Albums par ville
-Un livre d'autocollants par ville (12 par livre : 8 bronze, 3 argent, 1 or), rempli ensemble par les trois héros, plus un livre général (« 📚 Tous mes livres ») depuis le bouton Album de l'accueil. Les 5 anciens livres thématiques restent consultables. Toucher un autocollant ouvre sa description (écrite et lue).
+## Albums
+360 autocollants à débloquer : 10 villes × 3 héros × 12. Chaque héros gagne ses propres autocollants dans chaque ville. Deux classements, avec un bouton pour basculer : 3 albums de personnages (rangés par ville) ou 10 albums de villes (rangés par personnage). Toucher un autocollant ouvre sa description (écrite et lue). L'accueil invite à les trouver tous.
 
 ## Mini-jeux
 Chaque caisse tire au hasard un jeu parmi : puzzle, labyrinthe, jeu des paires, rythme façon Simon (couleurs + notes) ou énigme. La difficulté monte avec la ville. Environ 100 images pour les puzzles et les paires, 50 duos pour les labyrinthes (labyrinthe généré à chaque fois).
@@ -64,3 +64,8 @@ Trous remplis de lave ou d'eau (avec un requin qui patrouille et saute), pierres
 
 ## Difficulté croissante
 Quand tout a été attrapé dans une ville (étoiles, lettres, 20 monstres, questions), la carte propose « ↻⚔️ » : on peut la refaire avec un cran de difficulté en plus (⚔️1, ⚔️2…). La progression est remise à zéro, les mêmes autocollants sont à regagner (ils s'ajoutent en doublon), les ennemis ont plus de points de vie, attaquent plus souvent et plus vite, et à partir du niveau 2 tirent un coup de plus.
+
+## Parcours par héros (v0.17)
+- Filou : grands escaliers d'immeubles à gravir en se balançant (jusqu'à ~500 px de haut), plus de balanciers ; la caméra suit en hauteur.
+- Titan : un grand trou par niveau avec un pilier devant ; 3 coups de poing le font tomber en pont de pierre.
+- Ziggy : parfois un grand immeuble avec un trampoline puissant devant ; la caméra monte avec lui.
