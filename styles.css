@@ -433,3 +433,61 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
 .hit-meter.show{opacity:1;transform:none}
 .hit-meter i{font-style:normal;font-size:22px;filter:grayscale(1) opacity(.35);transition:filter .2s,transform .2s}
 .hit-meter i.on{filter:none;transform:scale(1.15)}
+
+/* ---------- Choix de la ville (10 niveaux par héros) ---------- */
+.level-screen{background:radial-gradient(ellipse at 50% 0,#fff9d7,#d5f4ff 60%,#a8ddf4);padding:calc(var(--sat) + 10px) calc(var(--sar) + 14px) calc(var(--sab) + 12px) calc(var(--sal) + 14px);display:none;flex-direction:column;gap:10px;overflow:hidden}
+.level-screen.active{display:flex}
+.level-hero{display:inline-block;vertical-align:middle;margin-right:8px}
+.level-hero .sprite{--sh:clamp(46px,9vh,78px);display:inline-block}
+.level-grid{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:clamp(8px,1.4vw,14px);align-content:start;padding:4px 2px 10px}
+.level-card{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 6px 9px;border-radius:22px;border:4px solid #fff;background:linear-gradient(180deg,var(--a) 0%,var(--b) 62%,var(--g) 100%);box-shadow:0 5px 0 rgba(30,70,110,.22),0 8px 16px #1d4d7a26;font-family:inherit;color:#243b52;cursor:pointer;min-height:clamp(128px,24vh,190px)}
+.level-card:active{transform:translateY(3px)}
+.level-card .lv-num{position:absolute;left:8px;top:6px;min-width:26px;height:26px;border-radius:13px;background:#fff;color:#e4741a;font-weight:1000;font-size:15px;display:grid;place-items:center;padding:0 6px;box-shadow:0 2px 0 #ffd9a8}
+.level-card .lv-flag{font-size:clamp(24px,4.4vh,36px);line-height:1;margin-top:2px}
+.level-card .lv-icon{font-size:clamp(34px,7.2vh,56px);line-height:1;filter:drop-shadow(0 3px 2px rgba(0,0,0,.25))}
+.level-card .lv-name{font-size:clamp(13px,2.3vh,17px);font-weight:1000;text-shadow:0 1px 0 #fff9}
+.lv-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;margin-top:2px}
+.lv-chip{position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:2px;padding:2px 6px;border-radius:10px;background:rgba(255,255,255,.88);font-size:clamp(10px,1.7vh,13px);font-weight:900;color:#4a6478;line-height:1.2}
+.lv-chip i{position:absolute;left:0;bottom:0;height:3px;background:#4cc36a;width:calc(var(--p,0)*100%)}
+.lv-chip.full{background:#dff5e2;color:#26794a}
+.lv-chip.med{background:#fff4c8;color:#8a5b0b}
+.level-card.locked{filter:grayscale(.85) brightness(.95);cursor:default;opacity:.8}
+.level-card .lv-lock{font-size:30px;margin-top:6px}
+.level-card.done::after{content:'✓';position:absolute;right:8px;top:6px;width:26px;height:26px;border-radius:50%;background:#4cc36a;color:#fff;font-weight:1000;display:grid;place-items:center;box-shadow:0 2px 0 #2b8a46}
+.level-card .lv-new{margin-top:4px;padding:2px 10px;border-radius:12px;background:#ff6b6b;color:#fff;font-size:12px;font-weight:1000;animation:pulse 1.6s ease-in-out infinite}
+.level-card.shake{animation:shake-x .35s}
+@keyframes shake-x{0%,100%{transform:none}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+@media (max-width:760px) and (orientation:portrait){.level-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.level-card{min-height:150px}}
+@media (max-height:460px) and (orientation:landscape){.level-grid{gap:6px}.level-card{min-height:112px;padding:5px 4px 6px;border-width:3px;border-radius:18px}.level-card .lv-icon{font-size:34px}.level-card .lv-flag{font-size:20px}}
+
+/* ---------- Feuille de statistiques de fin de niveau ---------- */
+.ending-city{margin:0 0 6px;font-size:clamp(16px,3vh,24px);font-weight:1000;color:#e4741a}
+.stats-sheet{display:grid;gap:6px;width:min(440px,92vw);padding:10px 12px;border-radius:22px;background:rgba(255,255,255,.86);border:3px solid #fff;box-shadow:0 5px 0 #b9dcef,0 8px 18px #1d4d7a22}
+.stat{display:grid;grid-template-columns:32px 1fr auto 58px;align-items:center;gap:8px;font-weight:900;color:#3b5870}
+.stat .stat-i{font-size:24px;line-height:1;text-align:center}
+.stat .stat-bar{height:14px;border-radius:7px;background:#e3ecf2;overflow:hidden;box-shadow:inset 0 1px 2px #0002}
+.stat .stat-bar i{display:block;height:100%;border-radius:7px;background:linear-gradient(#ffd96a,#ffb02e);width:var(--w,0%);transition:width .9s cubic-bezier(.2,.8,.2,1)}
+.stat.full .stat-bar i{background:linear-gradient(#7fe08e,#3fb85a)}
+.stat b{font-size:15px;min-width:52px;text-align:right}
+.stat em{font-style:normal;font-size:12px;font-weight:900;color:#e4741a;text-align:left}
+.stat.full em{color:#26a050;font-size:18px}
+.ending-remaining{margin:6px 0 0;font-size:clamp(14px,2.4vh,18px);font-weight:900;color:#c25b12;display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.ending-remaining .rem{background:#fff;border-radius:14px;padding:3px 10px;box-shadow:0 2px 0 #ffd9a8}
+.ending-remaining.all{color:#26a050}
+.ending-buttons{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:8px}
+.ending-buttons .primary-button,.ending-buttons .secondary-button{min-width:0;margin-top:0;padding-left:18px;padding-right:18px}
+@media (max-height:460px){.ending-alphabet{display:none}.stats-sheet{gap:3px;padding:6px 10px}.stat .stat-i{font-size:18px}.stat .stat-bar{height:10px}}
+
+/* ---------- Détail d'un autocollant ---------- */
+.album-slot.got{cursor:pointer}
+.sticker-detail{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:rgba(20,50,80,.55);padding:16px}
+.sticker-detail.hidden{display:none}
+.sd-card{position:relative;width:min(440px,94vw);max-height:92vh;overflow:auto;text-align:center;padding:20px 22px 22px;border-radius:30px;background:linear-gradient(170deg,#fffdf0,#d9f1ff);border:5px solid #fff;box-shadow:0 8px 0 #9fd0ea,0 18px 40px #0004;animation:pop-in .35s cubic-bezier(.2,1.4,.4,1)}
+.sd-close{position:absolute;right:10px;top:8px;width:46px;height:46px;border-radius:50%;border:3px solid #fff;background:linear-gradient(#ff8a8a,#e04848);color:#fff;font-size:28px;font-weight:1000;line-height:1;cursor:pointer;box-shadow:0 3px 0 #a82a2a}
+.sd-emoji{font-size:clamp(80px,22vh,150px);line-height:1.05;filter:drop-shadow(0 6px 4px #0003);animation:floaty 3s ease-in-out infinite}
+.sd-medal{font-size:30px;margin-top:2px}
+.sd-card h3{margin:2px 0 6px;font-size:clamp(22px,4.4vh,32px);color:#234665;font-weight:1000}
+.sd-card p{margin:0 0 10px;font-size:clamp(16px,2.8vh,21px);line-height:1.35;font-weight:800;color:#3b5870}
+.sd-listen{width:64px;height:64px;border-radius:50%;border:4px solid #fff;background:linear-gradient(#86daff,#2f8fdc);font-size:30px;cursor:pointer;box-shadow:0 4px 0 #1f6fb0}
+@keyframes pop-in{from{transform:scale(.7);opacity:0}to{transform:none;opacity:1}}
+@keyframes pulse{50%{transform:scale(1.1)}}

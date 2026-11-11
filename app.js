@@ -19,6 +19,7 @@
   const HIT_WINDOW = 14, HIT_MAX = 3;
   const MON_COLORS = ['#5fa8ee', '#ffd23f', '#ffb8d8', '#8c9a7a', '#6fbf6a'];
   const MON_TOTAL = 20;
+  const theme = () => MM.cities[(mission && mission.city) || 0];
   const SHOT_SPEED = { ziggy: 560, filou: 500, titan: 470 };
   const COUNT_WORDS = ['zéro', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf', 'dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize', 'dix-sept', 'dix-huit', 'dix-neuf', 'vingt'];
   const monsterImg = new Image(); monsterImg.src = 'assets/monsters.webp';
@@ -152,7 +153,7 @@
   let view = { scale: 1, ox: 0, oy: 0, w: 960, h: 540 };
   let world = { passPts: [200], passX: 200, width: 6200, floor: 426, camera: 0, checkpoint: 60, stations: [], gaps: [], bumps: [], platforms: [], coins: [], letters: [], enemies: [], bigFriends: [] };
   let player = { x: 70, y: 0, vx: 0, vy: 0, w: 58, h: 86, grounded: true, jumping: false, facing: 1, bob: 0 };
-  let lastPromptStation = -1;
+  let lastPromptStation = -1, lastFinished = null;
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function readSave() {
@@ -183,8 +184,57 @@
   }
   const missionTitles = { ziggy:'La piste des étoiles', filou:'Le grand pont de Filou', titan:'Le parcours des gros blocs' };
   const missionPalettes = { ziggy:['#b9edff','#66bd82','#ffd68a'], filou:['#c9f2ff','#65b9a4','#a8a3ef'], titan:['#bce9f7','#58a96f','#f2c76d'] };
-  function createMission(heroId) { const created = todaysMission(heroId); created.title = missionTitles[heroId]; created.palette = missionPalettes[heroId].slice(); created.levelVersion = 5; return created; }
-  // Recale une position de départ hors des ravins pour éviter une chute en boucle.
+  function createMission(heroId, index = 0) {
+    const created = todaysMission(heroId), city = MM.cities[index] || MM.cities[0];
+    created.title = `${city.flag} ${city.name}`; created.city = index; created.level = { hero: heroId, index };
+    created.seed = hash(`${heroId}-${index}-v5`) || 1;      // la ville est toujours la même : on peut la rejouer pour trouver ce qui manque
+    created.palette = [city.sky[0], city.grass, city.sky[1]]; created.levelVersion = 5; return created;
+  }
+  /* ----- progression par ville : 10 niveaux par héros, le suivant s'ouvre quand on arrive au bout ----- */
+  const BLANK_LEVEL = { done: false, stars: [], letters: [], monsters: [], q: 0, silver: false, gold: false, mon: false, tot: null };
+  function readLevel(hero, i) { return (save.levels && save.levels[hero] && save.levels[hero][i]) || BLANK_LEVEL; }
+  function levelEntry(hero, i) { save.levels = save.levels || {}; const arr = save.levels[hero] = save.levels[hero] || []; return arr[i] = arr[i] || { ...BLANK_LEVEL, stars: [], letters: [], monsters: [] }; }
+  const levelUnlocked = (hero, i) => i === 0 || readLevel(hero, i - 1).done;
+  function commitProgress(done) {
+    if (!mission || !mission.level || !Array.isArray(mission.coins)) return;
+    const L = levelEntry(mission.level.hero, mission.level.index);
+    L.stars = mission.coins.filter(c => c.collected).map(c => c.id);
+    L.letters = mission.letters.filter(l => l.collected).map(l => l.letter);
+    L.monsters = (mission.monsters || []).filter(m => m.friendly).map(m => m.id);
+    L.q = Math.max(L.q || 0, (mission.stationsDone || []).filter(Boolean).length);
+    L.silver = !!(L.silver || mission.silverGiven); L.gold = !!(L.gold || mission.goldGiven); L.mon = !!(L.mon || mission.monGiven);
+    L.tot = { s: mission.coins.length, l: mission.letters.length, m: MON_TOTAL, q: 3 };
+    if (done) L.done = true;
+    writeSave();
+  }
+  let levelHero = 'ziggy';
+  function openLevels(heroId) {
+    levelHero = heroId; const h = heroes[heroId], row = HERO_ROW[heroId] ?? 0;
+    $('#level-hero').innerHTML = `<span class="sprite" style="--col:${heroId === 'ziggy' ? 0 : 2};--row:${row}"></span>`;
+    $('#level-title').textContent = h.name;
+    renderLevels(); setScreen('level-screen');
+    if (!timerNoticePlaying) sayText('Choisis une ville !');
+  }
+  function renderLevels() {
+    const grid = $('#level-grid');
+    grid.innerHTML = MM.cities.map((c, i) => {
+      const L = readLevel(levelHero, i), open = levelUnlocked(levelHero, i), t = L.tot;
+      let inner;
+      if (!open) inner = '<span class="lv-lock" aria-hidden="true">🔒</span>';
+      else if (!t) inner = '<span class="lv-new">NOUVEAU</span>';
+      else {
+        const chip = (icon, a, b) => `<span class="lv-chip ${a >= b ? 'full' : ''}"><i style="--p:${b ? a / b : 0}"></i>${icon} ${a}/${b}</span>`;
+        inner = `<div class="lv-chips">${chip('⭐', L.stars.length, t.s)}${chip('🔤', L.letters.length, t.l)}${chip('👾', L.monsters.length, t.m)}${chip('❓', L.q, t.q)}</div><div class="lv-chips"><span class="lv-chip ${L.silver ? 'med' : ''}" style="opacity:${L.silver ? 1 : .55}">🥈${L.silver ? '✓' : ''}</span><span class="lv-chip ${L.gold ? 'med' : ''}" style="opacity:${L.gold ? 1 : .55}">🥇${L.gold ? '✓' : ''}</span></div>`;
+      }
+      const rem = t ? ` Il reste ${t.s - L.stars.length} étoiles, ${t.l - L.letters.length} lettres, ${t.m - L.monsters.length} monstres.` : '';
+      return `<button type="button" role="listitem" class="level-card ${open ? '' : 'locked'} ${L.done ? 'done' : ''}" data-i="${i}" style="--a:${c.sky[0]};--b:${c.sky[1]};--g:${c.grass}" aria-label="Niveau ${i + 1} : ${escapeHtml(c.name)}${open ? '' : ', verrouillé'}.${rem}"><span class="lv-num">${i + 1}</span><span class="lv-flag">${c.flag}</span><span class="lv-icon">${c.icon}</span><b class="lv-name">${escapeHtml(c.name)}</b>${inner}</button>`;
+    }).join('');
+  }
+  function pickLevel(i) {
+    const card = $(`#level-grid .level-card[data-i="${i}"]`);
+    if (!levelUnlocked(levelHero, i)) { if (card) { card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); } MM.haptic('oops'); showToast('Termine la ville d’avant !'); sayText('Termine d’abord la ville d’avant !'); return; }
+    startLevel(levelHero, i);
+  }
   function safeGroundX(x) {
     x = Math.max(70, Number(x) || 70);
     for (let k = 0; k < 6; k++) {
@@ -209,13 +259,14 @@
     $('#session-timer-row').classList.toggle('hidden',sessionActive);
     setScreen('hero-select');
   }
-  function chooseHero(heroId) {
-    if (!heroes[heroId]) return;
+  function chooseHero(heroId) { if (!heroes[heroId]) return; openLevels(heroId); }
+  function startLevel(heroId, index) {
     if(!sessionActive){sessionActive=true;sessionElapsed=0;sessionTimerLimit=Number($('#session-timer-select').value)||0;stopAfterMission=false;timerWarningSent=false;timerAnnouncementPending=false;save.sessionActive=true;save.sessionElapsed=0;save.sessionTimerLimit=sessionTimerLimit;save.stopAfterMission=false;save.timerWarningSent=false;}$('#session-timer-row').classList.toggle('hidden',sessionActive);
     activeHero = heroId;
-    mission = createMission(heroId);
+    mission = createMission(heroId, index);
     save.missionNumber=(Number(save.missionNumber)||0)+1;save.activeDate = dayKey(); save.activeHero = heroId; save.activeMission = mission; save.progress = 0; writeSave();
     beginGame(false);
+    const c = MM.cities[index]; if (c && !timerNoticePlaying) sayText(c.say);
   }
   function beginGame(resume) {
     if (!mission || !activeHero) return;
@@ -224,6 +275,7 @@
     if (!Array.isArray(mission.stationsDone)) mission.stationsDone = [false, false, false];
     save.progress = mission.stationsDone.filter(Boolean).length;
     $('#mission-title').textContent = mission.title;
+    if (mission.city == null) { mission.city = 0; mission.level = { hero: activeHero, index: 0 }; }
     $('#progress-dots').innerHTML = mission.tasks.map((_,i)=>`<span class="progress-dot ${mission.stationsDone[i] ? 'done' : ''}"></span>`).join('');
     const rnd = seeded(mission.seed);
     const level = LV.build(activeHero, seeded(mission.seed));
@@ -238,13 +290,20 @@
     world.coins = mission.coins; world.letters = mission.letters;
     world.hintAnchor = null;
     initMonsters(level, rnd);
+    if (!mission.priorApplied && mission.level) {       // ce qui a déjà été réussi dans cette ville est conservé
+      mission.priorApplied = true; const L = readLevel(mission.level.hero, mission.level.index);
+      mission.coins.forEach(c => { if (L.stars.includes(c.id)) c.collected = true; });
+      mission.letters.forEach(l => { if (L.letters.includes(l.letter)) l.collected = true; });
+      let o = 0; mission.monsters.forEach(m => { if (L.monsters.includes(m.id)) { m.friendly = true; m.prev = true; m.order = ++o; } });
+      mission.silverGiven = !!L.silver; mission.goldGiven = !!L.gold; mission.monGiven = !!L.mon;
+    }
     updateStarCounter(); updateFriendCounter(); updateLetterCounter();
     $('#home-hint').classList.toggle('hidden', !world.stations.every(station => station.done));
     player = { x: 70, y: world.floor - 86, vx: 0, vy: 0, w: 58, h: 86, grounded: true, jumping: false, facing: 1, bob: 0, carryVx: 0 };
     player.x = safeGroundX(resume ? (mission.checkpointX || 200) : 200);
     world.checkpoint = player.x;
     world.passPts = [200, ...level.stations.map(x => x - 330)]; world.passX = Math.max(...world.passPts.filter(cp => cp <= player.x + 1));
-    mission.monsters.forEach(m => { if (m.friendly) { m.x = player.x; m.y = player.y + player.h; } });
+    mission.monsters.forEach(m => { if (m.friendly && !m.prev) { m.x = player.x; m.y = player.y + player.h; } });
     shots = []; fireballs = []; tornados = []; hitTimes = []; rewindAt = 0; litShown = -1; shootReady = 0; flipUntil = 0; hurtUntil = 0;
     swing = null; fizzle = null; turboUntil = 0; turboReady = 0; punchReady = 0; coyote = 0; gt = 0; jumpBuffer = 0;
     FX.clear(); heroAnim = newHeroAnim(); lastPromptStation = -1;
@@ -331,12 +390,12 @@
   }
   function drawSky(time){const W=view.w,p=mission?.palette||[],extra=Math.max(0,view.h-WORLD_H);const g=ctx.createLinearGradient(0,0,0,WORLD_H);g.addColorStop(0,p[0]||'#70d0f4');g.addColorStop(.67,p[2]||'#c8f1fa');g.addColorStop(1,'#e8f9e9');ctx.fillStyle=g;ctx.fillRect(0,-extra-2,W,extra+WORLD_H+4);for(let i=0;i<Math.ceil(W/260)+2;i++){const x=((i*260-world.camera*.16+time*3)%(W+260))-130,y=55+(i%3)*48;cloud(x,y,1+(i%2)*.18);}if(extra>40)for(let i=0;i<Math.ceil(W/300)+2;i++){const x=((i*300-world.camera*.1+time*2)%(W+300))-150,y=-extra*(.2+(i%3)*.25);cloud(x,y,1.1+(i%2)*.25);}}
   function cloud(x,y,s=1){ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.fillStyle='rgba(255,255,255,.78)';ctx.beginPath();ctx.ellipse(0,12,49,18,0,0,Math.PI*2);ctx.ellipse(-23,2,24,20,0,0,Math.PI*2);ctx.ellipse(0,-5,28,27,0,0,Math.PI*2);ctx.ellipse(26,4,24,19,0,0,Math.PI*2);ctx.fill();ctx.restore();}
-  function drawHills(){const W=view.w,p=mission?.palette||[];ctx.fillStyle=p[1]||'#9edba8';ctx.beginPath();ctx.moveTo(0,355);for(let x=0;x<=W;x+=5){ctx.lineTo(x,350+28*Math.sin((x+world.camera*.18)/160)+16*Math.sin(x/63));}ctx.lineTo(W,540);ctx.lineTo(0,540);ctx.fill();ctx.fillStyle='#78c98e';ctx.beginPath();ctx.moveTo(0,395);for(let x=0;x<=W;x+=5)ctx.lineTo(x,390+22*Math.sin((x+world.camera*.31)/125));ctx.lineTo(W,540);ctx.lineTo(0,540);ctx.fill();}
+  function drawHills(){const W=view.w,TH=theme();if(TH.far)MM.farDraw[TH.far](ctx,W,372,world.camera,TH.far==='fuji'?'#a9a4d0':TH.far==='dunes'?TH.dirt:TH.hill[1]);ctx.fillStyle=TH.hill[0];ctx.beginPath();ctx.moveTo(0,355);for(let x=0;x<=W;x+=5){ctx.lineTo(x,350+28*Math.sin((x+world.camera*.18)/160)+16*Math.sin(x/63));}ctx.lineTo(W,540);ctx.lineTo(0,540);ctx.fill();ctx.fillStyle=TH.hill[1];ctx.beginPath();ctx.moveTo(0,395);for(let x=0;x<=W;x+=5)ctx.lineTo(x,390+22*Math.sin((x+world.camera*.31)/125));ctx.lineTo(W,540);ctx.lineTo(0,540);ctx.fill();}
   function drawTown(time) {
     const W = view.w, cam = world.camera;
     if (activeHero === 'filou') {
       // la ville : deux rangées d'immeubles qui défilent à des vitesses différentes
-      const layers = [{ k: .2, base: 392, col: '#c4cdf0', win: '#dfe6fb', min: 150, max: 330, step: 118 }, { k: .4, base: 400, col: '#a9b8ea', win: '#cdd8f6', min: 120, max: 260, step: 140 }];
+      const TW = theme().towers, layers = [{ k: .2, base: 392, col: TW[0], win: TW[1], min: 150, max: 330, step: 118 }, { k: .4, base: 400, col: TW[2], win: TW[3], min: 120, max: 260, step: 140 }];
       layers.forEach((L, li) => {
         const i0 = Math.floor(cam * L.k / L.step) - 1;
         for (let i = i0; i < i0 + Math.ceil(W / L.step) + 3; i++) {
@@ -347,21 +406,59 @@
           if (hv % 4 === 0) { ctx.fillStyle = L.col; ctx.fillRect(x + w / 2 - 2, L.base - h - 26, 4, 28); }
         }
       });
+      drawLandmark();
       return;
     }
+    drawLandmark();
+    const TH = theme();
     for (let i = 0; i < Math.ceil(W/430)+3; i++) {
       const wx = i*430 + 80, x = wx - cam*.48; if (x < -130 || x > W+130) continue;
-      const h = 110 + (i%3)*22, w = 108 + (i%2)*25, y = 390 - h;
-      ctx.fillStyle = ['#f8bb86','#f3d27f','#b9dcec','#d7b7e6'][i%4]; roundRect(x, y, w, h, 10, true);
-      ctx.fillStyle = '#e8877d'; ctx.beginPath(); ctx.moveTo(x-9, y+4); ctx.lineTo(x+w/2, y-44); ctx.lineTo(x+w+9, y+4); ctx.closePath(); ctx.fill();
-      for (let r = 0; r < 2; r++) for (let c = 0; c < 2; c++) { ctx.fillStyle = 'rgba(255,255,255,.86)'; roundRect(x+18+c*44, y+26+r*34, 19, 23, 6, true); ctx.fillStyle = '#90cadf'; ctx.fillRect(x+26+c*44, y+26+r*34, 3, 23); ctx.fillRect(x+18+c*44, y+36+r*34, 19, 3); }
-      ctx.fillStyle = '#ab7860'; roundRect(x+w/2-13, y+h-53, 26, 53, 12, true);
+      drawHouse(i, x, 390, 108 + (i%2)*25, 110 + (i%3)*22, TH);
     }
     for (let i = 0; i < Math.ceil(W/600)+2; i++) {
-      const x = i*600 + 230 - cam*.75; if (x < -70 || x > W+70) continue;
-      ctx.fillStyle = '#946b53'; roundRect(x-7, 326, 14, 100, 7, true);
-      ctx.fillStyle = ['#69c57c','#82d58d','#60b978'][i%3]; ctx.beginPath(); ctx.arc(x, 310, 43, 0, Math.PI*2); ctx.arc(x-26, 321, 30, 0, Math.PI*2); ctx.arc(x+25, 320, 31, 0, Math.PI*2); ctx.fill();
+      const x = i*600 + 230 - cam*.75; if (x < -90 || x > W+90) continue;
+      drawTree(x, TH.treeCols[i%3], TH.tree);
+    }
+  }
+  function drawLandmark() {
+    const TH = theme(), W = view.w, cam = world.camera, fn = MM.landmarks[TH.lm]; if (!fn) return;
+    const period = 2000, i0 = Math.floor((cam * .3 - 500) / period);
+    for (let i = i0; i < i0 + 3; i++) { const lx = i * period + 900 - cam * .3; if (lx > -320 && lx < W + 320) fn(ctx, lx, 404, 1.25, TH.lmCol); }
+  }
+  function winShape(x, y, w, h, style) {
+    ctx.beginPath();
+    if (style === 'arch') { ctx.moveTo(x, y + h); ctx.lineTo(x, y + w / 2); ctx.arc(x + w / 2, y + w / 2, w / 2, Math.PI, 0); ctx.lineTo(x + w, y + h); ctx.closePath(); }
+    else if (style === 'round') ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
+    else if (typeof ctx.roundRect === 'function') ctx.roundRect(x, y, w, h, 5); else ctx.rect(x, y, w, h);
+    ctx.fill();
+  }
+  function drawHouse(i, x, base, w, h, TH) {
+    const y = base - h, hv = hash('h' + i);
+    ctx.fillStyle = TH.houses[i % 4]; roundRect(x, y, w, h, 8, true);
+    ctx.fillStyle = TH.roofCol;
+    if (TH.house === 'peak') { ctx.beginPath(); ctx.moveTo(x - 9, y + 4); ctx.lineTo(x + w / 2, y - 46); ctx.lineTo(x + w + 9, y + 4); ctx.closePath(); ctx.fill(); }
+    else if (TH.house === 'mansard') { ctx.beginPath(); ctx.moveTo(x - 7, y + 5); ctx.lineTo(x + 12, y - 34); ctx.lineTo(x + w - 12, y - 34); ctx.lineTo(x + w + 7, y + 5); ctx.closePath(); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.5)'; winShape(x + w / 2 - 8, y - 28, 16, 20, 'arch'); }
+    else if (TH.house === 'flat') { ctx.fillRect(x - 5, y - 9, w + 10, 12); if (hv % 2) { ctx.fillStyle = '#8a6a50'; ctx.fillRect(x + 14, y - 40, 26, 30); ctx.beginPath(); ctx.moveTo(x + 10, y - 40); ctx.lineTo(x + 27, y - 52); ctx.lineTo(x + 44, y - 40); ctx.fill(); } }
+    else if (TH.house === 'dome') { ctx.beginPath(); ctx.arc(x + w / 2, y + 2, w * .46, Math.PI, 0); ctx.fill(); ctx.fillRect(x + w / 2 - 2, y - w * .46 - 12, 4, 12); }
+    else if (TH.house === 'terrace') { ctx.fillRect(x - 4, y - 8, w + 8, 11); for (let k = 0; k < 5; k++) ctx.fillRect(x + k * (w / 4.4), y - 18, 9, 11); }
+    else if (TH.house === 'pagoda') {
+      for (let t = 0; t < 2; t++) { const yy = y + 2 - t * 30, ww = w + 16 - t * 24; ctx.beginPath(); ctx.moveTo(x + w / 2 - ww / 2 - 8, yy + 2); ctx.quadraticCurveTo(x + w / 2 - ww / 4, yy - 4, x + w / 2, yy - 24); ctx.quadraticCurveTo(x + w / 2 + ww / 4, yy - 4, x + w / 2 + ww / 2 + 8, yy + 2); ctx.lineTo(x + w / 2 + ww / 2, yy + 8); ctx.lineTo(x + w / 2 - ww / 2, yy + 8); ctx.closePath(); ctx.fill(); if (!t) { ctx.fillStyle = TH.houses[(i + 1) % 4]; ctx.fillRect(x + w / 2 - 22, yy - 20, 44, 20); ctx.fillStyle = TH.roofCol; } }
+    }
+    for (let r = 0; r < 2; r++) for (let c = 0; c < 2; c++) { ctx.fillStyle = 'rgba(255,255,255,.88)'; winShape(x + 18 + c * 44, y + 26 + r * 34, 19, 23, TH.win); ctx.fillStyle = 'rgba(70,130,170,.55)'; ctx.fillRect(x + 26 + c * 44, y + 28 + r * 34, 3, 20); }
+    ctx.fillStyle = 'rgba(80,50,40,.55)'; roundRect(x + w / 2 - 13, y + h - 50, 26, 50, 12, true);
+  }
+  function drawTree(x, col, kind) {
+    ctx.fillStyle = '#946b53';
+    if (kind === 'palm') {
+      ctx.beginPath(); ctx.moveTo(x - 6, 426); ctx.quadraticCurveTo(x + 8, 360, x + 4, 300); ctx.lineTo(x + 11, 300); ctx.quadraticCurveTo(x + 18, 360, x + 8, 426); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = col; for (let k = 0; k < 6; k++) { const a = -Math.PI / 2 + (k - 2.5) * .62; ctx.beginPath(); ctx.moveTo(x + 7, 300); ctx.quadraticCurveTo(x + 7 + Math.cos(a) * 36, 300 + Math.sin(a) * 36 - 12, x + 7 + Math.cos(a) * 66, 300 + Math.sin(a) * 40 + 24); ctx.quadraticCurveTo(x + 7 + Math.cos(a) * 34, 300 + Math.sin(a) * 30 + 2, x + 7, 304); ctx.fill(); }
+    } else if (kind === 'pine') {
+      roundRect(x - 6, 396, 12, 30, 5, true); ctx.fillStyle = col; for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.moveTo(x - 34 + k * 7, 404 - k * 36); ctx.lineTo(x, 340 - k * 36); ctx.lineTo(x + 34 - k * 7, 404 - k * 36); ctx.closePath(); ctx.fill(); }
+    } else {
+      roundRect(x - 7, 326, 14, 100, 7, true);
+      ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, 310, 43, 0, Math.PI*2); ctx.arc(x-26, 321, 30, 0, Math.PI*2); ctx.arc(x+25, 320, 31, 0, Math.PI*2); ctx.fill();
       ctx.fillStyle = 'rgba(255,255,255,.23)'; ctx.beginPath(); ctx.arc(x-13, 291, 14, 0, Math.PI*2); ctx.fill();
+      if (kind === 'cherry') { ctx.fillStyle = 'rgba(255,255,255,.55)'; for (let k = 0; k < 7; k++) { ctx.beginPath(); ctx.arc(x - 40 + k * 13, 300 + (k % 3) * 14, 3, 0, 6.3); ctx.fill(); } }
     }
   }
   // petites lucioles qui flottent dans l'air
@@ -381,9 +478,10 @@
     const W = view.w, p = mission?.palette || [], F = world.floor, cam = world.camera;
     const inGap = (x, m = 0) => world.gaps.some(g => x > g.x - m && x < g.x + g.w + m);
     ctx.fillStyle = p[1] || '#76c78d'; ctx.fillRect(0, F, W, 120);
-    ctx.fillStyle = '#8ed49c'; ctx.fillRect(0, F+13, W, 7);
-    ctx.fillStyle = '#d6b785'; ctx.fillRect(0, F+25, W, 145);
-    ctx.fillStyle = '#c5a577'; for (let i = -1; i < Math.ceil(W/80)+2; i++) { const x = ((i*80 - cam*.9) % (W+80)); ctx.fillRect(x, F+42, 48, 3); }
+    const TH = theme();
+    ctx.fillStyle = TH.edge; ctx.fillRect(0, F+13, W, 7);
+    ctx.fillStyle = TH.dirt; ctx.fillRect(0, F+25, W, 145);
+    ctx.fillStyle = TH.line; for (let i = -1; i < Math.ceil(W/80)+2; i++) { const x = ((i*80 - cam*.9) % (W+80)); ctx.fillRect(x, F+42, 48, 3); }
     world.gaps.forEach(gap => {
       const x = gap.x - cam; if (x + gap.w < 0 || x > W) return;
       if (gap.lava) {
@@ -426,11 +524,9 @@
       const x = item.x - cam; if (x < -90 || x > W+90 || inGap(item.x, 40)) return;
       if (activeHero === 'filou' && world.platforms.some(pl => pl.bld && item.x > pl.x - 30 && item.x < pl.x + pl.w + 30)) return;
       const y = F; ctx.save();
-      if (item.kind === 0) { ctx.fillStyle = '#8d6046'; ctx.fillRect(x-25, y-27, 50, 5); ctx.fillRect(x-23, y-40, 46, 5); ctx.fillRect(x-18, y-22, 4, 18); ctx.fillRect(x+14, y-22, 4, 18); }
-      else if (item.kind === 1) { ctx.fillStyle = '#8b6748'; ctx.fillRect(x-3, y-56, 6, 56); ctx.fillStyle = '#ffedb0'; roundRect(x-25, y-70, 50, 25, 7, true); ctx.fillStyle = '#557c76'; ctx.font = '16px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('➜', x, y-52); }
-      else if (item.kind === 2) { ctx.fillStyle = '#c48461'; roundRect(x-24, y-19, 48, 19, 5, true); flower(x-12, y-19, item.flower); flower(x+3, y-21, (item.flower+1)%4); flower(x+15, y-18, (item.flower+2)%4); }
-      else if (item.kind === 3) { ctx.fillStyle = '#8b6748'; ctx.fillRect(x-3, y-68, 6, 68); ctx.fillStyle = '#f7d66e'; roundRect(x-12, y-78, 24, 18, 8, true); ctx.fillStyle = 'rgba(255,239,163,.35)'; ctx.beginPath(); ctx.arc(x, y-64, 24, 0, Math.PI*2); ctx.fill(); }
-      else { ctx.fillStyle = '#b6a27e'; ctx.beginPath(); ctx.ellipse(x, y-3, 24, 6, 0, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = '#fff0c0'; ctx.beginPath(); ctx.arc(x-7, y-4, 2, 0, Math.PI*2); ctx.arc(x+6, y-3, 2, 0, Math.PI*2); ctx.fill(); }
+      const prop = TH.props[item.kind % 5], size = [40, 36, 44, 34, 38][item.kind % 5];
+      ctx.fillStyle = 'rgba(40,60,80,.16)'; ctx.beginPath(); ctx.ellipse(x, y + 1, size * .42, 5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.font = `${size}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillText(prop, x, y - 2);
       ctx.restore();
     });
     world.pads.forEach(pad => {
@@ -690,7 +786,7 @@
     destroyGame();
     const advance = () => {
       if (scene !== 'puzzle-screen') return;
-      puzzleTask = null; puzzleStation = null; world.checkpoint = Math.max(world.checkpoint, safeGroundX(player.x)); mission.checkpointX = world.checkpoint;
+      puzzleTask = null; puzzleStation = null; world.checkpoint = Math.max(world.checkpoint, safeGroundX(player.x)); mission.checkpointX = world.checkpoint; commitProgress(false);
       setScreen('game-screen'); startLoop();
       $('#home-hint').classList.toggle('hidden', !world.stations.every(station => station.done));
     };
@@ -715,32 +811,44 @@
   function updateLetterCounter(){const node=$('#letter-count');if(node)node.textContent=`${(mission?.letters||[]).filter(letter=>letter.collected).length}/26`;}
   function finishMission() {
     if (scene === 'ending-screen') return;
+    commitProgress(true);
+    const lv = mission.level || { hero: activeHero, index: 0 }, city = MM.cities[lv.index] || MM.cities[0];
+    lastFinished = { hero: lv.hero, index: lv.index };
     save.activeMission = null; save.activeHero = null; save.activeDate = null; save.progress = 0; save.sessionElapsed = sessionElapsed; save.stopAfterMission = stopAfterMission; writeSave();
     $('#ending-hero').innerHTML = `<span class="sprite" style="--col:2;--row:${HERO_ROW[activeHero] ?? 0}"></span>`;
+    $('#ending-city').textContent = `${city.flag} ${city.name} ${city.icon}`;
     const caught = mission.monsters.filter(m => m.friendly).sort((a, b) => a.order - b.order), friendCount = caught.length;
-    $('#ending-friends').innerHTML = `<div class="ten-frame" aria-label="${friendCount} monstres capturés sur ${MON_TOTAL}">${Array.from({ length: MON_TOTAL }, (_, i) => caught[i] ? `<span class="mon-chip on" style="${monsterChipStyle(caught[i].type + 5, 38)}"></span>` : '<span class="mon-chip"></span>').join('')}</div><small>${friendCount}/${MON_TOTAL}</small>`;
-    $('#ending-friends').classList.remove('hidden');
+    const found = mission.letters.filter(item => item.collected).map(item => item.letter);
+    const stars = mission.coins.filter(s => s.collected).length, qDone = Math.max(readLevel(lv.hero, lv.index).q || 0, (mission.stationsDone || []).filter(Boolean).length);
+    const rows = [['⭐', 'étoiles', stars, mission.coins.length], ['🔤', 'lettres', found.length, mission.letters.length || 26], ['👾', 'monstres', friendCount, MON_TOTAL], ['❓', 'questions', qDone, 3]];
+    $('#ending-stats').innerHTML = rows.map(([icon, label, a, b]) => `<div class="stat ${a >= b ? 'full' : ''}" aria-label="${label} : ${a} sur ${b}"><span class="stat-i" aria-hidden="true">${icon}</span><div class="stat-bar"><i style="--w:${b ? Math.round(a / b * 100) : 0}%"></i></div><b>${a}/${b}</b><em>${a >= b ? '✓' : 'reste ' + (b - a)}</em></div>`).join('');
+    const left = rows.filter(r => r[2] < r[3]);
+    const rem = $('#ending-remaining');
+    rem.classList.toggle('all', !left.length);
+    rem.innerHTML = left.length ? 'Il reste : ' + left.map(([icon, , a, b]) => `<span class="rem">${icon} ${b - a}</span>`).join('') : '🎉 Tout est réussi dans cette ville !';
+    $('#ending-friends').innerHTML = `<div class="ten-frame" aria-label="${friendCount} monstres capturés sur ${MON_TOTAL}">${Array.from({ length: MON_TOTAL }, (_, i) => caught[i] ? `<span class="mon-chip on" style="${monsterChipStyle(caught[i].type + 5, 38)}"></span>` : '<span class="mon-chip"></span>').join('')}</div>`;
+    $('#ending-friends').classList.toggle('hidden', !friendCount);
     const won = mission.stickersWon || [], S = MM.stickers, box = $('#ending-stickers');
     box.classList.toggle('hidden', !won.length);
     box.innerHTML = won.length ? `<div class="sticker-row">${won.map((w, n) => { const info = S.info(w.id); return `<span class="${w.tier}" style="--r:${n % 2 ? 5 : -5}deg;--d:${n * 90}ms" aria-label="${escapeHtml(cap(info.n))}">${info.e}</span>`; }).join('')}</div>` : '';
-    const found = mission.letters.filter(item => item.collected).map(item => item.letter);
-    const stars = mission.coins.filter(s => s.collected).length;
-    $('#ending-stars').textContent = `⭐ ${stars}/${mission.coins.length}`;
     $('#alphabet-grid').innerHTML = ALPHABET.map(letter => `<span class="alphabet-letter ${found.includes(letter) ? 'found' : 'missing'}" aria-label="${letter} ${found.includes(letter) ? 'récoltée' : 'pas encore récoltée'}">${letter}</span>`).join('');
     $('#alphabet-summary').textContent = `${found.length}/26`;
     $('.rest-card').classList.toggle('hidden', !stopAfterMission);
     $('#new-mission-button').classList.toggle('hidden', stopAfterMission);
-    $('#finish-button').innerHTML = stopAfterMission ? 'Terminer <span>♥</span>' : 'Terminer <span>♥</span>';
+    $('#replay-button').classList.toggle('hidden', stopAfterMission);
+    $('#next-level-button').classList.toggle('hidden', stopAfterMission || lv.index >= MM.cities.length - 1);
     setScreen('ending-screen'); sound('finish'); MM.haptic('good');
+    const parts = left.map(([, label, a, b]) => `${b - a} ${label}`);
+    if (!timerNoticePlaying) setTimeout(() => { if (scene === 'ending-screen') sayText(left.length ? `Bravo ! Il te reste ${parts.join(', ')}.` : 'Bravo ! Tu as tout réussi dans cette ville !'); }, 900);
   }
   function quitMission() {
-    cancelSpeech();
+    cancelSpeech(); commitProgress(false);
+    const hero = activeHero;
     save.activeMission = null; save.activeHero = null; save.activeDate = null; save.progress = 0; writeSave();
     mission = null; activeHero = null; puzzleTask = null; puzzleStation = null;
     releaseControls();
-    startToday(); // propose de choisir une nouvelle mission (ou le repos si le minuteur est écoulé)
+    if (hero && !(sessionActive && stopAfterMission)) openLevels(hero); else startToday();
   }
-  // Récompense : un autocollant (nouveau de préférence) et quelques pièces.
   function moveAndCollide(dt, turboOn) {
     const F = world.floor, wasGrounded = player.grounded;
     const previousX = player.x, previousY = player.y, previousFeet = previousY + player.h;
@@ -858,6 +966,7 @@
         FX.sparkle(star.x, star.y, 7, ['#ffd84a', '#fff1a0', '#ffffff'], 130); FX.ring(star.x, star.y, '#fff1a0', 34, .3, 4);
         sound('star'); MM.haptic('star'); writeSave();
         if (!mission.silverGiven && world.coins.every(s => s.collected)) { mission.silverGiven = true; awardSticker('silver'); }
+        commitProgress(false);
       }
     }
     for (const letter of world.letters) {
@@ -868,6 +977,7 @@
         FX.sparkle(letter.x, letter.y, 14, LETTER_COLORS, 190); FX.ring(letter.x, letter.y, '#ffffff', 56, .4, 5); FX.text(letter.x, letter.y - 26, letter.letter, '#ffffff', 40);
         sound('coin'); MM.haptic('letter'); if (!timerNoticePlaying) sayText(letter.letter); writeSave();
         if (!mission.goldGiven && world.letters.every(l => l.collected)) { mission.goldGiven = true; awardSticker('gold'); }
+        commitProgress(false);
       }
     }
     void cx;
@@ -896,6 +1006,15 @@
     sound('sticker'); MM.haptic(tier === 'gold' ? 'gold' : 'silver');
     if (!timerNoticePlaying) sayText(`${tier === 'gold' ? 'Autocollant d’or' : 'Autocollant d’argent'} : ${info.n} !`);
   }
+  function openStickerDetail(id) {
+    const info = MM.stickers.info(id), T = MM.stickers.TIERS[info.tier];
+    $('#sd-emoji').textContent = info.e; $('#sd-medal').textContent = T.medal; $('#sd-name').textContent = cap(info.n); $('#sd-desc').textContent = info.d || '';
+    $('#sticker-detail').classList.remove('hidden');
+    stickerSpeech = `${cap(info.n)}. ${info.d || ''}`; if (!timerNoticePlaying) sayText(stickerSpeech);
+    MM.haptic('tap');
+  }
+  function closeStickerDetail() { $('#sticker-detail').classList.add('hidden'); cancelSpeech(); }
+  let stickerSpeech = '';
   function renderAlbum(page) {
     const S = MM.stickers, album = save.album || {};
     page = Math.max(0, Math.min(S.PAGES.length - 1, page ?? save.albumPage ?? 0)); save.albumPage = page;
@@ -909,7 +1028,7 @@
     $('#album-grid').innerHTML = pg.slots.map((slot, si) => {
       const id = page * S.PER_PAGE + si, count = album[id] || 0;
       return count > 0
-        ? `<div class="album-slot got ${slot.tier}" role="listitem" aria-label="${escapeHtml(cap(slot.n))}"><i class="medal">${S.TIERS[slot.tier].medal}</i><span>${slot.e}</span>${count > 1 ? `<b class="count">×${count}</b>` : ''}</div>`
+        ? `<div class="album-slot got ${slot.tier}" role="listitem" data-id="${id}" tabindex="0" aria-label="${escapeHtml(cap(slot.n))}"><i class="medal">${S.TIERS[slot.tier].medal}</i><span>${slot.e}</span>${count > 1 ? `<b class="count">×${count}</b>` : ''}</div>`
         : `<div class="album-slot ${slot.tier}" role="listitem" aria-label="Autocollant ${S.TIERS[slot.tier].label.toLowerCase()} à gagner"><i class="medal">${S.TIERS[slot.tier].medal}</i><span class="ghost">${slot.e}</span></div>`;
     }).join('');
     $('#album-total').textContent = `${S.owned(album)}/${S.TOTAL}`;
@@ -934,7 +1053,7 @@
   function sprinkle(x, y) { FX.sparkle(x, y, 14); }
   function drawBuilding(pl) {
     const W = view.w, F = world.floor, x = pl.x - world.camera; if (x < -260 || x > W + 60) return;
-    const top = pl.y, h = F - top, w = pl.w, c = pl.bld.color;
+    const TH = theme(), top = pl.y, h = F - top, w = pl.w, c = TH.houses[hash(`${pl.x}`) % 4];
     ctx.fillStyle = c; roundRect(x, top + 6, w, h - 6, 6, true);
     ctx.strokeStyle = 'rgba(80,50,40,.35)'; ctx.lineWidth = 4; roundRect(x, top + 6, w, h - 6, 6, false);
     ctx.fillStyle = 'rgba(0,0,0,.09)'; ctx.fillRect(x + w - 14, top + 14, 14, h - 14);
@@ -943,12 +1062,12 @@
     const gx = x + (w - cols * 38 + 12) / 2;
     for (let r = 0; r < rows; r++) for (let k = 0; k < cols; k++) {
       const lit = (hash(`${pl.x}-${r}-${k}`) % 3) === 0;
-      ctx.fillStyle = lit ? '#ffe9a0' : '#e8f5ff'; roundRect(gx + k * 38, top + 28 + r * 44, 26, 30, 6, true);
+      ctx.fillStyle = lit ? '#ffe9a0' : '#e8f5ff'; winShape(gx + k * 38, top + 28 + r * 44, 26, 30, TH.win);
       ctx.fillStyle = 'rgba(70,120,160,.35)'; ctx.fillRect(gx + k * 38 + 12, top + 28 + r * 44, 2, 30); ctx.fillRect(gx + k * 38, top + 42 + r * 44, 26, 2);
     }
     ctx.fillStyle = '#a56f58'; roundRect(x + w / 2 - 15, F - 46, 30, 46, 14, true);
     // toit : la plateforme sur laquelle on atterrit
-    ctx.fillStyle = pl.bld.roof; roundRect(x - 8, top - 4, w + 16, 20, 7, true);
+    ctx.fillStyle = TH.roof; roundRect(x - 8, top - 4, w + 16, 20, 7, true);
     ctx.fillStyle = 'rgba(255,255,255,.35)'; roundRect(x - 2, top - 2, w + 4, 6, 4, true);
     if (hash(`${pl.x}`) % 2) { ctx.fillStyle = '#9aa6bd'; roundRect(x + w - 56, top - 22, 34, 20, 4, true); ctx.fillStyle = '#7d8aa3'; ctx.fillRect(x + w - 56, top - 8, 34, 4); }
     else { ctx.strokeStyle = '#7d8aa3'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x + 40, top - 4); ctx.lineTo(x + 40, top - 36); ctx.stroke(); ctx.fillStyle = '#ff6b6b'; ctx.beginPath(); ctx.arc(x + 40, top - 38, 4, 0, Math.PI*2); ctx.fill(); }
@@ -963,13 +1082,13 @@
     const halo = () => { ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 11; ctx.stroke(); ctx.strokeStyle = DARK; ctx.lineWidth = 5; ctx.stroke(); };
     if (b.kind === 'boulder') {
       ctx.beginPath(); ctx.moveTo(x + 4, F); ctx.lineTo(x + 2, F - b.h * .62); ctx.lineTo(x + b.w * .2, top + b.h * .12); ctx.lineTo(x + b.w * .5, top); ctx.lineTo(x + b.w * .82, top + b.h * .1); ctx.lineTo(x + b.w, F - b.h * .5); ctx.lineTo(x + b.w - 4, F); ctx.closePath();
-      halo(); const g = ctx.createLinearGradient(x, top, x, F); g.addColorStop(0, '#8d97a8'); g.addColorStop(1, '#5b6578'); ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = DARK; ctx.lineWidth = 4; ctx.stroke();
+      halo(); const g = ctx.createLinearGradient(x, top, x, F); g.addColorStop(0, theme().rock[0]); g.addColorStop(1, theme().rock[1]); ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = DARK; ctx.lineWidth = 4; ctx.stroke();
       ctx.fillStyle = 'rgba(255,255,255,.4)'; ctx.beginPath(); ctx.ellipse(x + b.w * .34, top + b.h * .34, b.w * .16, b.h * .09, -.5, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(x + b.w * .66, F - b.h * .22, b.w * .2, b.h * .12, .3, 0, Math.PI * 2); ctx.fill();
       if (damaged) { ctx.strokeStyle = '#1b1f27'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x + b.w * .5, top + 6); ctx.lineTo(x + b.w * .44, top + b.h * .3); ctx.lineTo(x + b.w * .56, top + b.h * .5); ctx.lineTo(x + b.w * .46, top + b.h * .75); ctx.stroke(); }
     } else if (b.kind === 'wall') {
-      ctx.beginPath(); ctx.rect(x, top, b.w, b.h); halo(); ctx.fillStyle = '#e0643a'; ctx.fillRect(x, top, b.w, b.h);
-      ctx.strokeStyle = '#ffe9d2'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.rect(x, top, b.w, b.h); halo(); ctx.fillStyle = theme().wall; ctx.fillRect(x, top, b.w, b.h);
+      ctx.strokeStyle = theme().brick; ctx.lineWidth = 3;
       for (let r = 1; r < b.h / 28; r++) { const yy = top + r * 28; ctx.beginPath(); ctx.moveTo(x + 2, yy); ctx.lineTo(x + b.w - 2, yy); ctx.stroke(); const off = r % 2 ? b.w * .3 : b.w * .62; ctx.beginPath(); ctx.moveTo(x + off, yy); ctx.lineTo(x + off, yy - 28); ctx.stroke(); }
       ctx.strokeStyle = DARK; ctx.lineWidth = 4; ctx.strokeRect(x, top, b.w, b.h);
       if (damaged) { ctx.strokeStyle = '#3a1608'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x + b.w * .3, top + 4); ctx.lineTo(x + b.w * .6, top + b.h * .32); ctx.lineTo(x + b.w * .38, top + b.h * .6); ctx.lineTo(x + b.w * .66, top + b.h * .9); ctx.stroke(); }
@@ -978,8 +1097,8 @@
       ctx.fillStyle = '#c47b3a'; ctx.fillRect(x + 2, top, 8, b.h); ctx.fillRect(x + b.w - 10, top, 8, b.h);
       for (let r = 0; r < 3; r++) {
         const yy = top + 14 + r * (b.h - 56) / 2;
-        ctx.fillStyle = '#fff'; ctx.fillRect(x - 4, yy, b.w + 8, 24);
-        ctx.save(); ctx.beginPath(); ctx.rect(x - 4, yy, b.w + 8, 24); ctx.clip(); ctx.fillStyle = '#e0301f';
+        ctx.fillStyle = theme().fence[0]; ctx.fillRect(x - 4, yy, b.w + 8, 24);
+        ctx.save(); ctx.beginPath(); ctx.rect(x - 4, yy, b.w + 8, 24); ctx.clip(); ctx.fillStyle = theme().fence[1];
         for (let s = -2; s < 6; s++) { ctx.beginPath(); ctx.moveTo(x - 4 + s * 14, yy + 24); ctx.lineTo(x - 4 + s * 14 + 8, yy + 24); ctx.lineTo(x - 4 + s * 14 + 20, yy); ctx.lineTo(x - 4 + s * 14 + 12, yy); ctx.closePath(); ctx.fill(); }
         ctx.restore(); ctx.strokeStyle = DARK; ctx.lineWidth = 3.5; ctx.strokeRect(x - 4, yy, b.w + 8, 24);
       }
@@ -1073,7 +1192,7 @@
   function impK(m) { return m.type === 3 ? .56 : .44; }
   function setImp(m, st) { m.st = st; m.stT = 0; }
   function startAttack(m) {
-    m.cool = 2.3 + Math.random() * 1.7; m.dir = Math.sign(player.x + player.w / 2 - m.x) || 1; m.shots = m.type === 4 ? 2 : 1;
+    m.cool = (2.3 + Math.random() * 1.7) * (1.35 - (mission?.city || 0) * .045); m.dir = Math.sign(player.x + player.w / 2 - m.x) || 1; m.shots = m.type === 4 ? 2 : 1;
     setImp(m, m.type === 1 ? 'crouch' : m.type === 3 ? 'channel' : 'charge'); m.tx = player.x + player.w / 2;
     FX.dots(m.x, m.y - 60, 4, ['#ff8a2a', '#ffd23f'], 70);
   }
@@ -1149,7 +1268,7 @@
   }
   function updateFollowers(dt) {
     let leaderX = player.x + player.w / 2 - player.facing * 56;
-    const followers = world.monsters.filter(m => m.friendly).sort((a, b) => a.order - b.order);
+    const followers = world.monsters.filter(m => m.friendly && !m.prev).sort((a, b) => a.order - b.order);
     followers.forEach(m => {
       const spacing = 46, targetX = leaderX - player.facing * spacing, targetY = player.y + player.h - (m.type === 2 ? 70 : 0) - Math.sin(gt * 4 + m.id) * 3;
       m.x += (targetX - m.x) * Math.min(1, dt * 7); m.y += (targetY - m.y) * Math.min(1, dt * 6); leaderX = m.x;
@@ -1226,7 +1345,8 @@
     sound('sticker'); MM.haptic('friend');
     if (n % 10 === 0) { FX.confetti(player.x + player.w / 2, player.y, 30); FX.shake(2, .25); MM.haptic('gold'); }
     const pop = $('#friend-counter'); if (pop) { pop.classList.remove('pop'); void pop.offsetWidth; pop.classList.add('pop'); }
-    updateFriendCounter(); speakCount(n); writeSave();
+    updateFriendCounter(); speakCount(n); writeSave(); commitProgress(false);
+    if (!mission.monGiven && n >= MON_TOTAL) { mission.monGiven = true; setTimeout(() => { if (scene === 'game-screen') { awardSticker('silver'); commitProgress(false); } }, 2400); }
   }
   function drawMonster(m, time) {
     if (m.friendly || !s2ok()) return drawFriend(m, time);
@@ -1268,6 +1388,7 @@
     ctx.restore();
   }
   function drawFriend(m, time) {
+    if (m.prev) return;
     const cam = world.camera, x = m.x - cam; if (x < -160 || x > view.w + 160) return;
     const index = m.type + (m.friendly ? 5 : 0), [hw, , sh] = MON[index];
     const scale = m.friendly ? .8 : 1, k = hw * scale / sh;
@@ -1468,6 +1589,14 @@
 
   $('#start-button').addEventListener('click',startToday);
   document.querySelectorAll('.hero-card').forEach(card=>card.addEventListener('click',()=>chooseHero(card.dataset.hero)));
+  $('#level-grid').addEventListener('click',e=>{const card=e.target.closest('.level-card');if(card)pickLevel(Number(card.dataset.i));});
+  $('#album-grid').addEventListener('click',e=>{const slot=e.target.closest('.album-slot.got');if(slot)openStickerDetail(Number(slot.dataset.id));});
+  $('#sticker-close').addEventListener('click',closeStickerDetail);
+  $('#sd-listen').addEventListener('click',()=>{cancelSpeech();sayText(stickerSpeech);});
+  $('#sticker-detail').addEventListener('click',e=>{if(e.target.id==='sticker-detail')closeStickerDetail();});
+  $('#level-back').addEventListener('click',()=>setScreen('hero-select'));
+  $('#replay-button').addEventListener('click',()=>{if(lastFinished)startLevel(lastFinished.hero,lastFinished.index);});
+  $('#next-level-button').addEventListener('click',()=>{if(lastFinished)startLevel(lastFinished.hero,lastFinished.index+1);});
   document.querySelectorAll('[data-go="home"]').forEach(b=>b.addEventListener('click',()=>setScreen('home')));
   $('.settings-open').addEventListener('click',()=>setScreen('settings-screen'));
   $('#help-art-button').addEventListener('click',()=>setScreen('howto-screen'));
@@ -1483,7 +1612,7 @@
     $('#stat-questions').textContent = `${save.progress || 0}/${mission?.tasks?.length || 3}`;
     setScreen('stats-screen');
   }
-  $('#restart-button').addEventListener('click',()=>{if(!activeHero)return;mission=createMission(activeHero);save.activeMission=mission;save.activeHero=activeHero;save.progress=0;writeSave();beginGame(false);});
+  $('#restart-button').addEventListener('click',()=>{if(!activeHero)return;mission=createMission(activeHero,mission?.level?.index??0);save.activeMission=mission;save.activeHero=activeHero;save.progress=0;writeSave();beginGame(false);});
   $('#stats-button').addEventListener('click',showStats);$('#stats-back-button').addEventListener('click',()=>setScreen('pause-screen'));
   $('#stats-resume-button').addEventListener('click',()=>$('#resume-button').click());
   $('#puzzle-read-button').addEventListener('click',readPuzzleAloud);
@@ -1498,7 +1627,7 @@
   $('#album-tabs').addEventListener('click', e => { const tab = e.target.closest('.album-tab'); if (tab) { renderAlbum(Number(tab.dataset.page)); MM.haptic('tap'); } });
   document.addEventListener('visibilitychange', updateMusic);
   fetch('version.json', { cache: 'no-store' }).then(r => r.json()).then(v => { $('#home-version').textContent = `v${v.version}`; }).catch(() => {});
-  $('#new-mission-button').addEventListener('click',()=>{if(!stopAfterMission)setScreen('hero-select');});
+  $('#new-mission-button').addEventListener('click',()=>{if(!stopAfterMission)openLevels(lastFinished?lastFinished.hero:levelHero);});
   $('#finish-button').addEventListener('click',endSession);
   $('#sound-button').addEventListener('click',()=>setAudioEnabled(!audioEnabled));
   $('#music-toggle').checked=audioEnabled;$('#effects-toggle').checked=effectsEnabled;

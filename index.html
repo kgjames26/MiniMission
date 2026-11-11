@@ -88,6 +88,16 @@
         <div id="session-timer-row" class="session-timer-row"><label for="session-timer-select">Minuteur de partie <span>(facultatif)</span></label><select id="session-timer-select"><option value="0">Désactivé</option><option value="300">5 minutes</option><option value="600">10 minutes</option><option value="900">15 minutes</option><option value="1200">20 minutes</option><option value="1800">30 minutes</option><option value="2700">45 minutes</option><option value="3600">1 heure</option></select></div>
       </section>
 
+
+      <section id="level-screen" class="screen level-screen" aria-label="Choisir une ville">
+        <header class="screen-top">
+          <button id="level-back" class="round-btn" type="button" aria-label="Changer de héros">←</button>
+          <h2 class="screen-title"><span id="level-hero" class="level-hero" aria-hidden="true"></span><span id="level-title" class="t-red">Ville</span></h2>
+          <span class="top-spacer"></span>
+        </header>
+        <div id="level-grid" class="level-grid" role="list"></div>
+      </section>
+
       <section id="howto-screen" class="screen howto-screen" aria-label="Comment jouer">
         <header class="screen-top">
           <button class="round-btn" type="button" data-go="home" aria-label="Retour à l’accueil">←</button>
@@ -127,6 +137,11 @@
           <div id="album-tabs" class="album-tabs" role="tablist"></div>
           <p id="album-page-title" class="album-page-title"></p>
           <div id="album-grid" class="album-grid" role="list"></div>
+          <div id="sticker-detail" class="sticker-detail hidden" role="dialog" aria-modal="true" aria-label="Détail de l’autocollant">
+            <div class="sd-card"><button id="sticker-close" class="sd-close" type="button" aria-label="Fermer">×</button>
+              <div id="sd-emoji" class="sd-emoji"></div><div id="sd-medal" class="sd-medal"></div><h3 id="sd-name"></h3><p id="sd-desc"></p>
+              <button id="sd-listen" class="sd-listen" type="button" aria-label="Écouter">🔊</button></div>
+          </div>
           <div class="album-legend" aria-hidden="true"><span>🥉 ❓</span><span>🥈 ⭐</span><span>🥇 🔤</span><b id="album-total">0/60</b></div>
         </div>
       </section>
@@ -193,17 +208,25 @@
         </div>
       </section>
 
-      <section id="ending-screen" class="screen ending-screen" aria-label="Mission terminée">
+      <section id="ending-screen" class="screen ending-screen" aria-label="Niveau terminé">
         <div class="ending-confetti" aria-hidden="true"><i>✦</i><i>✧</i><i>★</i><i>✦</i><i>♥</i><i>✧</i></div>
         <div class="ending-inner">
           <div id="ending-hero" class="ending-hero" aria-hidden="true"></div>
-          <div class="ending-copy"><h2>Bravo&nbsp;!</h2><p id="ending-stars" class="ending-stars">⭐ 0/0</p>
+          <div class="ending-copy">
+            <h2>Bravo&nbsp;!</h2>
+            <p id="ending-city" class="ending-city"></p>
+            <div id="ending-stats" class="stats-sheet" aria-live="polite"></div>
+            <p id="ending-remaining" class="ending-remaining"></p>
             <div id="ending-stickers" class="ending-stickers hidden" aria-live="polite"></div>
             <div id="ending-friends" class="ending-friends hidden" aria-live="polite"></div>
             <section class="ending-alphabet" aria-label="Alphabet récolté"><div id="alphabet-grid" class="alphabet-grid" role="list"></div><p id="alphabet-summary">0/26</p></section>
             <div class="rest-card"><span class="rest-stars">🌙 ✦ ✦</span></div>
-            <button id="new-mission-button" class="secondary-button" type="button">Nouvelle mission <span>➜</span></button>
-            <button id="finish-button" class="primary-button" type="button">Terminer <span>♥</span></button>
+            <div class="ending-buttons">
+              <button id="new-mission-button" class="primary-button" type="button">🏠 Menu</button>
+              <button id="replay-button" class="secondary-button" type="button">↻ Rejouer</button>
+              <button id="next-level-button" class="secondary-button hidden" type="button">Suivant ➜</button>
+              <button id="finish-button" class="secondary-button" type="button">Terminer <span>♥</span></button>
+            </div>
           </div>
         </div>
       </section>
@@ -217,6 +240,7 @@
     <script src="minigames.js" defer></script>
     <script src="fx.js" defer></script>
     <script src="levels.js" defer></script>
+    <script src="cities.js" defer></script>
     <script src="app.js" defer></script>
   </body>
 </html>

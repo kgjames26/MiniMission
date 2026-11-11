@@ -105,13 +105,25 @@
         return len;
       },
       /* ---- Filou ---- */
-      swingGap(x) {
-        const approach = r(170, 230), gx = x + approach;
+      // plusieurs balancements d'affilée : on se pose à peine, puis on repart sur la toile
+      swingChain(x) {
+        const n = rnd() < .45 ? 3 : 2; let end = x, first = true;
+        for (let k = 0; k < n; k++) {
+          const before = c.log.length, len = first ? SEG.swingGap(end) : SEG.swingGap(end, { approach: 262 });
+          const g = c.gaps[c.gaps.length - 1];
+          if (c.log[c.log.length - 1] === 'swingGap!') { end = (first ? end + len : end + len); break; }
+          void before; end = g.x + g.w; first = false;
+        }
+        const last = c.gaps[c.gaps.length - 1];
+        return Math.max(end, last.x + last.w) + 470 - x;
+      },
+      swingGap(x, opts) {
+        const approach = (opts && opts.approach) || r(170, 230), gx = x + approach;
         for (let attempt = 0; attempt < 6; attempt++) {
           const w = attempt < 4 ? r(310, 420) : r(260, 300);
           const right = { x0: gx + w, x1: gx + w + 520, y: F }, left = { x0: gx - 800, x1: gx, y: F };
           const found = findAnchor({
-            starts: [gx - 250, gx - 190, gx - 130, gx - 70, gx - 12], ayList: [F - 360, F - 380, F - 340, F - 400, F - 420],
+            starts: [gx - 250, gx - 190, gx - 130, gx - 70, gx - 12].filter((st) => !opts || st >= gx - approach + 12), ayList: [F - 360, F - 380, F - 340, F - 400, F - 420],
             axList: [gx + w * .5, gx + w * .42, gx + w * .58], surfaces: [left, right], target: right
           });
           if (!found) continue;
@@ -284,7 +296,7 @@
       }
     };
     const DECKS = {
-      filou: ['street', 'swingGap', 'ladder', 'rooftops', 'swingGap', 'ladder', 'street', 'swingGap', 'ladder', 'rooftops', 'swingGap'],
+      filou: ['street', 'swingGap', 'swingChain', 'ladder', 'rooftops', 'swingGap', 'swingChain', 'ladder', 'street', 'swingGap', 'rooftops', 'swingChain'],
       ziggy: ['sprint', 'bigGap', 'fenceRun', 'highTrack', 'bigGap', 'hurdles', 'fenceRun', 'bigGap', 'highTrack', 'sprint', 'fenceRun'],
       titan: ['rubble', 'boulder', 'lavaRoofs', 'wall', 'double', 'crates', 'lavaRoofs', 'ledge', 'boulder', 'wall', 'lavaRoofs']
     };

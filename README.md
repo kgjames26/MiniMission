@@ -16,9 +16,15 @@ Puis ouvrir `http://localhost:4173`. Le service worker et l'installation PWA né
 - **Ziggy — la piste de vitesse** : plaques de vitesse, grands ravins, barrières et plateformes hautes. **ACTION** déclenche le turbo (course très rapide, écrase les petits obstacles et défonce les barrières) ; **SAUT** en plein turbo donne un grand saut.
 - **Titan — le chantier** : gros rochers et murs qui bloquent le chemin (il se met en garde en poussant). **ACTION** donne un gros coup de poing ; les gros obstacles se fissurent puis éclatent (2 à 3 coups). De la lave barre parfois la route : il faut sauter d'immeuble en immeuble.
 
-## Les 20 petits monstres (pour apprendre à compter)
+## Dix villes par héros
+Après le choix du héros, on choisit une ville (`cities.js`) : Paris, New York, Tokyo, Rio, Le Caire, Londres, Venise, Sydney, Marrakech, Pékin. Chaque ville a ses couleurs, son monument en arrière-plan, ses maisons, ses arbres et son petit mobilier. Le niveau suivant s'ouvre quand on arrive au bout du précédent. La ville est toujours la même (graine fixe) : la progression (étoiles, lettres, monstres, questions, autocollants) est conservée et la carte indique ce qu'il reste à faire.
+À la fin d'un niveau, une feuille de statistiques résume ce qui a été réussi et ce qu'il reste à faire, avec un bouton « Menu ».
 
-Chaque niveau cache 20 petits monstres méchants de 5 sortes (hérisson, limon qui rebondit, chauve-souris, golem costaud, lutin de feu qui lance des boules de feu sans danger). Le **3e bouton, au-dessus de SAUT**, tire : boule de feu (Ziggy), toile magique qui enroule (Filou), coup de poing projeté (Titan). Un monstre touché devient gentil, rejoint le héros, et le **nombre est affiché en grand et dit à voix haute**. Une barre de 20 cases (groupées par 5) se remplit ; une dizaine puis les 20 déclenchent une fête. On ne peut pas tirer sur un monstre hors de l'écran.
+## Le diablotin de feu (le seul ennemi)
+Les 20 petits monstres de chaque niveau sont des diablotins de feu, avec des attaques variées : boule de feu, double tir (dont un tir en cloche), flèche de feu (arc), tornade de feu (avec avertissement au sol) et grand saut. S'il touche le héros 3 fois en 14 secondes, celui-ci revient au dernier drapeau (point de passage). On les capture en les touchant : Ziggy et Filou avec leur tir, Titan avec son coup de poing de près ou son poing projeté à distance (qui casse aussi les obstacles). Un diablotin capturé devient un ami.
+
+## Ziggy
+Le turbo ne démarre que sur ACTION ; il s'arrête tout seul après ~1 s, en changeant de direction ou en rappuyant sur ACTION.
 
 ## Fonctionnalités
 
