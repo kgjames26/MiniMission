@@ -61,3 +61,6 @@ Chaque caisse tire au hasard un jeu parmi : puzzle, labyrinthe, jeu des paires, 
 
 ## Parcours
 Trous remplis de lave ou d'eau (avec un requin qui patrouille et saute), pierres flottantes en mobilier de la ville, barres à escalader pour passer un grand immeuble, balancements par-dessus un immeuble pour Filou (demi-tour en l'air possible après la toile). Toucher un monstre compte comme un impact. Après une chute, on repart bien avant le trou.
+
+## Difficulté croissante
+Quand tout a été attrapé dans une ville (étoiles, lettres, 20 monstres, questions), la carte propose « ↻⚔️ » : on peut la refaire avec un cran de difficulté en plus (⚔️1, ⚔️2…). La progression est remise à zéro, les mêmes autocollants sont à regagner (ils s'ajoutent en doublon), les ennemis ont plus de points de vie, attaquent plus souvent et plus vite, et à partir du niveau 2 tirent un coup de plus.
