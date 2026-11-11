@@ -187,11 +187,12 @@
   const missionPalettes = { ziggy:['#b9edff','#66bd82','#ffd68a'], filou:['#c9f2ff','#65b9a4','#a8a3ef'], titan:['#bce9f7','#58a96f','#f2c76d'] };
   function createMission(heroId, index = 0) {
     const created = todaysMission(heroId, index), city = MM.cities[index] || MM.cities[0];
-    created.tier = readLevel(heroId, index).tier || 0; created.title = `${city.flag} ${city.name}${created.tier ? ' ⚔️' + created.tier : ''}`; created.city = index; created.level = { hero: heroId, index };
+    created.tier = readLevel(heroId, index).tier || 0; created.title = `${city.flag} ${city.name}${created.tier ? ' ' + swords(created.tier) : ''}`; created.city = index; created.level = { hero: heroId, index };
     created.seed = hash(`${heroId}-${index}-v5`) || 1;      // la ville est toujours la même : on peut la rejouer pour trouver ce qui manque
     created.palette = [city.sky[0], city.grass, city.sky[1]]; created.levelVersion = 6; return created;
   }
   /* ----- progression par ville : 10 niveaux par héros, le suivant s'ouvre quand on arrive au bout ----- */
+  const swords = (n) => n <= 5 ? '⚔️'.repeat(n) : '⚔️×' + n;
   const BLANK_LEVEL = { tier: 0, done: false, stars: [], letters: [], monsters: [], q: 0, silver: false, gold: false, mon: false, tot: null };
   function readLevel(hero, i) { return (save.levels && save.levels[hero] && save.levels[hero][i]) || BLANK_LEVEL; }
   function levelEntry(hero, i) { save.levels = save.levels || {}; const arr = save.levels[hero] = save.levels[hero] || []; return arr[i] = arr[i] || { ...BLANK_LEVEL, stars: [], letters: [], monsters: [] }; }
@@ -229,9 +230,9 @@
         const chip = (icon, a, b) => `<span class="lv-chip ${a >= b ? 'full' : ''}"><i style="--p:${b ? a / b : 0}"></i>${icon} ${a}/${b}</span>`;
         inner = `<div class="lv-chips">${chip('⭐', L.stars.length, t.s)}${chip('🔤', L.letters.length, t.l)}${chip('👾', L.monsters.length, t.m)}${chip('❓', L.q, t.q)}</div><div class="lv-chips"><span class="lv-chip ${L.silver ? 'med' : ''}" style="opacity:${L.silver ? 1 : .55}">🥈${L.silver ? '✓' : ''}</span><span class="lv-chip ${L.gold ? 'med' : ''}" style="opacity:${L.gold ? 1 : .55}">🥇${L.gold ? '✓' : ''}</span></div>`;
       }
-      const tierBadge = (L.tier ? `<span class="lv-tier" aria-label="Difficulté ${L.tier}">⚔️${L.tier}</span>` : '') + (levelComplete(L) ? '<span class="lv-again" aria-label="Refaire plus difficile">↻⚔️</span>' : '');
+      const tierBadge = (L.tier ? `<span class="lv-tier" aria-label="Difficulté ${L.tier}">${swords(L.tier)}</span>` : '') + (levelComplete(L) ? '<span class="lv-again" aria-label="Refaire plus difficile">↻⚔️</span>' : '');
       const rem = t ? ` Il reste ${t.s - L.stars.length} étoiles, ${t.l - L.letters.length} lettres, ${t.m - L.monsters.length} monstres.` : '';
-      return `<button type="button" role="listitem" class="level-card ${open ? '' : 'locked'} ${L.done ? 'done' : ''}" data-i="${i}" style="--a:${c.sky[0]};--b:${c.sky[1]};--g:${c.grass}" aria-label="Niveau ${i + 1} : ${escapeHtml(c.name)}${open ? '' : ', verrouillé'}.${rem}"><span class="lv-num">${i + 1}</span><span class="lv-flag">${c.flag}</span><span class="lv-icon">${c.icon}</span><b class="lv-name">${escapeHtml(c.name)}</b>${inner}${tierBadge}</button>`;
+      return `<button type="button" role="listitem" class="level-card ${open ? '' : 'locked'} ${L.done ? 'done' : ''} ${L.tier ? 'hard' : ''}" data-i="${i}" style="--a:${c.sky[0]};--b:${c.sky[1]};--g:${c.grass}" aria-label="Niveau ${i + 1} : ${escapeHtml(c.name)}${open ? '' : ', verrouillé'}.${rem}"><span class="lv-num">${i + 1}</span><span class="lv-flag">${c.flag}</span><span class="lv-icon">${c.icon}</span><b class="lv-name">${escapeHtml(c.name)}</b>${inner}${tierBadge}</button>`;
     }).join('');
   }
   function pickLevel(i) {
@@ -264,6 +265,15 @@
     setScreen('hero-select');
   }
   function chooseHero(heroId) { if (!heroes[heroId]) return; openLevels(heroId); }
+  function showTierSplash(tier) {
+    const node = $('#tier-splash'); if (!node) return;
+    node.querySelector('.ts-swords').textContent = swords(tier);
+    node.querySelector('.ts-text').textContent = 'Plus difficile !';
+    node.classList.remove('show'); void node.offsetWidth; node.classList.add('show');
+    clearTimeout(showTierSplash.t); showTierSplash.t = setTimeout(() => node.classList.remove('show'), 3200);
+    sound('turbo'); MM.haptic('gold');
+    if (!timerNoticePlaying) sayText(`Niveau de difficulté ${COUNT_WORDS[Math.min(tier, 20)] || tier} ! Les monstres sont plus costauds.`);
+  }
   function startLevel(heroId, index) {
     if(!sessionActive){sessionActive=true;sessionElapsed=0;sessionTimerLimit=Number($('#session-timer-select').value)||0;stopAfterMission=false;timerWarningSent=false;timerAnnouncementPending=false;save.sessionActive=true;save.sessionElapsed=0;save.sessionTimerLimit=sessionTimerLimit;save.stopAfterMission=false;save.timerWarningSent=false;}$('#session-timer-row').classList.toggle('hidden',sessionActive);
     activeHero = heroId;
@@ -274,7 +284,8 @@
     mission = createMission(heroId, index);
     save.missionNumber=(Number(save.missionNumber)||0)+1;save.activeDate = dayKey(); save.activeHero = heroId; save.activeMission = mission; save.progress = 0; writeSave();
     beginGame(false);
-    const c = MM.cities[index]; if (c && !timerNoticePlaying) sayText(c.say);
+    const c = MM.cities[index];
+    if (mission.tier) showTierSplash(mission.tier); else if (c && !timerNoticePlaying) sayText(c.say);
   }
   function beginGame(resume) {
     if (!mission || !activeHero) return;
@@ -803,7 +814,31 @@
   }
   function roundRect(x,y,w,h,r,fill=true){ctx.beginPath();if(typeof ctx.roundRect==='function')ctx.roundRect(x,y,w,h,Math.min(r,w/2,h/2));else{ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);}if(fill)ctx.fill();else ctx.stroke();}
   function cancelSpeech(requeueTimer=true){speechToken++;MM.music.duck(false);if(timerNoticePlaying){timerNoticePlaying=false;if(requeueTimer){timerAnnouncementPending=true;save.timerAnnouncementPending=true;writeSave();}}if('speechSynthesis'in window)window.speechSynthesis.cancel();}
-  function sayText(text,onComplete){if(!('speechSynthesis'in window)||!('SpeechSynthesisUtterance'in window))return false;cancelSpeech(false);const token=++speechToken;const utterance=new SpeechSynthesisUtterance(text);utterance.rate=.88;utterance.pitch=1.02;utterance.volume=1;const voices=window.speechSynthesis.getVoices();const voice=voices.find(v=>/^fr-BE/i.test(v.lang))||voices.find(v=>/^fr-FR/i.test(v.lang))||voices.find(v=>/^fr/i.test(v.lang))||null;utterance.voice=voice;utterance.lang=voice?.lang||'fr-FR';MM.music.duck(true);utterance.onend=()=>{if(token===speechToken){MM.music.duck(false);onComplete?.(true);}};utterance.onerror=()=>{if(token===speechToken){MM.music.duck(false);onComplete?.(false);}};window.speechSynthesis.speak(utterance);return true;}
+  /* ----- voix : on choisit la plus agréable disponible (voix naturelles/neuronales d'abord), ou celle choisie dans les réglages ----- */
+  function voiceScore(v) {
+    const n = v.name || '', l = v.lang || '';
+    if (!/^fr/i.test(l)) return -1e9;
+    let sc = 0;
+    if (/natural|neural|online|premium|enhanced|améliorée|siri/i.test(n)) sc += 60;
+    if (/google/i.test(n)) sc += 35;
+    if (/denise|eloise|élo|amélie|amelie|audrey|marie|julie|hortense|céline|celine|vivienne|brigitte|sylvie|chloé|chloe/i.test(n)) sc += 15;
+    if (/espeak|compact|robot|novelty/i.test(n)) sc -= 80;
+    if (/^fr-FR/i.test(l)) sc += 6; else if (/^fr-CA/i.test(l)) sc += 3;
+    if (!v.localService) sc += 4;
+    return sc;
+  }
+  function frenchVoices() { return (window.speechSynthesis ? speechSynthesis.getVoices() : []).filter(v => /^fr/i.test(v.lang)).sort((a, b) => voiceScore(b) - voiceScore(a)); }
+  function pickVoice() {
+    const list = frenchVoices(); if (!list.length) return null;
+    return (save.voiceName && list.find(v => v.name === save.voiceName)) || list[0];
+  }
+  function fillVoiceSelect() {
+    const sel = $('#voice-select'); if (!sel) return;
+    const list = frenchVoices(), cur = save.voiceName || '';
+    sel.innerHTML = '<option value="">Automatique (la plus agréable)</option>' + list.map(v => `<option value="${escapeHtml(v.name)}" ${v.name === cur ? 'selected' : ''}>${escapeHtml(v.name)} (${escapeHtml(v.lang)})</option>`).join('');
+  }
+  if ('speechSynthesis' in window) { try { speechSynthesis.addEventListener('voiceschanged', fillVoiceSelect); } catch {} }
+  function sayText(text,onComplete){if(!('speechSynthesis'in window)||!('SpeechSynthesisUtterance'in window))return false;cancelSpeech(false);const token=++speechToken;const utterance=new SpeechSynthesisUtterance(text);utterance.rate=.92;utterance.pitch=1.06;utterance.volume=1;const voice=pickVoice();utterance.voice=voice;utterance.lang=voice?.lang||'fr-FR';MM.music.duck(true);utterance.onend=()=>{if(token===speechToken){MM.music.duck(false);onComplete?.(true);}};utterance.onerror=()=>{if(token===speechToken){MM.music.duck(false);onComplete?.(false);}};window.speechSynthesis.speak(utterance);return true;}
   function speakTimerNotice(onComplete){if(!timerAnnouncementPending){onComplete?.();return;}timerAnnouncementPending=false;const started=sayText('On va bientôt terminer. Tu peux finir cette mission tranquillement. Après, ton héros ira se reposer.',()=>{timerNoticePlaying=false;save.timerAnnouncementPending=false;save.sessionElapsed=sessionElapsed;writeSave();onComplete?.();if(scene==='puzzle-screen'&&puzzleTask&&!puzzleResolved&&!onComplete)readPuzzleAloud();});timerNoticePlaying=started;if(!started){save.timerAnnouncementPending=false;writeSave();onComplete?.();}}
   function readPuzzleAloud() {
     if (!puzzleTask || puzzleResolved || timerNoticePlaying) return;
@@ -1733,6 +1768,8 @@
     ['pointerup', 'pointerleave', 'pointercancel'].forEach(t => btn.addEventListener(t, stop));
     btn.addEventListener('contextmenu', e => e.preventDefault());
   }
+  fillVoiceSelect();
+  $('#voice-select').addEventListener('change', e => { save.voiceName = e.target.value; writeSave(); sayText('Bonjour ! Je suis ta nouvelle voix.'); });
   $('#album-open').addEventListener('click',()=>{renderAlbum(-1);setScreen('album-screen');});
   $('#reward-continue').addEventListener('click',()=>{cancelSpeech();rewardAdvance?.();});
   $('#puzzle-close').addEventListener('click', closePuzzle);
