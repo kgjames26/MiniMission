@@ -8,6 +8,8 @@
   const shuffle = (list) => { const a = list.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const sample = (list, n) => shuffle(list).slice(0, n);
   const seeded = (seed) => { let s = seed || 1; return () => { s += 0x6D2B79F5; let t = s; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; };
+  const PICS = ["🦁", "🐘", "🚀", "🐙", "🦄", "🏰", "🐢", "🚂", "🌈", "🦋", "🐬", "🐼", "🦊", "🐸", "🐵", "🐧", "🦉", "🐞", "🐝", "🦀", "🐳", "🦒", "🦓", "🐯", "🐻", "🐨", "🐰", "🐶", "🐱", "🐭", "🐹", "🐷", "🐮", "🐔", "🦆", "🦜", "🐠", "🐡", "🦈", "🐌", "🦖", "🦕", "🐉", "🚜", "🚒", "🚓", "🚑", "🚌", "🚲", "✈️", "🚁", "⛵", "🚢", "🛸", "🌙", "☀️", "⭐", "☁️", "⛄", "🌻", "🌷", "🌹", "🌲", "🌴", "🍄", "🍎", "🍌", "🍓", "🍒", "🍇", "🍉", "🍍", "🥕", "🌽", "🍕", "🍔", "🍦", "🍩", "🍪", "🎂", "🧁", "🎈", "🎁", "🎸", "🥁", "🎺", "⚽", "🏀", "🎨", "🧸", "🪁", "🚪", "🏠", "🗼", "🎡", "🏝️", "🌋", "🗻", "🦩", "🦔", "🍋", "🥝", "🌵", "🐾"];
+  const MAZE_PAIRS = [["🐭", "🧀"], ["🐰", "🥕"], ["🐻", "🍯"], ["🐱", "🐟"], ["🐶", "🦴"], ["🐢", "🥬"], ["🐿️", "🌰"], ["🐝", "🌻"], ["🦊", "🍇"], ["🐸", "🪰"], ["🐵", "🍌"], ["🐼", "🎋"], ["🐮", "🌾"], ["🐴", "🍎"], ["🐷", "🍄"], ["🐔", "🌽"], ["🦆", "🍞"], ["🐧", "🐟"], ["🐨", "🌿"], ["🦒", "🍃"], ["🐘", "🥜"], ["🦕", "🌴"], ["🧒", "🍦"], ["👧", "🎈"], ["👦", "⚽"], ["🚀", "🌙"], ["🚂", "🏠"], ["🚜", "🌾"], ["⛵", "🏝️"], ["🚒", "🔥"], ["🚑", "🏥"], ["🚲", "🌳"], ["🦋", "🌷"], ["🐞", "🌹"], ["🐌", "🥬"], ["🐙", "💎"], ["🐠", "🪸"], ["🦀", "🐚"], ["🐬", "⭐"], ["🐳", "🌊"], ["🦄", "🌈"], ["🧚", "🪄"], ["🤖", "🔋"], ["👽", "🛸"], ["🦖", "🍖"], ["🐉", "💰"], ["🏴‍☠️", "🗝️"], ["🎅", "🎁"], ["🧑‍🚀", "🪐"], ["🦉", "🌙"]];
   const NUM_WORDS = ['zéro', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf', 'dix'];
 
   /* ---------- Questions ---------- */
@@ -59,18 +61,19 @@
   G.makeQuiz = () => pick(FAMILIES)();
 
   /* ---------- Choix des trois jeux d'une mission ---------- */
-  G.makeTasks = (legacyQuiz) => {
+  G.makeTasks = (legacyQuiz, level = 0) => {
+    const lv = Math.max(0, Math.min(9, level));
     const makeOne = (kind) => {
-      if (kind === 'maze') return { kind: 'maze', size: 5, seed: Math.floor(rand() * 4e9) + 1, say: 'Aide la souris à trouver le fromage !' };
-      if (kind === 'jigsaw') return { kind: 'jigsaw', emoji: pick(['🦁', '🐘', '🚀', '🐙', '🦄', '🏰', '🐢', '🚂', '🌈', '🦋']), cols: 2, rows: 2, say: 'Remets l’image dans le bon ordre !' };
-      if (kind === 'simon') return { kind: 'simon', length: 3, say: 'Regarde bien les couleurs, puis refais comme moi !' };
+      if (kind === 'maze') { const [seeker, goal] = pick(MAZE_PAIRS); return { kind: 'maze', size: 4 + Math.floor(lv / 3) + (rand() < .35 ? 1 : 0), seed: Math.floor(rand() * 4e9) + 1, seeker, goal, say: `Aide ${seeker} à trouver ${goal} !` }; }
+      if (kind === 'jigsaw') return { kind: 'jigsaw', emoji: pick(PICS), cols: lv < 3 ? 2 : 3, rows: lv < 3 ? 2 : lv < 6 ? 2 : 3, say: 'Remets l’image dans le bon ordre !' };
+      if (kind === 'pairs') return { kind: 'pairs', cards: sample(PICS, Math.min(6, 3 + Math.floor(lv / 3) + (rand() < .3 ? 1 : 0))), say: 'Retrouve les paires !' };
+      if (kind === 'simon') return { kind: 'simon', length: 3 + Math.floor(lv / 3), say: 'Écoute la musique et regarde les couleurs, puis refais comme moi !' };
       return rand() < .18 && legacyQuiz ? { ...legacyQuiz(), kind: 'quiz' } : G.makeQuiz();
     };
-    const games = shuffle(['maze', 'jigsaw', 'simon']);
-    const kinds = rand() < .35 ? ['quiz', 'quiz', games[0]] : ['quiz', games[0], games[1]];
-    return shuffle(kinds).map(makeOne);
+    // trois jeux différents tirés au hasard parmi : puzzle, labyrinthe, paires, rythme, énigme
+    return sample(['maze', 'jigsaw', 'pairs', 'simon', 'quiz'], 3).map(makeOne);
   };
-  G.icon = (kind) => ({ maze: '🐭', jigsaw: '🧩', simon: '🎵' }[kind] || '❓');
+  G.icon = (kind) => ({ maze: '🐭', jigsaw: '🧩', simon: '🎵', pairs: '🃏' }[kind] || '❓');
 
   /* ---------- Mini-jeux ---------- */
   // api : { onSolved(), tone(freq, ms), say(text) }
@@ -78,6 +81,7 @@
     host.innerHTML = '';
     if (task.kind === 'maze') return startMaze(task, host, api);
     if (task.kind === 'jigsaw') return startJigsaw(task, host, api);
+    if (task.kind === 'pairs') return startPairs(task, host, api);
     return startSimon(task, host, api);
   };
 
@@ -107,7 +111,7 @@
       ctx.fillStyle = '#fff8e6'; ctx.fillRect(0, 0, W, W);
       trail.forEach(([x, y]) => { ctx.fillStyle = 'rgba(255,214,90,.45)'; ctx.fillRect(x * k + 3, y * k + 3, k - 6, k - 6); });
       ctx.font = `${k * .62}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('🧀', (n - .5) * k, (n - .5) * k + Math.sin(t / 300) * 3);
+      ctx.fillText(task.goal || '🧀', (n - .5) * k, (n - .5) * k + Math.sin(t / 300) * 3);
       ctx.strokeStyle = '#8a5a3c'; ctx.lineWidth = Math.max(5, k * .09); ctx.lineCap = 'round';
       ctx.beginPath();
       for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
@@ -119,7 +123,7 @@
       }
       ctx.stroke();
       ctx.font = `${k * .62}px sans-serif`;
-      ctx.fillText('🐭', (cur[0] + .5) * k, (cur[1] + .5) * k + Math.sin(t / 220) * 2);
+      ctx.fillText(task.seeker || '🐭', (cur[0] + .5) * k, (cur[1] + .5) * k + Math.sin(t / 220) * 2);
       raf = requestAnimationFrame(draw);
     }
     const open = (x, y, d) => !cells[y][x][d];
@@ -186,6 +190,31 @@
       if (order.every((v, i) => v === i)) { solved = true; board.classList.add('done'); api.tone(784, 160); setTimeout(() => api.tone(1047, 260), 160); setTimeout(() => { if (!stopped) api.onSolved(); }, 900); }
     }
     render();
+    return { destroy() { stopped = true; host.innerHTML = ''; } };
+  }
+
+  function startPairs(task, host, api) {
+    const deck = shuffle([...task.cards, ...task.cards].map((e, i) => ({ e, id: i })));
+    const grid = document.createElement('div'); grid.className = 'pairs-grid'; grid.style.setProperty('--n', deck.length <= 6 ? 3 : 4);
+    host.appendChild(grid);
+    let first = -1, lock = false, matched = 0, stopped = false;
+    const tiles = deck.map((c, i) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'pair-card'; b.setAttribute('aria-label', 'Carte retournée');
+      b.innerHTML = `<span class="pc-back">⭐</span><span class="pc-face">${c.e}</span>`;
+      b.addEventListener('click', () => flip(i)); grid.appendChild(b); return b;
+    });
+    function flip(i) {
+      if (lock || stopped || tiles[i].classList.contains('up') || tiles[i].classList.contains('ok')) return;
+      tiles[i].classList.add('up'); api.tone(500 + i * 25, 90);
+      if (first < 0) { first = i; return; }
+      const a = first; first = -1;
+      if (deck[a].e === deck[i].e) {
+        tiles[a].classList.replace('up', 'ok'); tiles[i].classList.replace('up', 'ok'); matched++; api.tone(784, 140);
+        if (matched === task.cards.length) { api.tone(1047, 240); setTimeout(() => { if (!stopped) api.onSolved(); }, 800); }
+      } else {
+        lock = true; setTimeout(() => { if (stopped) return; tiles[a].classList.remove('up'); tiles[i].classList.remove('up'); lock = false; }, 950);
+      }
+    }
     return { destroy() { stopped = true; host.innerHTML = ''; } };
   }
 
