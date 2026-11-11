@@ -530,3 +530,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
 .lv-again{margin-top:3px;padding:2px 8px;border-radius:12px;background:#fff4c8;color:#8a5b0b;font-size:13px;font-weight:1000;animation:pulse 1.8s ease-in-out infinite}
 .icon-btn.newround{position:relative;background:linear-gradient(#ffb36b,#e8621a);box-shadow:0 5px 0 #a8420c,0 8px 14px #184d7240}
 .icon-btn.newround::after{content:'⚔️';position:absolute;right:-6px;top:-6px;font-size:20px;filter:drop-shadow(0 1px 1px #0006)}
+
+.reset-hold{position:relative;overflow:hidden;width:100%;margin-top:10px;padding:14px 12px;border-radius:16px;border:3px solid #e04848;background:#fff1f0;color:#b02a2a;font:inherit;font-weight:900;font-size:16px;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none;-webkit-touch-callout:none}
+.reset-hold .rh-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:#ff9b9b}
+.reset-hold.holding .rh-fill{width:100%;transition:width 3s linear}
+.reset-hold .rh-text{position:relative}
+.reset-hold small{font-weight:700;opacity:.75}

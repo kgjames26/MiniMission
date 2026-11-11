@@ -1723,6 +1723,16 @@
   $('#stats-resume-button').addEventListener('click',()=>$('#resume-button').click());
   $('#puzzle-read-button').addEventListener('click',readPuzzleAloud);
   $('#quit-button').addEventListener('click',quitMission);
+  {   // réinitialisation : il faut garder le doigt appuyé 3 secondes
+    const btn = $('#reset-button'); let timer = 0;
+    const stop = () => { clearTimeout(timer); timer = 0; btn.classList.remove('holding'); };
+    btn.addEventListener('pointerdown', (e) => {
+      e.preventDefault(); stop(); void btn.offsetWidth; btn.classList.add('holding');
+      timer = setTimeout(() => { stop(); try { localStorage.removeItem(STORE); } catch {} save = {}; MM.haptic('gold'); location.reload(); }, 3000);
+    });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(t => btn.addEventListener(t, stop));
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  }
   $('#album-open').addEventListener('click',()=>{renderAlbum(-1);setScreen('album-screen');});
   $('#reward-continue').addEventListener('click',()=>{cancelSpeech();rewardAdvance?.();});
   $('#puzzle-close').addEventListener('click', closePuzzle);
