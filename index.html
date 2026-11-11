@@ -160,6 +160,7 @@
         <div id="monster-bar" class="monster-bar" aria-hidden="true"></div>
         <div id="hit-meter" class="hit-meter" aria-hidden="true"><i>🔥</i><i>🔥</i><i>🔥</i></div>
         <div id="award-banner" class="award-banner hidden" role="status"><span class="award-medal"></span><span class="award-sticker"></span><span class="award-text"><b class="award-name"></b><i class="award-new">NOUVEAU</i></span></div>
+        <div id="tier-splash" class="tier-splash" aria-hidden="true"><div class="ts-card"><span class="ts-swords"></span><b class="ts-text"></b></div></div>
         <div id="home-hint" class="home-hint hidden" aria-hidden="true">🏡 ➜</div>
         <div class="touch-controls">
           <div id="dpad" class="dpad" role="group" aria-label="Croix de déplacement : gauche, droite, haut pour sauter, bas pour descendre">
@@ -232,7 +233,7 @@
       </section>
 
       <section id="settings-screen" class="screen modal-screen" aria-label="Réglages adulte">
-        <div class="modal-card settings-card"><button class="close-settings" type="button" data-go="home" aria-label="Fermer">×</button><h2>⚙ Réglages</h2><label class="setting-row"><span>🔊 Sons</span><input id="music-toggle" type="checkbox" checked /></label><label class="setting-row"><span>🎵 Musique</span><input id="music-bg-toggle" type="checkbox" checked /></label><label class="setting-row"><span>💥 Bruitages</span><input id="effects-toggle" type="checkbox" checked /></label><label class="setting-row"><span>📳 Vibrations</span><input id="haptics-toggle" type="checkbox" checked /></label><button id="reset-button" class="reset-hold" type="button" aria-label="Réinitialiser le jeu : garder appuyé 3 secondes"><span class="rh-fill"></span><span class="rh-text">🗑️ Tout réinitialiser <small>(garder appuyé)</small></span></button></div>
+        <div class="modal-card settings-card"><button class="close-settings" type="button" data-go="home" aria-label="Fermer">×</button><h2>⚙ Réglages</h2><label class="setting-row"><span>🔊 Sons</span><input id="music-toggle" type="checkbox" checked /></label><label class="setting-row"><span>🎵 Musique</span><input id="music-bg-toggle" type="checkbox" checked /></label><label class="setting-row"><span>💥 Bruitages</span><input id="effects-toggle" type="checkbox" checked /></label><label class="setting-row"><span>📳 Vibrations</span><input id="haptics-toggle" type="checkbox" checked /></label><label class="setting-row voice-row"><span>🗣️ Voix</span><select id="voice-select" aria-label="Choisir la voix"><option value="">Automatique</option></select></label><button id="reset-button" class="reset-hold" type="button" aria-label="Réinitialiser le jeu : garder appuyé 3 secondes"><span class="rh-fill"></span><span class="rh-text">🗑️ Tout réinitialiser <small>(garder appuyé)</small></span></button></div>
       </section>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </main>
