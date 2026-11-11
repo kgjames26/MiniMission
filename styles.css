@@ -428,3 +428,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
   .power-chip{font-size:11px}.power-chip small{padding:1px 6px}.power-chip em{font-size:1.2em}
   .howto-label{font-size:18px}.howto-keys{display:none}
 }
+
+.hit-meter{position:absolute;z-index:3;right:calc(var(--sar,0px) + 14px);top:calc(var(--sat) + 62px);display:flex;gap:4px;padding:5px 9px;border-radius:14px;background:rgba(255,255,255,.8);box-shadow:0 3px 10px #1d4d7a33;pointer-events:none;opacity:0;transform:translateY(-6px);transition:opacity .25s,transform .25s}
+.hit-meter.show{opacity:1;transform:none}
+.hit-meter i{font-style:normal;font-size:22px;filter:grayscale(1) opacity(.35);transition:filter .2s,transform .2s}
+.hit-meter i.on{filter:none;transform:scale(1.15)}

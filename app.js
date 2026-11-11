@@ -16,6 +16,7 @@
   // monstres : [hauteur dans le monde, largeur/hauteur, hauteur du sprite dans sa case] ; 0-4 méchants, 5-9 gentils
   const MON = [[66, 1.246, 252], [62, 1.044, 252], [72, 2.098, 183], [104, 1.111, 252], [104, .734, 252], [66, 1.056, 252], [62, 1.02, 252], [74, 1.032, 252], [104, 1.242, 252], [104, .841, 252]];
   const MON_CELL = { w: 400, h: 264, pad: 6 };
+  const HIT_WINDOW = 14, HIT_MAX = 3;
   const MON_COLORS = ['#5fa8ee', '#ffd23f', '#ffb8d8', '#8c9a7a', '#6fbf6a'];
   const MON_TOTAL = 20;
   const SHOT_SPEED = { ziggy: 560, filou: 500, titan: 470 };
@@ -23,6 +24,11 @@
   const monsterImg = new Image(); monsterImg.src = 'assets/monsters.webp';
   const movesImg = new Image(); movesImg.src = 'assets/hero-moves.webp';
   // Planche des héros : une ligne par héros (Ziggy, Filou, Titan), six poses chacune. Voir « Animation des héros ».
+  const S2 = { img: new Image(), map: null };
+  S2.img.src = 'assets/sprites2.webp';
+  fetch('assets/sprites2.json').then(r => r.json()).then(j => { S2.map = j; }).catch(() => {});
+  const s2ok = () => !!(S2.map && S2.img.complete && S2.img.naturalWidth);
+  const HERO_K = .5, HERO_PX = 280;     // échelle d'affichage des planches animées (hauteur de référence 280 px)
   const heroAtlas = new Image();
   heroAtlas.src = 'assets/heroes-atlas.webp';
   const heroes = {
@@ -140,11 +146,11 @@
   let musicEnabled = save.musicEnabled !== false;
   let hapticsEnabled = save.hapticsEnabled !== false;
   MM.setHaptics(hapticsEnabled);
-  let shots = [], fireballs = [];
+  let shots = [], fireballs = [], tornados = [], hitTimes = [], rewindAt = 0, litShown = -1;
   let shootReady = 0, flipUntil = 0, flipDir = 1, hurtUntil = 0;
   let gameCtl = null;
   let view = { scale: 1, ox: 0, oy: 0, w: 960, h: 540 };
-  let world = { width: 6200, floor: 426, camera: 0, checkpoint: 60, stations: [], gaps: [], bumps: [], platforms: [], coins: [], letters: [], enemies: [], bigFriends: [] };
+  let world = { passPts: [200], passX: 200, width: 6200, floor: 426, camera: 0, checkpoint: 60, stations: [], gaps: [], bumps: [], platforms: [], coins: [], letters: [], enemies: [], bigFriends: [] };
   let player = { x: 70, y: 0, vx: 0, vy: 0, w: 58, h: 86, grounded: true, jumping: false, facing: 1, bob: 0 };
   let lastPromptStation = -1;
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -177,7 +183,7 @@
   }
   const missionTitles = { ziggy:'La piste des étoiles', filou:'Le grand pont de Filou', titan:'Le parcours des gros blocs' };
   const missionPalettes = { ziggy:['#b9edff','#66bd82','#ffd68a'], filou:['#c9f2ff','#65b9a4','#a8a3ef'], titan:['#bce9f7','#58a96f','#f2c76d'] };
-  function createMission(heroId) { const created = todaysMission(heroId); created.title = missionTitles[heroId]; created.palette = missionPalettes[heroId].slice(); created.levelVersion = 4; return created; }
+  function createMission(heroId) { const created = todaysMission(heroId); created.title = missionTitles[heroId]; created.palette = missionPalettes[heroId].slice(); created.levelVersion = 5; return created; }
   // Recale une position de départ hors des ravins pour éviter une chute en boucle.
   function safeGroundX(x) {
     x = Math.max(70, Number(x) || 70);
@@ -214,7 +220,7 @@
   function beginGame(resume) {
     if (!mission || !activeHero) return;
     // missions sauvegardées avant les nouveaux niveaux : on repart sur une mission neuve
-    if (mission.levelVersion !== 4) { mission = createMission(activeHero); save.activeMission = mission; save.progress = 0; resume = false; }
+    if (mission.levelVersion !== 5) { mission = createMission(activeHero); save.activeMission = mission; save.progress = 0; resume = false; }
     if (!Array.isArray(mission.stationsDone)) mission.stationsDone = [false, false, false];
     save.progress = mission.stationsDone.filter(Boolean).length;
     $('#mission-title').textContent = mission.title;
@@ -222,7 +228,7 @@
     const rnd = seeded(mission.seed);
     const level = LV.build(activeHero, seeded(mission.seed));
     world.width = level.width; world.floor = level.floor; world.camera = 0; world.checkpoint = 60;
-    world.gaps = level.gaps; world.platforms = level.platforms; world.anchors = level.anchors; world.pads = level.pads;
+    world.gaps = level.gaps; world.platforms = level.platforms; world.anchors = level.anchors; world.pads = [];
     const broken = new Set(mission.brokenBumps || []), damage = mission.damage || {};
     world.bumps = level.bumps.filter(b => !broken.has(b.id)).map(b => ({ ...b, hp: Math.max(1, b.maxHp - (damage[b.id] || 0)), hit: -9 }));
     world.stations = level.stations.map((x, i) => ({ x, y: world.floor - 190, i, done: mission.stationsDone[i] === true, hit: false, bob: rnd()*6 }));
@@ -237,8 +243,9 @@
     player = { x: 70, y: world.floor - 86, vx: 0, vy: 0, w: 58, h: 86, grounded: true, jumping: false, facing: 1, bob: 0, carryVx: 0 };
     player.x = safeGroundX(resume ? (mission.checkpointX || 200) : 200);
     world.checkpoint = player.x;
+    world.passPts = [200, ...level.stations.map(x => x - 330)]; world.passX = Math.max(...world.passPts.filter(cp => cp <= player.x + 1));
     mission.monsters.forEach(m => { if (m.friendly) { m.x = player.x; m.y = player.y + player.h; } });
-    shots = []; fireballs = []; shootReady = 0; flipUntil = 0; hurtUntil = 0;
+    shots = []; fireballs = []; tornados = []; hitTimes = []; rewindAt = 0; litShown = -1; shootReady = 0; flipUntil = 0; hurtUntil = 0;
     swing = null; fizzle = null; turboUntil = 0; turboReady = 0; punchReady = 0; coyote = 0; gt = 0; jumpBuffer = 0;
     FX.clear(); heroAnim = newHeroAnim(); lastPromptStation = -1;
     lastActiveTick = performance.now(); lastTime = performance.now();
@@ -276,6 +283,7 @@
     gt += dt;
     const hero = activeHero;
     const move = (keys.right?1:0) - (keys.left?1:0);
+    if (gt < turboUntil && move && move !== player.facing) turboUntil = 0;   // changer de direction arrête le turbo
     const turboOn = gt < turboUntil;
     if (move && !swing) player.facing = move;
     const speed = hero === 'ziggy' ? 270 : 235;
@@ -298,11 +306,9 @@
     // la maison au bout du chemin termine la mission, qu'on ait ouvert toutes les caisses ou non
     if (player.x + player.w >= world.width - 150 && player.grounded && !swing) { finishMission(); return; }
     // plaques de vitesse (Ziggy)
-    if (hero === 'ziggy' && player.grounded && gt >= turboUntil) {
-      const cx = player.x + player.w/2;
-      if (world.pads.some(p => cx > p.x && cx < p.x + p.w)) startTurbo(1.3, true);
-    }
-    updateFollowers(dt); updateMonsters(dt); updateShots(dt);
+    if (rewindAt && gt >= rewindAt) { rewindAt = 0; hitTimes = []; updateHitMeter(); respawn(world.passX); }
+    updateFollowers(dt); updateMonsters(dt); updateShots(dt); updateHitMeter();
+    for (const cp of world.passPts) if (player.grounded && player.x > cp) world.passX = Math.max(world.passX, cp);
     collectPickups();
     // effets de course
     const onGround = player.grounded && !swing;
@@ -381,10 +387,28 @@
     world.gaps.forEach(gap => {
       const x = gap.x - cam; if (x + gap.w < 0 || x > W) return;
       if (gap.lava) {
-        ctx.fillStyle = '#6b2f1f'; ctx.fillRect(x, F, gap.w, 66); ctx.fillStyle = '#ff6a1f'; ctx.fillRect(x, F+16, gap.w, 96);
-        ctx.fillStyle = '#ffc13a'; for (let i = 0; i < Math.ceil(gap.w/47); i++) { ctx.beginPath(); ctx.ellipse(x+18+i*47, F+43+(i%2)*19 + Math.sin(time*2+i)*2, 20, 5, 0, 0, Math.PI*2); ctx.fill(); }
-        ctx.fillStyle = '#c92f10'; ctx.fillRect(x, F+106, gap.w, 60);
-        ctx.fillStyle = '#fff3a0'; for (let i = 0; i < Math.ceil(gap.w/90); i++) { const bx = x + 30 + i*90, by = F + 30 - Math.abs(Math.sin(time*2.2 + i*1.7)) * 34; ctx.beginPath(); ctx.arc(bx, by, 5, 0, Math.PI*2); ctx.fill(); }
+        const gw = gap.w, t = time;
+        ctx.fillStyle = '#4a1c14'; ctx.fillRect(x, F, gw, 160);
+        const lg = ctx.createLinearGradient(0, F + 14, 0, F + 150); lg.addColorStop(0, '#ffd23a'); lg.addColorStop(.25, '#ff7a1f'); lg.addColorStop(1, '#b81f0c');
+        ctx.fillStyle = lg; ctx.beginPath(); ctx.moveTo(x, F + 150);
+        for (let px = 0; px <= gw; px += 8) ctx.lineTo(x + px, F + 16 + Math.sin(t * 2.4 + (x + px) * .045) * 4 + Math.sin(t * 1.3 + (x + px) * .11) * 2);
+        ctx.lineTo(x + gw, F + 150); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(255,240,150,.8)'; ctx.beginPath();
+        for (let px = 0; px <= gw; px += 8) ctx.lineTo(x + px, F + 16 + Math.sin(t * 2.4 + (x + px) * .045) * 4 + Math.sin(t * 1.3 + (x + px) * .11) * 2);
+        for (let px = gw; px >= 0; px -= 8) ctx.lineTo(x + px, F + 24 + Math.sin(t * 2.4 + (x + px) * .045) * 4 + Math.sin(t * 1.3 + (x + px) * .11) * 2);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#ffc13a'; for (let i = 0; i < Math.ceil(gw / 52); i++) { ctx.beginPath(); ctx.ellipse(x + 22 + i * 52 + Math.sin(t * .8 + i) * 8, F + 56 + (i % 3) * 20, 22, 5, 0, 0, Math.PI * 2); ctx.fill(); }
+        for (let i = 0; i < Math.ceil(gw / 70); i++) {                       // grosses bulles qui éclatent + étincelles qui montent
+          const ph = (t * .7 + i * .37) % 1, bx = x + 26 + i * 70 + Math.sin(i * 3) * 14, by = F + 40 - ph * 90;
+          ctx.globalAlpha = 1 - ph; ctx.fillStyle = ph < .85 ? '#ffe07a' : '#fff'; ctx.beginPath(); ctx.arc(bx, by, 5 + (1 - ph) * 5, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'lighter'; const glow = ctx.createLinearGradient(0, F - 90, 0, F + 20); glow.addColorStop(0, 'rgba(255,120,30,0)'); glow.addColorStop(1, 'rgba(255,140,40,.4)'); ctx.fillStyle = glow; ctx.fillRect(x - 10, F - 90, gw + 20, 110);
+        for (let i = 0; i < Math.ceil(gw / 90); i++) {                       // petites flammes qui lèchent le bord
+          const fx0 = x + 30 + i * 90 + Math.sin(i * 5) * 18, h = 20 + Math.sin(t * 7 + i * 2) * 8;
+          ctx.fillStyle = 'rgba(255,170,40,.75)'; ctx.beginPath(); ctx.moveTo(fx0 - 9, F + 14); ctx.quadraticCurveTo(fx0 - 4, F + 14 - h * .6, fx0 + Math.sin(t * 9 + i) * 4, F + 14 - h); ctx.quadraticCurveTo(fx0 + 6, F + 14 - h * .5, fx0 + 9, F + 14); ctx.closePath(); ctx.fill();
+        }
+        ctx.globalCompositeOperation = 'source-over';
         return;
       }
       ctx.fillStyle = '#956b49'; ctx.fillRect(x, F, gap.w, 66); ctx.fillStyle = '#65c9e9'; ctx.fillRect(x, F+16, gap.w, 96);
@@ -393,6 +417,11 @@
     });
     for (let i = 0; i < Math.ceil(W/120)+2; i++) { const x = (i*120 + 35 - cam*.9) % (W+120); if (!inGap(x + cam, 10)) flower(x, F+7, i%4); }
     world.platforms.forEach(pl => { if (pl.bld) drawBuilding(pl); });
+    world.passPts.forEach((cp, i) => {       // drapeaux : points de passage
+      if (!i) return; const x = cp - cam; if (x < -40 || x > W + 40) return; const on = world.passX >= cp;
+      ctx.fillStyle = '#8b6748'; ctx.fillRect(x - 2, F - 78, 4, 78); ctx.fillStyle = on ? '#4cc36a' : '#cfd6d8';
+      ctx.beginPath(); ctx.moveTo(x + 2, F - 78); ctx.lineTo(x + 40, F - 66 + Math.sin(time * 4) * 2); ctx.lineTo(x + 2, F - 52); ctx.closePath(); ctx.fill();
+    });
     world.decorations.forEach(item => {
       const x = item.x - cam; if (x < -90 || x > W+90 || inGap(item.x, 40)) return;
       if (activeHero === 'filou' && world.platforms.some(pl => pl.bld && item.x > pl.x - 30 && item.x < pl.x + pl.w + 30)) return;
@@ -510,21 +539,36 @@
   }
   // Quelle pose afficher, selon ce que fait le héros (du plus prioritaire au moins prioritaire).
   function choosePose() {
-    const a = heroAnim, t = a.timers, hero = activeHero;
+    const a = heroAnim, t = a.timers, hero = activeHero, air = !player.grounded;
     const main = (col) => ({ s: 'main', col }), mv = (col) => ({ s: 'moves', col, row: MOVES.rows[hero] });
+    const n = (f) => s2ok() && S2.map[f] ? { s: 's2', f } : null;
+    const walkN = (name, N, mul) => n(`${name}${Math.floor(a.phase * mul) % N}`);
+    const moving = Math.abs(player.vx) > 12;
     if (hero === 'filou') {
-      if (swing) { const th = Math.abs(swing.theta); return mv(th < .45 ? 1 : swing.theta * swing.omega > 0 ? 2 : 0); } // au bas : accroupi ; en montant : bras tendu ; en redescendant : accroché
-      if (t.shot) return mv(2);
-      if (!player.grounded && (Math.abs(player.carryVx) > 60 || gt < flipUntil)) return mv(3);                          // vol après la toile
+      let q;
+      if (swing) { q = n(swing.theta * swing.omega > 0 ? 'filou_s1' : 'filou_s0'); if (q) return q; return mv(Math.abs(swing.theta) < .45 ? 1 : swing.theta * swing.omega > 0 ? 2 : 0); }
+      if (t.shot) { q = n(t.shot > .12 ? 'filou_launch' : 'filou_aim'); if (q) return q; return mv(2); }
+      if (gt < flipUntil && (q = n('filou_s4'))) return q;
+      if (t.release && (q = n('filou_s3'))) return q;
+      if (air) { if (Math.abs(player.carryVx) > 60 && !s2ok()) return mv(3); const vy = player.vy; q = n(vy < -300 ? 'filou_j1' : vy < 60 ? 'filou_j2' : vy < 380 ? 'filou_j3' : 'filou_j4'); if (q) return q; return main(POSE.jump); }
+      if (t.land && (q = n(t.land > .14 ? 'filou_j5' : 'filou_j6'))) return q;
+      if (t.stumble && (q = n(a.stumbleAge < .18 ? 'filou_j0' : 'filou_j6'))) return q;
+      if (t.celebrate && (q = n('filou_j3'))) return q;
+      if (moving && (q = walkN('filou_w', 8, 1.94))) return q;
+      if (!moving && (q = n('filou_w7'))) return q;
     }
     if (hero === 'titan') {
       if (t.punch) return t.punch > .22 ? mv(1) : t.punch > .08 ? mv(2) : mv(5);                                         // armé, coup de poing, retour en garde
       if (t.shot) return mv(4);
-      if (t.stumble) return mv(Math.floor(a.time * 6) % 2);                                                            // il pousse l'obstacle en position de combat
+      if (t.stumble) return mv(Math.floor(a.time * 6) % 2);
+      let q;
+      if (!air && !t.celebrate && !t.land) { if (moving && (q = walkN('titan_w', 7, 1.7))) return q; if (!moving && (q = n('titan_w7'))) return q; }
     }
     if (hero === 'ziggy') {
       if (t.shot) return main(POSE.dodge);
-      if (t.ability || gt < turboUntil) return !player.grounded ? mv(player.vy < 0 ? 4 : 1) : mv([0, 2, 3, 5][Math.floor(a.time * 14) % 4]);
+      let q;
+      if (gt < turboUntil && (q = air ? n('ziggy_r1') : n('ziggy_r' + (Math.floor(a.time * 13) % 4)))) return q;
+      if (!air && !t.celebrate && !t.land && !t.stumble) { if (moving && (q = walkN('ziggy_w', 5, 1.21))) return q; if (!moving && (q = n('ziggy_w1'))) return q; }
     }
     if (swing) return main(POSE.jump);
     if (t.punch) return main(POSE.land);
@@ -532,16 +576,16 @@
     if (t.ability) return main(hero === 'ziggy' ? POSE.dodge : hero === 'filou' ? POSE.jump : POSE.land);
     if (t.drop) return main(POSE.duck);
     if (t.celebrate) return main(POSE.jump);
-    if (!player.grounded) return main(POSE.jump);
+    if (air) return main(POSE.jump);
     if (t.land && t.land > .14) return main(POSE.land);
-    if (Math.abs(player.vx) > 12) return main(Math.floor(a.phase) % 2 ? POSE.walkB : POSE.walkA);
+    if (moving) return main(Math.floor(a.phase) % 2 ? POSE.walkB : POSE.walkA);
     return main(HERO_IDLE[hero] ?? POSE.walkB);
   }
   function drawHero(c, x, feetY, time) {
     if (!heroAtlas.complete || !heroAtlas.naturalWidth) return;
     const A = HERO_ATLAS, a = heroAnim, pose = choosePose(), hero = activeHero, row = HERO_ROW[hero] ?? 0;
-    const isMoves = pose.s === 'moves', M = MOVES;
-    const dw = isMoves ? M.cellW * M.scale : A.cellW * A.scale, dh = isMoves ? M.foot * M.scale : A.cellH * A.scale;
+    const isMoves = pose.s === 'moves', isS2 = pose.s === 's2', M = MOVES, K = HERO_K;
+    const dw = isMoves ? M.cellW * M.scale : A.cellW * A.scale, dh = isS2 ? HERO_PX * K : isMoves ? M.foot * M.scale : A.cellH * A.scale;
     const walking = player.grounded && Math.abs(player.vx) > 12 && !a.timers.ability && gt >= turboUntil;
     // ombre au sol : suit le héros, rétrécit quand il saute, disparaît au-dessus d'un ravin
     const overGap = world.gaps.some(g => player.x + player.w * .5 > g.x && player.x + player.w * .5 < g.x + g.w);
@@ -552,8 +596,8 @@
     }
     const lunge = a.timers.punch ? Math.sin(Math.min(1, (.32 - a.timers.punch) / .32) * Math.PI) * 14 : 0;
     const hop = a.timers.celebrate ? Math.abs(Math.sin((a.time - a.celebrateStart) * 10)) * 15 : 0;
-    const bob = walking ? Math.abs(Math.sin(a.phase * Math.PI)) * 3.5 : 0;
-    const breathe = !walking && player.grounded && pose.s === 'main' && pose.col === (HERO_IDLE[hero] ?? POSE.walkB) ? Math.sin(a.time * 2.6) * .012 : 0;
+    const bob = walking && !isS2 ? Math.abs(Math.sin(a.phase * Math.PI)) * 3.5 : 0;
+    const breathe = !walking && player.grounded && !isS2 && pose.s === 'main' && pose.col === (HERO_IDLE[hero] ?? POSE.walkB) ? Math.sin(a.time * 2.6) * .012 : 0;
     let tilt = 0;
     if (swing) tilt = clamp(-swing.theta * .25, -.35, .35);
     else if (!player.grounded) tilt = clamp(player.vy * .00018, -.09, .14);
@@ -565,7 +609,20 @@
     const prevSmoothing = c.imageSmoothingEnabled; c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
     const drawPose = (offsetX, alpha) => {
       c.save(); c.globalAlpha = alpha;
-      if (isMoves && swing && hero === 'filou') {
+      if (isS2 && swing && hero === 'filou') {
+        // en balancement : la main du héros est exactement au bout de la corde, et le bras pointe vers l'accroche
+        const h = SW.hand(swing), f = S2.map[pose.f], side = swing.ax >= h.x ? 1 : -1;
+        const ang = Math.atan2(swing.ay - h.y, Math.abs(swing.ax - h.x)), phi = pose.f === 'filou_s1' ? -.52 : -.65;
+        c.translate(h.x - world.camera + offsetX, h.y); c.scale(side, 1); c.rotate(clamp((ang - phi) * .85, -.9, .9));
+        c.drawImage(S2.img, f.x, f.y, f.w, f.h, -f.hx * K, -f.hy * K, f.w * K, f.h * K);
+      } else if (isS2) {
+        const f = S2.map[pose.f];
+        c.translate(x + offsetX + player.facing * lunge, feetY - hop); c.scale(player.facing, 1);
+        if (flipAngle) { c.translate(0, -dh * .5); c.rotate(flipAngle * player.facing); c.translate(0, dh * .5); }
+        c.translate(0, -dh * .35); c.rotate(tilt); c.translate(0, dh * .35);
+        c.scale(sx, sy);
+        c.drawImage(S2.img, f.x, f.y, f.w, f.h, -f.ax * K, -f.ay * K, f.w * K, f.h * K);
+      } else if (isMoves && swing && hero === 'filou') {
         // en balancement : la main du héros est exactement au bout de la corde
         const h = SW.hand(swing), hnd = M.hands.filou[pose.col], s = M.scale, side = swing.ax >= h.x ? 1 : -1;
         c.translate(h.x - world.camera + offsetX, h.y); c.scale(side, 1); c.rotate(tilt * side);
@@ -580,7 +637,7 @@
       }
       c.restore();
     };
-    if (a.timers.ability && hero === 'ziggy' && !isMoves) for (let i = 2; i >= 1; i--) drawPose(-player.facing * i * 24, .12 / i * 1.6);
+    if ((a.timers.ability || gt < turboUntil) && hero === 'ziggy' && !isMoves) for (let i = 2; i >= 1; i--) drawPose(-player.facing * i * 24, .12 / i * 1.6);
     drawPose(0, 1);
     c.imageSmoothingEnabled = prevSmoothing;
     c.restore();
@@ -732,15 +789,16 @@
   function doJump(turbo) {
     player.vy = turbo ? -780 : -600; player.grounded = false; player.jumping = true;
     const x = player.x + player.w/2, y = player.y + player.h;
-    if (turbo) { turboUntil = Math.max(turboUntil, gt + .55); FX.ring(x, y, '#ffe36e', 70, .35, 6); FX.sparkle(x, y, 10, ['#fff3a0', '#ffb0d0', '#a8e8ff'], 200); MM.haptic('turbo'); }
+    if (turbo) { FX.ring(x, y, '#ffe36e', 70, .35, 6); FX.sparkle(x, y, 10, ['#fff3a0', '#ffb0d0', '#a8e8ff'], 200); MM.haptic('turbo'); }
     else MM.haptic('jump');
     FX.dust(x, y, 0, 4);
     triggerHeroAnimation('jump', 360); sound('jump');
   }
-  function respawn() {
+  function respawn(toX) {
     swing = null; turboUntil = 0; player.carryVx = 0;
-    FX.sparkle(player.x + player.w/2, world.floor - 40, 8, ['#d6ecff', '#ffffff'], 120);
-    player.x = safeGroundX(world.checkpoint); player.y = world.floor - player.h; player.vx = 0; player.vy = 0; player.grounded = true;
+    FX.sparkle(player.x + player.w/2, player.y + 30, 10, ['#d6ecff', '#ffffff'], 140);
+    player.x = safeGroundX(toX ?? world.checkpoint); player.y = world.floor - player.h; player.vx = 0; player.vy = 0; player.grounded = true; hurtUntil = gt + 1.5;
+    FX.sparkle(player.x + player.w/2, world.floor - 40, 10, ['#ffe36e', '#ffffff'], 140);
   }
   function attachWeb(a) {
     const hx = player.x + player.w/2, hy = player.y + 12, dir = a.x >= hx ? 1 : -1;
@@ -973,8 +1031,8 @@
     return `width:${Math.round(w * s)}px;height:${Math.round(sh * s)}px;background:url(assets/monsters.webp) no-repeat;background-size:${MON_CELL.w * 5 * s}px ${MON_CELL.h * 2 * s}px;background-position:${-(col * MON_CELL.w + (MON_CELL.w - w) / 2) * s}px ${-(row * MON_CELL.h + (MON_CELL.h - MON_CELL.pad - sh)) * s}px`;
   }
   function initMonsters(level, rnd) {
-    if (!Array.isArray(mission.monsters)) mission.monsters = level.monsters.map(m => ({ id: m.id, type: m.type, x: m.x, y: m.type === 2 ? m.y + MON[2][0] / 2 : m.y, homeX: m.x, homeY: m.type === 2 ? m.y + MON[2][0] / 2 : m.y, hp: m.hp, friendly: false, order: 0 }));
-    mission.monsters.forEach(m => { m.dir = 1; m.phase = rnd() * 6; m.fireIn = 1.2 + rnd() * 2; m.hop = 0; m.flash = 0; m.wrap = 0; m.charge = 0; if (m.friendly) { m.x = player ? player.x : m.x; } });
+    if (!Array.isArray(mission.monsters)) mission.monsters = level.monsters.map(m => ({ id: m.id, type: m.type, x: m.x, y: m.y, homeX: m.x, homeY: m.y, hp: m.hp, friendly: false, order: 0 }));
+    mission.monsters.forEach(m => { m.dir = rnd() < .5 ? 1 : -1; m.pd = m.dir; m.phase = rnd() * 6; m.cool = 1.2 + rnd() * 2.2; m.st = 'walk'; m.stT = 0; m.jy = 0; m.jv = 0; m.flash = 0; m.wrap = 0; m.hitT = 0; m.moving = false; patrolRange(m); if (m.friendly) { m.x = player ? player.x : m.x; } });
     world.monsters = mission.monsters;
   }
   function capturedCount() { return (mission?.monsters || []).filter(m => m.friendly).length; }
@@ -998,26 +1056,96 @@
     if (timerNoticePlaying) return;
     sayText(n === 10 ? 'Dix ! Bravo, une dizaine !' : n === 20 ? 'Vingt ! Tous les monstres sont gentils !' : COUNT_WORDS[n]);
   }
-  function monsterBox(m) { const [hw, ratio] = MON[m.type]; return { cx: m.x, cy: m.y - hw / 2, hw: hw * ratio * .42 + 6, hh: hw * .5 + 4 }; }
+  function monsterBox(m) { const big = m.type === 3 ? 1.27 : 1; return { cx: m.x, cy: m.y - (m.jy || 0) - 44 * big, hw: 30 * big + 4, hh: 46 * big }; }
+  function patrolRange(m) {
+    const def = [90, 0, 45, 60, 75][m.type] ?? 60; let lo = m.x - def, hi = m.x + def;
+    if (m.y >= world.floor - 4) {
+      for (const g of world.gaps) { if (g.x + g.w <= m.x) lo = Math.max(lo, g.x + g.w + 26); else if (g.x >= m.x) hi = Math.min(hi, g.x - 26); }
+      for (const b of world.bumps) { if (b.kind === 'small') continue; if (b.x + b.w <= m.x) lo = Math.max(lo, b.x + b.w + 20); else if (b.x >= m.x) hi = Math.min(hi, b.x - 20); }
+    } else {
+      const pl = world.platforms.find(q => Math.abs(q.y - m.y) < 8 && m.x >= q.x && m.x <= q.x + q.w);
+      if (pl) { lo = Math.max(lo, pl.x + 26); hi = Math.min(hi, pl.x + pl.w - 26); }
+    }
+    m.lo = Math.min(lo, m.x); m.hi = Math.max(hi, m.x);
+  }
   function onScreen(x, margin = 0) { return x > world.camera - margin && x < world.camera + view.w + margin; }
+  /* ----- le diablotin de feu : le seul ennemi du jeu, malicieux, avec trois attaques ----- */
+  function impK(m) { return m.type === 3 ? .56 : .44; }
+  function setImp(m, st) { m.st = st; m.stT = 0; }
+  function startAttack(m) {
+    m.cool = 2.3 + Math.random() * 1.7; m.dir = Math.sign(player.x + player.w / 2 - m.x) || 1; m.shots = m.type === 4 ? 2 : 1;
+    setImp(m, m.type === 1 ? 'crouch' : m.type === 3 ? 'channel' : 'charge'); m.tx = player.x + player.w / 2;
+    FX.dots(m.x, m.y - 60, 4, ['#ff8a2a', '#ffd23f'], 70);
+  }
+  function launchFire(m) {
+    const d = m.dir, k = impK(m) / .44, px = player.x + player.w / 2, py = player.y + player.h * .45;
+    const x = m.x + d * 40 * k, y = m.y - (m.jy || 0) - 52 * k;
+    if (m.type === 2) {                                                // flèche de feu : rapide et droite
+      const vx = d * 430, t = Math.max(.25, Math.abs(px - x) / 430);
+      fireballs.push({ x, y, vx, vy: clamp((py - y) / t, -210, 210), g: 0, dir: d, life: 4, kind: 'arrow' }); sound('soft');
+    } else if (m.type === 4 && m.shots === 1) {                        // 2e boule : un tir en cloche
+      fireballs.push({ x, y, vx: d * clamp(Math.abs(px - x) * .8, 150, 260), vy: -330, g: 620, dir: d, life: 4, kind: 'lob' }); sound('soft');
+    } else {
+      const vx = d * 235, t = Math.max(.3, Math.abs(px - x) / 235);
+      fireballs.push({ x, y, vx, vy: clamp((py - y) / t, -140, 140), g: 0, dir: d, life: 5, kind: 'fire' }); sound('soft');
+    }
+    FX.sparkle(x, y, 7, ['#ffd23f', '#ff8a2a', '#fff3a0'], 140);
+  }
   function updateMonsters(dt) {
     const px = player.x + player.w / 2;
     for (const m of world.monsters) {
       if (m.friendly) { m.flash = Math.max(0, m.flash - dt); m.wrap = Math.max(0, m.wrap - dt); continue; }
-      m.phase += dt; m.flash = Math.max(0, m.flash - dt);
-      if (!onScreen(m.x, 120)) continue;
-      const toward = Math.sign(px - m.x) || 1;
-      if (m.type === 0 || m.type === 3) { const sp = m.type === 0 ? 46 : 24, rg = m.type === 0 ? 90 : 55; m.x += m.dir * sp * dt; if (Math.abs(m.x - m.homeX) > rg) m.dir = -m.dir; }
-      else if (m.type === 1) { m.hop = Math.abs(Math.sin(m.phase * 3.2)) * 44; m.x = m.homeX + Math.sin(m.phase * .9) * 40; }
-      else if (m.type === 2) { m.x = m.homeX + Math.sin(m.phase * .8) * 110; m.y = m.homeY + Math.sin(m.phase * 1.7) * 55; }
-      else if (m.type === 4) {
-        m.fireIn -= dt; m.charge = m.fireIn < .55 ? 1 : 0;
-        if (m.fireIn <= 0) {
-          m.fireIn = 2.8 + Math.random() * 1.2; m.charge = 0;
-          if (onScreen(m.x, -20) && Math.abs(px - m.x) < 620) { fireballs.push({ x: m.x + toward * 30, y: m.y - 70, vx: toward * 200, dir: toward, life: 6 }); sound('soft'); }
+      m.flash = Math.max(0, m.flash - dt); m.hitT = Math.max(0, (m.hitT || 0) - dt);
+      if (!onScreen(m.x, 140)) continue;
+      m.phase += dt; m.stT += dt;
+      const dist = Math.abs(px - m.x), toward = Math.sign(px - m.x) || 1;
+      switch (m.st) {
+        case 'walk': {
+          const sp = [46, 0, 26, 28, 40][m.type] ?? 30;
+          if (m.x <= m.lo + 2) m.pd = 1; else if (m.x >= m.hi - 2) m.pd = -1;
+          m.dir = dist < 520 ? toward : m.pd;
+          m.moving = sp > 0 && m.hi - m.lo > 12 && dist > 120;
+          if (m.moving) m.x = clamp(m.x + m.pd * sp * dt * (dist < 520 ? .7 : 1), m.lo, m.hi);
+          m.cool -= dt;
+          if (m.cool <= 0 && dist < 650 && onScreen(m.x, -30) && gt > hurtUntil - .4) startAttack(m);
+          break;
         }
+        case 'charge': m.dir = toward; m.moving = false; if (m.stT > (m.type === 2 ? .75 : .55)) setImp(m, 'windup'); break;
+        case 'windup': if (m.stT > .24) { launchFire(m); setImp(m, 'release'); } break;
+        case 'release': if (m.stT > .22) { if (m.shots > 1) { m.shots--; setImp(m, 'windup'); } else setImp(m, 'follow'); } break;
+        case 'follow': if (m.stT > .6) setImp(m, 'walk'); break;
+        case 'crouch': m.dir = toward; if (m.stT > .4) { m.jv = 560; m.jvx = toward * clamp(dist * .9, 90, 230); setImp(m, 'air'); } break;
+        case 'air':
+          m.jv -= 1500 * dt; m.jy += m.jv * dt; m.x = clamp(m.x + m.jvx * dt, m.lo, m.hi);
+          if (m.jy <= 0 && m.jv < 0) { m.jy = 0; setImp(m, 'land'); FX.dust(m.x, m.y, 0, 5); FX.shake(1.5, .1); }
+          break;
+        case 'land': if (m.stT > .32) { m.shots = 1; if (dist < 520 && m.type === 1) { m.dir = toward; setImp(m, 'windup'); } else setImp(m, 'follow'); } break;
+        case 'channel':
+          m.moving = false; if (m.stT < .6) m.tx = px;
+          if (Math.random() < .5) FX.dots(m.x + (Math.random() - .5) * 40, m.y - 4, 1, ['#ff8a2a', '#ffd23f'], 60);
+          if (m.stT > .95) { tornados.push({ x: clamp(m.tx, m.x - 340, m.x + 340), y: m.y, age: 0, life: 2.8, from: m }); setImp(m, 'emerge'); sound('turbo'); FX.shake(2, .2); }
+          break;
+        case 'emerge': if (m.stT > .5) setImp(m, 'hold'); break;
+        case 'hold': if (m.stT > .7) setImp(m, 'follow'); break;
+        default: setImp(m, 'walk');
       }
     }
+  }
+  function playerHit(dir) {
+    if (swing || gt < hurtUntil || rewindAt) return;
+    hurtUntil = gt + 1.3;
+    hitTimes = hitTimes.filter(t => gt - t < HIT_WINDOW); hitTimes.push(gt);
+    player.vy = -300; player.grounded = false; player.carryVx = -dir * 190; triggerHeroAnimation('stumble');
+    FX.sparkle(player.x + player.w / 2, player.y + 30, 12, ['#ff8a2a', '#ffd23f', '#ffffff'], 190); FX.shake(3, .18); MM.haptic('oops'); sound('bump');
+    updateHitMeter();
+    if (hitTimes.length >= HIT_MAX) { rewindAt = gt + .7; showToast('Oups ! On revient au dernier point de passage.'); }
+  }
+  function updateHitMeter() {
+    hitTimes = hitTimes.filter(t => gt - t < HIT_WINDOW);
+    if (hitTimes.length === litShown) return; litShown = hitTimes.length;
+    const meter = $('#hit-meter'); if (!meter) return;
+    [...meter.children].forEach((chip, i) => chip.classList.toggle('on', i < hitTimes.length));
+    meter.classList.toggle('show', hitTimes.length > 0);
   }
   function updateFollowers(dt) {
     let leaderX = player.x + player.w / 2 - player.facing * 56;
@@ -1053,6 +1181,10 @@
       if (Math.random() < .8) FX.glitter(s.x - s.dir * 10, s.y);
       if (s.x < cam - 30 || s.x > cam + view.w + 30 || gt - s.born > 3) { shots.splice(i, 1); continue; }    // jamais plus loin que l'écran
       let used = false;
+      if (s.hero === 'titan') {                                        // le poing projeté casse les obstacles comme le coup de poing
+        const fl = world.floor, bump = world.bumps.find(b => b.kind !== 'small' && s.x > b.x - s.r && s.x < b.x + b.w + s.r && s.y > fl - b.h - 30);
+        if (bump) { hitBump(bump, 'punch'); used = true; }
+      }
       for (let j = fireballs.length - 1; j >= 0 && !used; j--) if (Math.hypot(fireballs[j].x - s.x, fireballs[j].y - s.y) < 34) { FX.sparkle(fireballs[j].x, fireballs[j].y, 8, ['#ffb02e', '#ffffff'], 140); fireballs.splice(j, 1); used = true; }
       for (const m of world.monsters) {
         if (used || m.friendly || !onScreen(m.x, -10)) continue;      // on ne peut pas tirer sur un monstre hors de l'écran
@@ -1063,26 +1195,31 @@
     }
     for (let i = fireballs.length - 1; i >= 0; i--) {
       const f = fireballs[i];
-      f.x += f.vx * dt; f.life -= dt;
+      f.x += f.vx * dt; f.life -= dt; if (f.g) { f.vy += f.g * dt; } f.y += (f.vy || 0) * dt;
       if (Math.random() < .7) FX.dots(f.x - f.dir * 12, f.y, 1, ['#ff8a2a', '#ffd23f'], 50);
-      if (f.life <= 0 || !onScreen(f.x, 160)) { fireballs.splice(i, 1); continue; }
+      if (f.life <= 0 || !onScreen(f.x, 160) || f.y > world.floor + 80) { fireballs.splice(i, 1); continue; }
       if (!swing && gt > hurtUntil && Math.abs(f.x - (player.x + player.w / 2)) < 32 && Math.abs(f.y - (player.y + player.h / 2)) < 52) {
-        fireballs.splice(i, 1); hurtUntil = gt + 1;       // la boule de feu ne fait pas de mal : un petit saut en arrière, c'est tout
-        player.vy = -300; player.grounded = false; player.carryVx = -f.dir * 190; triggerHeroAnimation('stumble');
-        FX.sparkle(player.x + player.w / 2, player.y + 30, 10, ['#ffb02e', '#fff3a0', '#ffffff'], 180); MM.haptic('oops'); sound('soft');
+        fireballs.splice(i, 1); playerHit(f.dir);
       }
+    }
+    for (let i = tornados.length - 1; i >= 0; i--) {
+      const q = tornados[i]; q.age += dt;
+      if (q.age > q.life || !onScreen(q.x, 200)) { tornados.splice(i, 1); continue; }
+      if (q.age > .5) q.x += Math.sign(player.x + player.w / 2 - q.x) * 34 * dt;
+      if (Math.random() < .6) FX.dots(q.x + (Math.random() - .5) * 50, q.y - Math.random() * 110, 1, ['#ff8a2a', '#ffd23f', '#fff3a0'], 40);
+      if (q.age > .4 && q.age < q.life - .4 && !swing && gt > hurtUntil && Math.abs(player.x + player.w / 2 - q.x) < 30 && player.y + player.h > q.y - 120 && player.y < q.y) playerHit(Math.sign(q.x - (player.x + player.w / 2)) || 1);
     }
   }
   function hitMonster(m, s) {
     m.hp--; m.flash = .3;
     FX.ring(s.x, s.y, s.hero === 'ziggy' ? '#ffb02e' : s.hero === 'filou' ? '#e7d8ff' : '#fff3a0', 56, .3, 6);
-    if (m.hp > 0) { FX.sparkle(m.x, m.y - 40, 8, ['#ffffff', '#ffd23f'], 150); FX.shake(1.5, .12); MM.haptic('tap'); return; }
+    if (m.hp > 0) { m.hitT = .45; if (m.st !== 'air') { m.st = 'walk'; m.stT = 0; m.cool = Math.max(m.cool || 0, 1.5); } FX.sparkle(m.x, m.y - 40, 8, ['#ffffff', '#ffd23f'], 150); FX.shake(1.5, .12); MM.haptic('tap'); return; }
     captureMonster(m, s.hero);
   }
   function captureMonster(m, by) {
     m.friendly = true; m.order = capturedCount() + 0.5; m.flash = .7; m.wrap = by === 'filou' ? .9 : 0;
     const sorted = world.monsters.filter(q => q.friendly).sort((a, b) => a.order - b.order); sorted.forEach((q, i) => { q.order = i + 1; });
-    const n = capturedCount(), hw = MON[m.type][0];
+    const n = capturedCount(), hw = MON[m.type + 5][0]; m.st = 'walk'; m.jy = 0;
     triggerHeroAnimation('collect', 400);
     FX.heart(m.x, m.y - hw); FX.sparkle(m.x, m.y - hw / 2, 14, ['#ffb5c8', '#ffdf8d', '#ffffff', '#9fe3ff'], 190);
     FX.text(m.x, m.y - hw - 18, String(n), '#fff6c4', 50);
@@ -1092,11 +1229,50 @@
     updateFriendCounter(); speakCount(n); writeSave();
   }
   function drawMonster(m, time) {
+    if (m.friendly || !s2ok()) return drawFriend(m, time);
+    const cam = world.camera, x = m.x - cam; if (x < -160 || x > view.w + 160) return;
+    let name;
+    if (m.hitT > 0) name = 'imp_hit';
+    else switch (m.st) {
+      case 'charge': name = 'imp_charge'; break; case 'windup': name = 'imp_windup'; break; case 'release': name = 'imp_release'; break;
+      case 'follow': name = 'imp_follow'; break; case 'crouch': name = 'imp_crouch'; break; case 'air': name = m.jv > 100 ? 'imp_arc' : 'imp_jump1'; break;
+      case 'land': name = 'imp_land'; break; case 'channel': name = 'imp_channel'; break; case 'emerge': name = 'imp_emerge'; break; case 'hold': name = 'imp_hold'; break;
+      default: name = m.moving ? `imp_w${Math.floor(m.phase * 7) % 6}` : 'imp_w0';
+    }
+    const f = S2.map[name]; if (!f) return;
+    const k = impK(m), jy = m.jy || 0, lift = clamp(jy / 160, 0, 1);
+    ctx.save();
+    ctx.fillStyle = `rgba(60,30,20,${.22 * (1 - lift * .7)})`; ctx.beginPath(); ctx.ellipse(x, m.y + 1, 26 * k / .44 * (1 - lift * .4), 6, 0, 0, Math.PI * 2); ctx.fill();
+    // lueur de feu : plus vive quand il prépare une attaque
+    const charging = m.st === 'charge' || m.st === 'windup' || m.st === 'channel';
+    ctx.globalCompositeOperation = 'lighter';
+    const gr = ctx.createRadialGradient(x, m.y - jy - 50 * k / .44, 4, x, m.y - jy - 50 * k / .44, (charging ? 78 : 56) * k / .44);
+    gr.addColorStop(0, `rgba(255,150,50,${charging ? .5 + Math.sin(time * 25) * .1 : .1})`); gr.addColorStop(1, 'rgba(255,90,20,0)');
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, m.y - jy - 50 * k / .44, 80 * k / .44, 0, Math.PI * 2); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.translate(x, m.y - jy);
+    const pop = m.flash > 0 ? 1 + Math.sin(m.flash * 18) * .08 : 1, breathe = m.moving || m.st !== 'walk' ? 1 : 1 + Math.sin(time * 4 + m.id) * .015;
+    ctx.scale(m.dir * pop, pop * breathe);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(S2.img, f.x, f.y, f.w, f.h, -f.ax * k, -f.ay * k, f.w * k, f.h * k);
+    if (m.flash > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.min(.6, m.flash * 1.6); ctx.drawImage(S2.img, f.x, f.y, f.w, f.h, -f.ax * k, -f.ay * k, f.w * k, f.h * k); }
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+    if (m.type === 2 && (m.st === 'charge' || m.st === 'windup' || m.st === 'release')) {        // l'archer : arc de bois et flèche de feu
+      const pull = m.st === 'charge' ? Math.min(1, m.stT / .7) : m.st === 'windup' ? 1 : 0;
+      ctx.translate(44, -52); ctx.strokeStyle = '#8a5a34'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.arc(-6, 0, 30, -1.15, 1.15); ctx.stroke();
+      ctx.strokeStyle = '#fff6d6'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-6 + Math.cos(-1.15) * 30, Math.sin(-1.15) * 30); ctx.lineTo(-6 - pull * 16, 0); ctx.lineTo(-6 + Math.cos(1.15) * 30, Math.sin(1.15) * 30); ctx.stroke();
+      if (pull > 0) { ctx.strokeStyle = '#7a5230'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-6 - pull * 16, 0); ctx.lineTo(34, 0); ctx.stroke();
+        const g2 = ctx.createRadialGradient(36, 0, 1, 36, 0, 14); g2.addColorStop(0, '#fff3a0'); g2.addColorStop(.5, '#ff8a2a'); g2.addColorStop(1, 'rgba(255,60,20,0)'); ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(36, 0, 14, 0, Math.PI * 2); ctx.fill(); }
+    }
+    ctx.restore();
+  }
+  function drawFriend(m, time) {
     const cam = world.camera, x = m.x - cam; if (x < -160 || x > view.w + 160) return;
     const index = m.type + (m.friendly ? 5 : 0), [hw, , sh] = MON[index];
     const scale = m.friendly ? .8 : 1, k = hw * scale / sh;
     let feet = m.y;
-    if (m.friendly) feet += Math.sin(time * 4 + m.id) * 2; else if (m.type === 1) feet -= m.hop; else if (m.type === 2) feet += Math.sin(time * 6 + m.id) * 2;
+    if (m.friendly) feet += Math.sin(time * 4 + m.id) * 2; 
     if (!monsterImg.complete || !monsterImg.naturalWidth) return;
     ctx.save();
     if (m.type !== 2 && !m.friendly) { ctx.fillStyle = 'rgba(40,60,80,.2)'; ctx.beginPath(); ctx.ellipse(x, m.y + 1, hw * .45, 6, 0, 0, Math.PI * 2); ctx.fill(); }
@@ -1135,17 +1311,36 @@
       }
       ctx.restore();
     }
+    for (const q of tornados) {
+      const x = q.x - cam, grow = Math.min(1, q.age / .45), fade = Math.min(1, (q.life - q.age) / .4), f = S2.map && S2.map.imp_tornado; if (!f) continue;
+      ctx.save(); ctx.globalAlpha = fade;
+      ctx.globalCompositeOperation = 'lighter'; const gg = ctx.createRadialGradient(x, q.y, 4, x, q.y, 70); gg.addColorStop(0, 'rgba(255,160,50,.55)'); gg.addColorStop(1, 'rgba(255,90,20,0)'); ctx.fillStyle = gg; ctx.beginPath(); ctx.ellipse(x, q.y, 70 * grow, 18, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalCompositeOperation = 'source-over';
+      const kk = 135 * grow / f.h; ctx.translate(x, q.y); ctx.scale(1 + Math.sin(time * 14) * .05, 1); ctx.drawImage(S2.img, f.x, f.y, f.w, f.h, -f.ax * kk, -f.ay * kk, f.w * kk, f.h * kk);
+      ctx.restore();
+    }
+    for (const m of world.monsters) {      // avertissement : le sol rougeoie là où la tornade va naître
+      if (m.friendly || m.st !== 'channel') continue; const x = m.tx - cam, pulse = .5 + .5 * Math.sin(time * 18);
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = `rgba(255,${110 + pulse * 80},40,${.25 + m.stT * .35})`; ctx.beginPath(); ctx.ellipse(x, m.y, 20 + m.stT * 40, 7 + m.stT * 7, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    }
     for (const f of fireballs) {
       const x = f.x - cam, y = f.y; ctx.save(); ctx.translate(x, y);
-      const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 22); g.addColorStop(0, '#fff3a0'); g.addColorStop(.4, '#ff8a2a'); g.addColorStop(1, 'rgba(220,40,20,0)');
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 22 + Math.sin(time * 30) * 2, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#ff5a1a'; ctx.beginPath(); ctx.moveTo(-f.dir * 24, 0); ctx.lineTo(-f.dir * 4, -9); ctx.lineTo(-f.dir * 4, 9); ctx.closePath(); ctx.fill();
+      if (f.kind === 'arrow') {
+        ctx.scale(f.dir, 1); const ang = Math.atan2(f.vy, Math.abs(f.vx)); ctx.rotate(ang);
+        ctx.strokeStyle = '#7a5230'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-26, 0); ctx.lineTo(14, 0); ctx.stroke();
+        ctx.strokeStyle = '#ff7a2a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-26, 0); ctx.lineTo(-33, -5); ctx.moveTo(-26, 0); ctx.lineTo(-33, 5); ctx.stroke();
+        ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(14, 0, 1, 14, 0, 20); g.addColorStop(0, '#fff3a0'); g.addColorStop(.45, '#ff8a2a'); g.addColorStop(1, 'rgba(255,60,20,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(14, 0, 20 + Math.sin(time * 40) * 2, 0, Math.PI * 2); ctx.fill();
+      } else {
+        const fr = S2.map && S2.map.imp_fireball;
+        ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 30); g.addColorStop(0, 'rgba(255,230,140,.8)'); g.addColorStop(.5, 'rgba(255,120,30,.45)'); g.addColorStop(1, 'rgba(220,40,20,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 30 + Math.sin(time * 30) * 2, 0, Math.PI * 2); ctx.fill(); ctx.globalCompositeOperation = 'source-over';
+        if (fr) { ctx.scale(f.dir, 1); ctx.rotate(Math.atan2(f.vy, Math.abs(f.vx)) * .8); const kk = 64 / fr.h * 1.15; ctx.drawImage(S2.img, fr.x, fr.y, fr.w, fr.h, -fr.w * kk * .72, -fr.h * kk / 2, fr.w * kk, fr.h * kk); }
+      }
       ctx.restore();
     }
   }
   function ziggyTurbo() {
+    if (gt < turboUntil) { turboUntil = 0; return; }   // ACTION une 2e fois : on freine
     if (gt < turboReady) return;
-    startTurbo(1.4, false);
+    startTurbo(1.2, false);
   }
   function findAnchor(exclude) {
     const hx = player.x + player.w/2, hy = player.y + 12;
@@ -1183,7 +1378,7 @@
     player.grounded = false; player.jumping = true; swing = null;
     const x = player.x + player.w/2, y = player.y + 20;
     FX.ring(x, y, '#e7d8ff', 50, .3, 4); FX.sparkle(x, y, flip ? 12 : 8, ['#ffffff', '#d8c8ff'], 170);
-    triggerHeroAnimation('jump', 360); MM.haptic(flip ? 'good' : 'jump');
+    triggerHeroAnimation('jump', 360); if (!flip) triggerHeroAnimation('release', 320); MM.haptic(flip ? 'good' : 'jump');
   }
   function titanPunch() {
     if (gt < punchReady) return;
@@ -1196,6 +1391,11 @@
     sound('punch'); MM.haptic('punch'); FX.shake(3, .16);
     let hit = false;
     for (const b of world.bumps.slice()) if (b.kind !== 'small' && b.x < x1 && b.x + b.w > x0) { hitBump(b, 'punch'); hit = true; }
+    for (const m of world.monsters) {                                  // à portée de poing : le coup de poing capture aussi (même force que le poing projeté)
+      if (m.friendly || !onScreen(m.x, -10)) continue;
+      const b = monsterBox(m);
+      if ((b.cx - cx) * dir > -30 && Math.abs(b.cx - cx) < b.hw + 125 && Math.abs(b.cy - (player.y + player.h / 2)) < b.hh + 55) { hitMonster(m, { hero: 'titan', x: b.cx, y: b.cy }); hit = true; }
+    }
     if (!hit) FX.dust(fx, world.floor, dir, 3);
   }
   function playTone(freq, ms) {

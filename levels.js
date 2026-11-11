@@ -332,12 +332,11 @@
       const roofs = c.platforms.filter((p) => p.w >= 130 && !STATIONS.some((s) => Math.abs(p.x + p.w / 2 - s) < 200)).map((p) => ({ x0: p.x + 40, x1: p.x + p.w - 40, y: p.y, roof: true }));
       const surfaces = ground.concat(roofs);
       const order = shuffle([0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4]);
-      const lo = 850, hi = W - 1000, step = (hi - lo) / 20, used = [];
+      const lo = 850, hi = Math.round(W * .6), step = (hi - lo) / 20, used = [];
       for (let i = 0; i < 20; i++) {
         const type = order[i], s0 = lo + i * step, s1 = s0 + step;
         let x, y;
-        if (type === 2) { x = r(s0 + 40, s1 - 40); y = F - r(190, 320); }
-        else {
+        {
           const cand = surfaces.map((sf) => ({ sf, a: Math.max(sf.x0, s0 - 120), b: Math.min(sf.x1, s1 + 120) })).filter((q) => q.b - q.a >= 70 && !used.some((u) => Math.abs(u - (q.a + q.b) / 2) < 150));
           const pool = (type === 4 || rnd() < .45) && cand.some((q) => q.sf.roof) ? cand.filter((q) => q.sf.roof) : cand;
           const pickFrom = pool.length ? pool : cand;
@@ -350,20 +349,26 @@
     }
 
     /* ----- Lettres : 26 emplacements, les plus difficiles d'abord ----- */
+    // les dernières étoiles, lettres et monstres ne se suivent pas : chaque autocollant a le temps d'être savouré
+    c.stars = c.stars.filter((s) => s.x < W * .76);
     const taken = [];
     const blocked = (s) => c.gaps.some((g) => s.x > g.x - 24 && s.x < g.x + g.w + 24 && s.diff !== 'hard' && s.y > F - 120)
       || c.bumps.some((b) => s.x > b.x - 24 && s.x < b.x + b.w + 24 && s.y > F - b.h - 30);
     const rank = { hard: 0, medium: 1, easy: 2 };
-    c.spots.filter((s) => !blocked(s)).sort((a, b) => rank[a.diff] - rank[b.diff]).forEach((s) => {
+    c.spots.filter((s) => !blocked(s) && s.x < W - 1000).sort((a, b) => rank[a.diff] - rank[b.diff]).forEach((s) => {
       if (taken.length < 26 && taken.every((t) => Math.abs(t.x - s.x) > 150 || Math.abs(t.y - s.y) > 120)) taken.push(s);
     });
-    for (let fx = 300; taken.length < 26 && fx < W - 300; fx += 170) {
+    for (let fx = 300; taken.length < 26 && fx < W - 1000; fx += 170) {
       const s = { x: fx, y: F - 58, diff: 'easy' };
       if (!blocked(s) && taken.every((t) => Math.abs(t.x - s.x) > 150)) taken.push(s);
     }
-    for (let fx = 330; taken.length < 26 && fx < W - 300; fx += 61) {
+    for (let fx = 330; taken.length < 26 && fx < W - 1000; fx += 61) {
       const s = { x: fx, y: F - 58, diff: 'easy' };
       if (!blocked(s) && taken.every((t) => Math.abs(t.x - s.x) > 110)) taken.push(s);
+    }
+    // la dernière lettre est loin des dernières étoiles
+    if (Math.max(...taken.map((t) => t.x)) < W - 1900) {
+      for (let fx = W - 1500; fx < W - 1050; fx += 40) { const s = { x: fx, y: F - 58, diff: 'easy' }; if (!blocked(s)) { taken.pop(); taken.push(s); break; } }
     }
     c.letterSpots = taken.sort((a, b) => a.x - b.x).slice(0, 26);
     return c;
