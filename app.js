@@ -823,7 +823,8 @@
     if (/google/i.test(n)) sc += 35;
     if (/denise|eloise|élo|amélie|amelie|audrey|marie|julie|hortense|céline|celine|vivienne|brigitte|sylvie|chloé|chloe/i.test(n)) sc += 15;
     if (/espeak|compact|robot|novelty/i.test(n)) sc -= 80;
-    if (/^fr-FR/i.test(l)) sc += 6; else if (/^fr-CA/i.test(l)) sc += 3;
+    if (/^fr[-_]FR/i.test(l)) sc += 80; else if (/^fr[-_]CA/i.test(l)) sc -= 40; else if (/^fr[-_](BE|CH|LU)/i.test(l)) sc += 10;   // voix de France d'abord, canadienne en dernier recours
+    if (/canad|québ|quebec|sylvie|antoine|nicolas/i.test(n)) sc -= 40;
     if (!v.localService) sc += 4;
     return sc;
   }
