@@ -410,7 +410,7 @@
       }
     };
     const DECKS = {
-      filou: ['swingChain', 'skyHop', 'swingOver', 'swingGap', 'swingChain', 'ladderTall', 'skyHop', 'swingOver', 'swingChain', 'ladder', 'swingChain', 'hopStones', 'skyHop', 'swingGap', 'swingOver', 'swingChain', 'ladderTall', 'rooftops'],
+      filou: ['swingGap', 'swingOver', 'street', 'swingGap', 'ladder', 'swingOver', 'swingGap', 'hopStones', 'swingGap', 'swingOver', 'ladder', 'rooftops', 'swingGap', 'swingOver'],
       ziggy: ['sprint', 'hopStones', 'trampTower', 'bigGap', 'towerHop', 'fenceRun', 'highTrack', 'hopStones', 'bigGap', 'hurdles', 'towerHop', 'fenceRun', 'hopStones', 'trampTower', 'highTrack'],
       titan: ['rubble', 'hopStones', 'boulder', 'lavaRoofs', 'towerHop', 'wall', 'double', 'hopStones', 'crates', 'lavaRoofs', 'towerHop', 'ledge', 'boulder', 'hopStones', 'wall', 'lavaRoofs']
     };
