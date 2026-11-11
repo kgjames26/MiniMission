@@ -49,6 +49,7 @@
           <button class="round-btn settings-open" type="button" aria-label="Réglages pour l'adulte" title="Réglages">⚙</button>
           <span class="grow"></span>
           <button id="help-art-button" class="pill-btn" type="button" aria-label="Mode d’emploi"><span aria-hidden="true">📖</span><span>Mode d’emploi</span></button>
+          <button id="timer-open" class="round-btn timer-open" type="button" aria-label="Minuteur de jeu"><span aria-hidden="true">⏱️</span><b id="timer-chip" class="timer-chip hidden"></b></button>
           <button id="home-sound-toggle" class="round-btn" type="button" aria-label="Activer ou couper les sons">♫</button>
         </div>
         <h1 class="logo" aria-label="Mini Mission">
@@ -107,8 +108,9 @@
         </header>
         <div class="howto-board">
           <div class="howto-block">
-            <p class="howto-label"><span aria-hidden="true">👣</span> DÉPLACER&nbsp;!</p>
-            <div class="dpad dpad-demo" style="--pad:var(--demo-pad)" aria-hidden="true"><span class="dpad-base"></span><span class="dpad-btn dpad-up"></span><span class="dpad-btn dpad-left"></span><span class="dpad-center"></span><span class="dpad-btn dpad-right"></span><span class="dpad-btn dpad-down"></span></div>
+            <p class="howto-label"><span aria-hidden="true">👣</span> GAUCHE ⬌ DROITE&nbsp;!</p>
+            <div class="dpad lr dpad-demo" style="--lrw:var(--demo-lr)" aria-hidden="true"><span class="lr-btn lr-left"><span>◀</span></span><span class="lr-btn lr-right"><span>▶</span></span></div>
+            <p class="howto-hint">Garde le doigt appuyé pour avancer&nbsp;!</p>
             
           </div>
           <div class="howto-block">
@@ -165,13 +167,9 @@
         <div id="tier-splash" class="tier-splash" aria-hidden="true"><div class="ts-card"><span class="ts-swords"></span><b class="ts-text"></b></div></div>
         <div id="home-hint" class="home-hint hidden" aria-hidden="true">🏡 ➜</div>
         <div class="touch-controls">
-          <div id="dpad" class="dpad" role="group" aria-label="Croix de déplacement : gauche, droite, haut pour sauter, bas pour descendre">
-            <span class="dpad-base" aria-hidden="true"></span>
-            <button type="button" class="dpad-btn dpad-up" data-dir="up" aria-label="Sauter" tabindex="-1"></button>
-            <button type="button" class="dpad-btn dpad-left" data-dir="left" aria-label="Aller à gauche" tabindex="-1"></button>
-            <span class="dpad-center" aria-hidden="true"></span>
-            <button type="button" class="dpad-btn dpad-right" data-dir="right" aria-label="Aller à droite" tabindex="-1"></button>
-            <button type="button" class="dpad-btn dpad-down" data-dir="down" aria-label="Descendre d’une plateforme" tabindex="-1"></button>
+          <div id="dpad" class="dpad lr" role="group" aria-label="Aller à gauche ou à droite">
+            <button type="button" class="lr-btn lr-left" data-dir="left" aria-label="Aller à gauche" tabindex="-1"><span>◀</span></button>
+            <button type="button" class="lr-btn lr-right" data-dir="right" aria-label="Aller à droite" tabindex="-1"><span>▶</span></button>
           </div>
           <div class="action-cluster">
             <button type="button" id="attack-button" class="action-button" aria-label="Action : utiliser le pouvoir du héros et transformer un farceur en ami" tabindex="-1"><span class="action-ring" aria-hidden="true"></span><span class="action-power" aria-hidden="true">☄️</span><strong aria-hidden="true">ACTION&nbsp;!</strong><small aria-hidden="true">TURBO</small></button>
@@ -234,8 +232,29 @@
         </div>
       </section>
 
+
+      <section id="timer-screen" class="screen modal-screen" aria-label="Minuteur de jeu">
+        <div class="modal-card timer-card"><button class="close-settings" type="button" data-go="home" aria-label="Fermer">×</button>
+          <h2>⏱️ Combien de temps ?</h2>
+          <div id="timer-options" class="timer-options" role="group"></div>
+          <p class="timer-note">Ensuite, les héros vont dormir.</p>
+        </div>
+      </section>
+
+      <section id="rest-screen" class="screen rest-screen" aria-label="Les héros dorment">
+        <button class="round-btn rest-back" type="button" data-go="home" aria-label="Retour à l’accueil">←</button>
+        <div class="rest-sky" aria-hidden="true"><span class="rest-moon">🌙</span><i>✦</i><i>✧</i><i>✦</i><i>✧</i><i>★</i></div>
+        <div class="rest-heroes" aria-hidden="true">
+          <div class="rest-hero"><span class="sprite" style="--col:3;--row:0"></span><span class="zzz"><i>Z</i><i>z</i><i>z</i></span></div>
+          <div class="rest-hero"><span class="sprite" style="--col:3;--row:1"></span><span class="zzz"><i>Z</i><i>z</i><i>z</i></span></div>
+          <div class="rest-hero"><span class="sprite" style="--col:3;--row:2"></span><span class="zzz"><i>Z</i><i>z</i><i>z</i></span></div>
+        </div>
+        <p class="rest-title">Chut… les héros dorment&nbsp;!</p>
+        <p id="rest-count" class="rest-count">60:00</p>
+      </section>
+
       <section id="settings-screen" class="screen modal-screen" aria-label="Réglages adulte">
-        <div class="modal-card settings-card"><button class="close-settings" type="button" data-go="home" aria-label="Fermer">×</button><h2>⚙ Réglages</h2><label class="setting-row"><span>🔊 Sons</span><input id="music-toggle" type="checkbox" checked /></label><label class="setting-row"><span>🎵 Musique</span><input id="music-bg-toggle" type="checkbox" checked /></label><label class="setting-row"><span>💥 Bruitages</span><input id="effects-toggle" type="checkbox" checked /></label><label class="setting-row"><span>📳 Vibrations</span><input id="haptics-toggle" type="checkbox" checked /></label><label class="setting-row voice-row"><span>🗣️ Voix</span><select id="voice-select" aria-label="Choisir la voix"><option value="">Automatique</option></select></label><button id="reset-button" class="reset-hold" type="button" aria-label="Réinitialiser le jeu : garder appuyé 3 secondes"><span class="rh-fill"></span><span class="rh-text">🗑️ Tout réinitialiser <small>(garder appuyé)</small></span></button></div>
+        <div class="modal-card settings-card"><button class="close-settings" type="button" data-go="home" aria-label="Fermer">×</button><h2>⚙ Réglages</h2><label class="setting-row"><span>🔊 Sons</span><input id="music-toggle" type="checkbox" checked /></label><label class="setting-row"><span>🎵 Musique</span><input id="music-bg-toggle" type="checkbox" checked /></label><label class="setting-row"><span>💥 Bruitages</span><input id="effects-toggle" type="checkbox" checked /></label><label class="setting-row"><span>📳 Vibrations</span><input id="haptics-toggle" type="checkbox" checked /></label><label class="setting-row voice-row"><span>🗣️ Voix</span><select id="voice-select" aria-label="Choisir la voix"><option value="">Automatique</option></select></label><button id="timer-reset-button" class="reset-hold" type="button" aria-label="Réinitialiser le minuteur : garder appuyé 3 secondes"><span class="rh-fill"></span><span class="rh-text">⏱️ Réinitialiser le minuteur <small>(garder appuyé)</small></span></button><button id="reset-button" class="reset-hold" type="button" aria-label="Réinitialiser le jeu : garder appuyé 3 secondes"><span class="rh-fill"></span><span class="rh-text">🗑️ Tout réinitialiser <small>(garder appuyé)</small></span></button></div>
       </section>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </main>

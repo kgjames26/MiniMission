@@ -72,3 +72,9 @@ Quand tout a été attrapé dans une ville (étoiles, lettres, 20 monstres, ques
 
 ## Balancement de Filou (v0.22)
 Filou reste accroché à sa toile tant qu'on ne saute pas (le bouton SAUT clignote au meilleur moment ; maintenir ← ou → donne de l'élan). Les anneaux sont placés plus haut et le liquide des trous (eau avec requin, lave) est plus profond : Filou ne les touche jamais en se balançant. Nouveaux « saute-mouton » : une suite de 4 anneaux qui montent vers un trésor visible en haut de l'écran.
+
+## Commandes, minuteur, repos (v0.28)
+- Deux gros boutons ◀ ▶ (plus de croix : le saut a son bouton) ; le mode d'emploi est mis à jour.
+- Minuteur : bouton ⏱️ en haut à droite de l'accueil (5 à 60 min). Une fois le temps écoulé, la partie en cours se termine, puis les héros dorment 1 heure (écran de repos animé, JOUER est bloqué). Le parent remet le minuteur à zéro en gardant appuyé « Réinitialiser le minuteur » dans les réglages.
+- La musique se coupe après 45 s sans toucher l'écran et revient au premier contact.
+- Au lancement, on passe toujours par accueil → héros → ville : le jeu ne reprend plus une partie tout seul.

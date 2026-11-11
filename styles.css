@@ -571,3 +571,45 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
 .home-tagline{padding:0;background:none;box-shadow:none;margin:0 0 10px;font-size:clamp(24px,4.6vh,38px);font-weight:1000;color:#fff;letter-spacing:.5px;-webkit-text-stroke:.12em #e4741a;paint-order:stroke fill;text-shadow:0 4px 0 #b8560f}
 #jump-button.cue{animation:jump-cue .5s ease-in-out infinite;box-shadow:0 0 0 6px #fff,0 0 28px 10px rgba(255,240,120,.95)}
 @keyframes jump-cue{50%{transform:scale(1.14)}}
+
+/* ---------- Commandes gauche / droite : deux gros boutons pour de petites mains ---------- */
+.dpad.lr{display:flex;gap:calc(var(--pad)*.16);width:var(--lrw,min(calc(var(--pad)*2.15),48vw));height:calc(var(--lrw,min(calc(var(--pad)*2.15),48vw))*.52);padding:0;grid-template:none}
+.lr-btn{position:relative;flex:1;display:grid;place-items:center;border-radius:34%;border:calc(var(--pad)*.045) solid #fff;background:radial-gradient(circle at 50% 28%,#b7f58f,#4cc13c 62%,#2f9a2a);box-shadow:0 calc(var(--pad)*.07) 0 #1f7a1d,0 calc(var(--pad)*.12) calc(var(--pad)*.16) rgba(0,40,0,.35),inset 0 calc(var(--pad)*.04) 0 rgba(255,255,255,.55);cursor:pointer;touch-action:none;font-family:inherit;padding:0}
+.lr-btn span{font-size:calc(var(--pad)*.62);line-height:1;color:#fff;text-shadow:0 calc(var(--pad)*.03) 0 #1f7a1d,0 0 calc(var(--pad)*.1) rgba(255,255,255,.5);pointer-events:none}
+.lr-btn.pressed{transform:translateY(calc(var(--pad)*.05));filter:brightness(1.12);box-shadow:0 calc(var(--pad)*.02) 0 #1f7a1d,inset 0 calc(var(--pad)*.05) 0 rgba(255,255,255,.4)}
+.dpad.lr.dpad-demo{pointer-events:none;--pad:var(--demo-pad)}
+.howto-screen{--demo-lr:calc(var(--demo-pad)*1.9)}
+.howto-hint{margin:6px 0 0;font-weight:900;color:#4a7a5e;text-align:center;font-size:clamp(13px,2.2vh,17px)}
+/* ---------- Minuteur ---------- */
+.timer-open{position:relative}
+.timer-chip{position:absolute;right:-6px;bottom:-8px;min-width:30px;padding:1px 6px;border-radius:12px;background:#ff8a2a;color:#fff;font-size:12px;font-weight:1000;border:2px solid #fff;text-align:center}
+.timer-card{width:min(480px,94vw);text-align:center}
+.timer-options{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}
+.timer-options button{padding:12px 4px;border-radius:18px;border:3px solid #cfe3ee;background:#fff;color:#33506a;font:inherit;font-size:20px;font-weight:1000;cursor:pointer;line-height:1.1}
+.timer-options button small{display:block;font-size:11px;font-weight:800;opacity:.7}
+.timer-options button.on{background:linear-gradient(#ffd96a,#ff9f1c);border-color:#fff;color:#fff;box-shadow:0 4px 0 #c56a00}
+.timer-note{margin:4px 0 0;font-weight:800;color:#6b8b9b;font-size:14px}
+/* ---------- Les héros dorment ---------- */
+.rest-screen{background:linear-gradient(#1c2a5a,#3b3a80 60%,#5b4a8a);color:#fff;flex-direction:column;align-items:center;justify-content:center;gap:clamp(6px,2vh,18px);overflow:hidden}
+.rest-back{position:absolute;left:calc(var(--sal) + 14px);top:calc(var(--sat) + 12px);z-index:3}
+.rest-sky{position:absolute;inset:0;pointer-events:none}
+.rest-moon{position:absolute;right:10%;top:12%;font-size:clamp(60px,14vh,120px);filter:drop-shadow(0 0 24px #fff8b0);animation:floaty 6s ease-in-out infinite}
+.rest-sky i{position:absolute;font-style:normal;font-size:26px;color:#ffe9a0;animation:twinkle 2.4s ease-in-out infinite}
+.rest-sky i:nth-child(2){left:12%;top:20%}.rest-sky i:nth-child(3){left:30%;top:10%;animation-delay:.6s}.rest-sky i:nth-child(4){left:60%;top:22%;animation-delay:1.2s}.rest-sky i:nth-child(5){left:80%;top:48%;animation-delay:.3s}.rest-sky i:nth-child(6){left:20%;top:55%;animation-delay:.9s}
+@keyframes twinkle{50%{opacity:.3;transform:scale(.7)}}
+.rest-heroes{position:relative;z-index:2;display:flex;gap:clamp(8px,4vw,50px);align-items:flex-end;justify-content:center;margin-top:8vh}
+.rest-hero{position:relative;display:grid;place-items:end center}
+.rest-hero .sprite{--sh:clamp(90px,26vh,200px);transform-origin:50% 90%;transform:rotate(-78deg) translateY(8%);filter:brightness(.82) saturate(.9);animation:breathe 3.2s ease-in-out infinite}
+.rest-hero:nth-child(2) .sprite{animation-delay:.5s}.rest-hero:nth-child(3) .sprite{animation-delay:1s}
+@keyframes breathe{50%{transform:rotate(-78deg) translateY(8%) scale(1.05,.97)}}
+.zzz{position:absolute;right:-6%;top:-18%;display:flex;gap:2px;font-weight:1000;color:#cfe0ff}
+.zzz i{font-style:normal;font-size:clamp(20px,4.6vh,36px);animation:zfloat 2.6s ease-in-out infinite;opacity:0}
+.zzz i:nth-child(2){animation-delay:.8s;font-size:clamp(16px,3.6vh,28px)}.zzz i:nth-child(3){animation-delay:1.6s;font-size:clamp(12px,2.8vh,22px)}
+@keyframes zfloat{0%{opacity:0;transform:translate(0,10px)}30%{opacity:1}100%{opacity:0;transform:translate(14px,-34px)}}
+.rest-title{position:relative;z-index:2;margin:0;font-size:clamp(22px,4.8vh,40px);font-weight:1000;text-align:center;text-shadow:0 3px 0 #1c2a5a}
+.rest-count{position:relative;z-index:2;margin:0;font-size:clamp(28px,6vh,52px);font-weight:1000;color:#ffe9a0;letter-spacing:2px}
+#session-timer-row{display:none!important}
+@media(max-height:460px){.home-tagline{display:none}.home-album-row{margin:0 0 6px;padding:0}.home-album-row .pill-btn#album-open{min-height:44px;padding:6px 22px;font-size:18px}}
+.rest-heroes{margin-top:4vh;margin-bottom:9vh;gap:clamp(24px,8vw,90px)}
+.rest-hero{width:clamp(60px,16vh,120px);height:clamp(60px,16vh,120px)}
+.rest-hero .sprite{position:absolute;left:50%;bottom:0;margin-left:calc(var(--sh)*-.5)}
