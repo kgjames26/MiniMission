@@ -187,14 +187,16 @@
   const missionPalettes = { ziggy:['#b9edff','#66bd82','#ffd68a'], filou:['#c9f2ff','#65b9a4','#a8a3ef'], titan:['#bce9f7','#58a96f','#f2c76d'] };
   function createMission(heroId, index = 0) {
     const created = todaysMission(heroId, index), city = MM.cities[index] || MM.cities[0];
-    created.title = `${city.flag} ${city.name}`; created.city = index; created.level = { hero: heroId, index };
+    created.tier = readLevel(heroId, index).tier || 0; created.title = `${city.flag} ${city.name}${created.tier ? ' ⚔️' + created.tier : ''}`; created.city = index; created.level = { hero: heroId, index };
     created.seed = hash(`${heroId}-${index}-v5`) || 1;      // la ville est toujours la même : on peut la rejouer pour trouver ce qui manque
     created.palette = [city.sky[0], city.grass, city.sky[1]]; created.levelVersion = 6; return created;
   }
   /* ----- progression par ville : 10 niveaux par héros, le suivant s'ouvre quand on arrive au bout ----- */
-  const BLANK_LEVEL = { done: false, stars: [], letters: [], monsters: [], q: 0, silver: false, gold: false, mon: false, tot: null };
+  const BLANK_LEVEL = { tier: 0, done: false, stars: [], letters: [], monsters: [], q: 0, silver: false, gold: false, mon: false, tot: null };
   function readLevel(hero, i) { return (save.levels && save.levels[hero] && save.levels[hero][i]) || BLANK_LEVEL; }
   function levelEntry(hero, i) { save.levels = save.levels || {}; const arr = save.levels[hero] = save.levels[hero] || []; return arr[i] = arr[i] || { ...BLANK_LEVEL, stars: [], letters: [], monsters: [] }; }
+  // tout a été attrapé : la ville peut être refaite avec une difficulté de plus (mêmes autocollants à regagner)
+  function levelComplete(L) { const t = L.tot; return !!(t && L.stars.length >= t.s && L.letters.length >= t.l && L.monsters.length >= t.m && L.q >= t.q && L.silver && L.gold && L.mon); }
   const levelUnlocked = (hero, i) => i === 0 || readLevel(hero, i - 1).done;
   function commitProgress(done) {
     if (!mission || !mission.level || !Array.isArray(mission.coins)) return;
@@ -227,8 +229,9 @@
         const chip = (icon, a, b) => `<span class="lv-chip ${a >= b ? 'full' : ''}"><i style="--p:${b ? a / b : 0}"></i>${icon} ${a}/${b}</span>`;
         inner = `<div class="lv-chips">${chip('⭐', L.stars.length, t.s)}${chip('🔤', L.letters.length, t.l)}${chip('👾', L.monsters.length, t.m)}${chip('❓', L.q, t.q)}</div><div class="lv-chips"><span class="lv-chip ${L.silver ? 'med' : ''}" style="opacity:${L.silver ? 1 : .55}">🥈${L.silver ? '✓' : ''}</span><span class="lv-chip ${L.gold ? 'med' : ''}" style="opacity:${L.gold ? 1 : .55}">🥇${L.gold ? '✓' : ''}</span></div>`;
       }
+      const tierBadge = (L.tier ? `<span class="lv-tier" aria-label="Difficulté ${L.tier}">⚔️${L.tier}</span>` : '') + (levelComplete(L) ? '<span class="lv-again" aria-label="Refaire plus difficile">↻⚔️</span>' : '');
       const rem = t ? ` Il reste ${t.s - L.stars.length} étoiles, ${t.l - L.letters.length} lettres, ${t.m - L.monsters.length} monstres.` : '';
-      return `<button type="button" role="listitem" class="level-card ${open ? '' : 'locked'} ${L.done ? 'done' : ''}" data-i="${i}" style="--a:${c.sky[0]};--b:${c.sky[1]};--g:${c.grass}" aria-label="Niveau ${i + 1} : ${escapeHtml(c.name)}${open ? '' : ', verrouillé'}.${rem}"><span class="lv-num">${i + 1}</span><span class="lv-flag">${c.flag}</span><span class="lv-icon">${c.icon}</span><b class="lv-name">${escapeHtml(c.name)}</b>${inner}</button>`;
+      return `<button type="button" role="listitem" class="level-card ${open ? '' : 'locked'} ${L.done ? 'done' : ''}" data-i="${i}" style="--a:${c.sky[0]};--b:${c.sky[1]};--g:${c.grass}" aria-label="Niveau ${i + 1} : ${escapeHtml(c.name)}${open ? '' : ', verrouillé'}.${rem}"><span class="lv-num">${i + 1}</span><span class="lv-flag">${c.flag}</span><span class="lv-icon">${c.icon}</span><b class="lv-name">${escapeHtml(c.name)}</b>${inner}${tierBadge}</button>`;
     }).join('');
   }
   function pickLevel(i) {
@@ -264,6 +267,10 @@
   function startLevel(heroId, index) {
     if(!sessionActive){sessionActive=true;sessionElapsed=0;sessionTimerLimit=Number($('#session-timer-select').value)||0;stopAfterMission=false;timerWarningSent=false;timerAnnouncementPending=false;save.sessionActive=true;save.sessionElapsed=0;save.sessionTimerLimit=sessionTimerLimit;save.stopAfterMission=false;save.timerWarningSent=false;}$('#session-timer-row').classList.toggle('hidden',sessionActive);
     activeHero = heroId;
+    if (levelComplete(readLevel(heroId, index))) {
+      const E = levelEntry(heroId, index); E.tier = (E.tier || 0) + 1;
+      E.stars = []; E.letters = []; E.monsters = []; E.q = 0; E.silver = E.gold = E.mon = false; writeSave();
+    }
     mission = createMission(heroId, index);
     save.missionNumber=(Number(save.missionNumber)||0)+1;save.activeDate = dayKey(); save.activeHero = heroId; save.activeMission = mission; save.progress = 0; writeSave();
     beginGame(false);
@@ -890,7 +897,7 @@
     $('#alphabet-grid').innerHTML = ALPHABET.map(letter => `<span class="alphabet-letter ${found.includes(letter) ? 'found' : 'missing'}" aria-label="${letter} ${found.includes(letter) ? 'récoltée' : 'pas encore récoltée'}">${letter}</span>`).join('');
     $('#alphabet-summary').textContent = `${found.length}/26`;
     $('.rest-card').classList.toggle('hidden', !stopAfterMission);
-    $('#replay-button').classList.toggle('hidden', stopAfterMission);
+    $('#replay-button').classList.toggle('hidden', stopAfterMission); $('#replay-button').classList.toggle('newround', levelComplete(readLevel(lv.hero, lv.index)));
     $('#next-level-button').classList.toggle('hidden', stopAfterMission || lv.index >= MM.cities.length - 1);
     setScreen('ending-screen'); sound('finish'); MM.haptic('good');
     const parts = left.map(([, label, a, b]) => `${b - a} ${label}`);
@@ -1230,7 +1237,7 @@
     if (!Array.isArray(mission.monsters)) mission.monsters = level.monsters.map(m => {
       // moitié diablotins de feu (lanceurs), moitié petits monstres tranquilles : hérisson, limon, chauve-souris, golem
       const imp = m.id % 2 === 0, type = imp ? (m.id / 2) % 5 : ((m.id - 1) / 2) % 4, y = !imp && type === 2 ? m.y - 150 - rnd() * 100 : m.y;
-      return { id: m.id, imp, type, x: m.x, y, homeX: m.x, homeY: y, hp: type === 3 ? 2 : 1, friendly: false, order: 0 };
+      return { id: m.id, imp, type, x: m.x, y, homeX: m.x, homeY: y, hp: (type === 3 ? 2 : 1) + Math.min(4, mission.tier || 0), friendly: false, order: 0 };
     });
     mission.monsters.forEach(m => { m.dir = rnd() < .5 ? 1 : -1; m.pd = m.dir; m.phase = rnd() * 6; m.hop = 0; m.cool = 1.2 + rnd() * 2.2; m.st = 'walk'; m.stT = 0; m.jy = 0; m.jv = 0; m.flash = 0; m.wrap = 0; m.hitT = 0; m.moving = false; if (m.imp) patrolRange(m); if (m.friendly) { m.x = player ? player.x : m.x; } });
     world.monsters = mission.monsters;
@@ -1273,7 +1280,7 @@
   function impK(m) { return m.type === 3 ? .56 : .44; }
   function setImp(m, st) { m.st = st; m.stT = 0; }
   function startAttack(m) {
-    m.cool = (2.3 + Math.random() * 1.7) * (1.35 - (mission?.city || 0) * .045); m.dir = Math.sign(player.x + player.w / 2 - m.x) || 1; m.shots = m.type === 4 ? 2 : 1;
+    m.cool = (2.3 + Math.random() * 1.7) * (1.35 - (mission?.city || 0) * .045) * Math.max(.45, 1 - .12 * (mission?.tier || 0)); m.dir = Math.sign(player.x + player.w / 2 - m.x) || 1; m.shots = (m.type === 4 ? 2 : 1) + ((mission?.tier || 0) >= 2 ? 1 : 0);
     setImp(m, m.type === 1 ? 'crouch' : m.type === 3 ? 'channel' : 'charge'); m.tx = player.x + player.w / 2;
     FX.dots(m.x, m.y - 60, 4, ['#ff8a2a', '#ffd23f'], 70);
   }
@@ -1281,12 +1288,12 @@
     const d = m.dir, k = impK(m) / .44, px = player.x + player.w / 2, py = player.y + player.h * .45;
     const x = m.x + d * 40 * k, y = m.y - (m.jy || 0) - 52 * k;
     if (m.type === 2) {                                                // flèche de feu : rapide et droite
-      const vx = d * 430, t = Math.max(.25, Math.abs(px - x) / 430);
+      const sp = 430 * (1 + .1 * (mission?.tier || 0)), vx = d * sp, t = Math.max(.25, Math.abs(px - x) / sp);
       fireballs.push({ x, y, vx, vy: clamp((py - y) / t, -210, 210), g: 0, dir: d, life: 4, kind: 'arrow' }); sound('soft');
     } else if (m.type === 4 && m.shots === 1) {                        // 2e boule : un tir en cloche
       fireballs.push({ x, y, vx: d * clamp(Math.abs(px - x) * .8, 150, 260), vy: -330, g: 620, dir: d, life: 4, kind: 'lob' }); sound('soft');
     } else {
-      const vx = d * 235, t = Math.max(.3, Math.abs(px - x) / 235);
+      const sp = 235 * (1 + .1 * (mission?.tier || 0)), vx = d * sp, t = Math.max(.3, Math.abs(px - x) / sp);
       fireballs.push({ x, y, vx, vy: clamp((py - y) / t, -140, 140), g: 0, dir: d, life: 5, kind: 'fire' }); sound('soft');
     }
     FX.sparkle(x, y, 7, ['#ffd23f', '#ff8a2a', '#fff3a0'], 140);

@@ -525,3 +525,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
 .pair-card.up .pc-face,.pair-card.ok .pc-face{transform:none;opacity:1}
 .pair-card.up .pc-back,.pair-card.ok .pc-back{opacity:0}
 .pair-card.ok{border-color:#7fe08e;box-shadow:0 0 0 3px #7fe08e,0 5px 0 #2b8a46;animation:pop-in .35s}
+
+.lv-tier{position:absolute;right:8px;bottom:6px;padding:1px 7px;border-radius:10px;background:#ff6b6b;color:#fff;font-size:12px;font-weight:1000}
+.lv-again{margin-top:3px;padding:2px 8px;border-radius:12px;background:#fff4c8;color:#8a5b0b;font-size:13px;font-weight:1000;animation:pulse 1.8s ease-in-out infinite}
+.icon-btn.newround{position:relative;background:linear-gradient(#ffb36b,#e8621a);box-shadow:0 5px 0 #a8420c,0 8px 14px #184d7240}
+.icon-btn.newround::after{content:'⚔️';position:absolute;right:-6px;top:-6px;font-size:20px;filter:drop-shadow(0 1px 1px #0006)}
