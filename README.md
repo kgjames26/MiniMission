@@ -52,3 +52,12 @@ Le turbo ne démarre que sur ACTION ; il s'arrête tout seul après ~1 s, en cha
 - `levels.js` : génération des niveaux par héros et physique de la toile (partagée avec le jeu).
 - `stickers.js` : pages et règles de l'album. `fx.js` : particules, vibrations, musique. `minigames.js` : questions, labyrinthe, puzzle, Simon.
 - `sw.js` : cache hors ligne. `assets/` : sprites des héros (`heroes-atlas.webp` marche/saut, `hero-moves.webp` coups de poing/course rapide/balancement, `heroes-hd.webp` pour les écrans), `monsters.webp` (10 monstres), musique.
+
+## Albums par ville
+Un livre d'autocollants par ville (12 par livre : 8 bronze, 3 argent, 1 or), rempli ensemble par les trois héros, plus un livre général (« 📚 Tous mes livres ») depuis le bouton Album de l'accueil. Les 5 anciens livres thématiques restent consultables. Toucher un autocollant ouvre sa description (écrite et lue).
+
+## Mini-jeux
+Chaque caisse tire au hasard un jeu parmi : puzzle, labyrinthe, jeu des paires, rythme façon Simon (couleurs + notes) ou énigme. La difficulté monte avec la ville. Environ 100 images pour les puzzles et les paires, 50 duos pour les labyrinthes (labyrinthe généré à chaque fois).
+
+## Parcours
+Trous remplis de lave ou d'eau (avec un requin qui patrouille et saute), pierres flottantes en mobilier de la ville, barres à escalader pour passer un grand immeuble, balancements par-dessus un immeuble pour Filou (demi-tour en l'air possible après la toile). Toucher un monstre compte comme un impact. Après une chute, on repart bien avant le trou.

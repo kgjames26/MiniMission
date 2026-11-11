@@ -105,6 +105,59 @@
         return len;
       },
       /* ---- Filou ---- */
+      // grands trous traversés de meuble en meuble / de toit en toit : des pierres flottantes à hauteurs variées
+      hopStones(x) {
+        const approach = r(150, 200), gx = x + approach, n = ri(4, 6);
+        let cx = gx + r(85, 105), prevH = 0;
+        for (let i = 0; i < n; i++) {
+          const w = r(92, 125);
+          let h = i === 0 ? r(55, 85) : prevH + (rnd() < .5 ? 1 : -1) * r(30, 65);
+          h = Math.max(60, Math.min(190, h)); if (i === n - 1) h = Math.min(h, 120);
+          platform(cx, h, w, { kind: 'furn', icon: ri(0, 4) });
+          starLine(cx + w * .2, F - h - 40, 2, w * .5);
+          if (i === 1 || i === n - 1) spot(cx + w / 2, F - h - 44, i === n - 1 ? 'hard' : 'medium');
+          prevH = h; cx += w + r(88, 118);
+        }
+        c.gaps.push({ x: gx, w: cx - gx - 6 });
+        return approach + (cx - gx) + 330;
+      },
+      // grimper de barre en barre pour passer par-dessus un grand immeuble qui barre la route
+      towerHop(x) {
+        const approach = r(170, 210), tw = r(170, 210), th = r(285, 315);
+        let cx = x + approach; const hs = [75, 150, 225];
+        hs.forEach((h, i) => { platform(cx, h, 100, { kind: 'bar' }); starLine(cx + 20, F - h - 40, 2, 50); if (i === 1) spot(cx + 50, F - h - 42, 'medium'); cx += 100 + (i < 2 ? 32 : 58); });
+        const tx = cx; bump(tx, tw, th, 'tower', 0); spot(tx + tw / 2, F - th - 40, 'hard'); starLine(tx + 30, F - th - 40, 3, 55);
+        cx = tx + tw + 55;
+        [225, 150, 75].forEach((h, i) => { platform(cx, h, 100, { kind: 'bar' }); starLine(cx + 20, F - h - 40, 2, 50); cx += 100 + 32; });
+        return cx - x + 260;
+      },
+      // Filou : un immeuble trop haut pour être gravi, on le franchit d'un grand balancement par-dessus
+      swingOver(x) {
+        const approach = r(420, 460), gx = x + approach;
+        for (const th of [240, 215, 190, 165]) for (let attempt = 0; attempt < 4; attempt++) {
+          const tw = r(120, 150);
+          const right = { x0: gx + tw, x1: gx + tw + 520, y: F }, left = { x0: gx - 900, x1: gx, y: F };
+          let best = null;
+          for (const ay of [F - 560, F - 540, F - 520, F - 500, F - 480]) for (const ax of [gx - 380, gx - 350, gx - 320, gx - 290, gx - 260]) {
+            const a = { x: ax, y: ay }; let ok = true, n = 0, res0 = null;
+            for (const sx of [gx - 520, gx - 470, gx - 420, gx - 370, gx - 320]) {
+              if (!swing.canReach(a, sx, HAND_Y, 1)) continue;
+              n++;
+              const res = swing.simulate(ax, ay, sx, HAND_Y, 1, [left, right]);
+              const clear = res.path.every((p) => p.x < gx - 20 || p.x > gx + tw + 20 || p.y + PH / 2 < F - th - 10);
+              if (!res.land || res.land.surface !== right || !clear) { ok = false; break; }
+              if (!res0) res0 = res;
+            }
+            if (ok && n >= 3 && !best) best = { ax, ay, path: res0.path, split: res0.split };
+          }
+          if (!best) continue;
+          bump(gx, tw, th, 'tower', 0); c.anchors.push({ x: best.ax, y: best.ay }); c.log.push('swingOver');
+          swingStars(best.path, 2, 2);
+          const pb = best.path[Math.min(best.path.length - 1, best.split + 2)]; spot(pb.x, pb.y, 'hard');
+          return approach + tw + 480;
+        }
+        return SEG.swingGap(x);
+      },
       // plusieurs balancements d'affilée : on se pose à peine, puis on repart sur la toile
       swingChain(x) {
         const n = rnd() < .45 ? 3 : 2; let end = x, first = true;
@@ -296,9 +349,9 @@
       }
     };
     const DECKS = {
-      filou: ['street', 'swingGap', 'swingChain', 'ladder', 'rooftops', 'swingGap', 'swingChain', 'ladder', 'street', 'swingGap', 'rooftops', 'swingChain'],
-      ziggy: ['sprint', 'bigGap', 'fenceRun', 'highTrack', 'bigGap', 'hurdles', 'fenceRun', 'bigGap', 'highTrack', 'sprint', 'fenceRun'],
-      titan: ['rubble', 'boulder', 'lavaRoofs', 'wall', 'double', 'crates', 'lavaRoofs', 'ledge', 'boulder', 'wall', 'lavaRoofs']
+      filou: ['street', 'swingGap', 'hopStones', 'swingOver', 'swingChain', 'ladder', 'towerHop', 'swingChain', 'rooftops', 'swingOver', 'hopStones', 'swingGap', 'swingChain', 'ladder'],
+      ziggy: ['sprint', 'hopStones', 'bigGap', 'towerHop', 'fenceRun', 'highTrack', 'hopStones', 'bigGap', 'hurdles', 'towerHop', 'fenceRun', 'hopStones', 'highTrack'],
+      titan: ['rubble', 'hopStones', 'boulder', 'lavaRoofs', 'towerHop', 'wall', 'double', 'hopStones', 'crates', 'lavaRoofs', 'towerHop', 'ledge', 'boulder', 'hopStones', 'wall', 'lavaRoofs']
     };
 
     // zone de repos : terrain dégagé autour des caisses à énigme
@@ -329,7 +382,6 @@
       if (b - x > 150) SEG.street(x, b - x);
     }
     rest(W - 700, W - 120);
-    if (hero === 'titan') c.gaps.forEach((g) => { g.lava = true; });
 
     /* ----- 20 petits monstres, répartis sur tout le parcours (sol, toits, airs) ----- */
     {

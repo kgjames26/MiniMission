@@ -222,10 +222,10 @@
             <section class="ending-alphabet" aria-label="Alphabet récolté"><div id="alphabet-grid" class="alphabet-grid" role="list"></div><p id="alphabet-summary">0/26</p></section>
             <div class="rest-card"><span class="rest-stars">🌙 ✦ ✦</span></div>
             <div class="ending-buttons">
-              <button id="new-mission-button" class="primary-button" type="button">🏠 Menu</button>
-              <button id="replay-button" class="secondary-button" type="button">↻ Rejouer</button>
-              <button id="next-level-button" class="secondary-button hidden" type="button">Suivant ➜</button>
-              <button id="finish-button" class="secondary-button" type="button">Terminer <span>♥</span></button>
+              <button id="new-mission-button" class="icon-btn" type="button" aria-label="Menu principal">🏠</button>
+              <button id="replay-button" class="icon-btn" type="button" aria-label="Rejouer cette ville">↻</button>
+              <button id="end-album-button" class="icon-btn" type="button" aria-label="Voir l’album de la ville">📒</button>
+              <button id="next-level-button" class="icon-btn go hidden" type="button" aria-label="Ville suivante">➜</button>
             </div>
           </div>
         </div>
@@ -236,6 +236,7 @@
       </section>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </main>
+    <script src="stickers-cities.js" defer></script>
     <script src="stickers.js" defer></script>
     <script src="minigames.js" defer></script>
     <script src="fx.js" defer></script>

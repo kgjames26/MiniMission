@@ -491,3 +491,37 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
 .sd-listen{width:64px;height:64px;border-radius:50%;border:4px solid #fff;background:linear-gradient(#86daff,#2f8fdc);font-size:30px;cursor:pointer;box-shadow:0 4px 0 #1f6fb0}
 @keyframes pop-in{from{transform:scale(.7);opacity:0}to{transform:none;opacity:1}}
 @keyframes pulse{50%{transform:scale(1.1)}}
+
+.icon-btn{width:clamp(58px,10vh,78px);height:clamp(58px,10vh,78px);border-radius:50%;border:4px solid #fff;background:linear-gradient(#86daff,#2f8fdc);color:#fff;font-size:clamp(28px,5vh,38px);font-weight:1000;line-height:1;cursor:pointer;box-shadow:0 5px 0 #1f6fb0,0 8px 14px #184d7240;display:grid;place-items:center;font-family:inherit}
+.icon-btn:active{transform:translateY(3px);box-shadow:0 2px 0 #1f6fb0}
+.icon-btn.go{background:linear-gradient(#8be28f,#34a853);box-shadow:0 5px 0 #207a3b,0 8px 14px #184d7240}
+.icon-btn.hidden{display:none}
+.ending-buttons{gap:14px;margin-top:10px}
+
+.album-tabs{overflow-x:auto;justify-content:flex-start;scrollbar-width:none;padding:4px 2px 8px}
+.album-tabs::-webkit-scrollbar{display:none}
+.album-tab{flex:none}
+.album-grid.books{grid-template-columns:repeat(5,minmax(0,1fr))}
+.book-card{position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px 10px;border-radius:20px;border:4px solid #fff;background:linear-gradient(170deg,#fff,color-mix(in srgb,var(--c) 28%,#fff));box-shadow:0 5px 0 var(--c),0 8px 14px #00000018;font-family:inherit;color:#33506a;cursor:pointer}
+.book-card:active{transform:translateY(3px)}
+.book-card .bk-face{font-size:clamp(24px,4vh,34px);line-height:1}
+.book-card .bk-icon{font-size:clamp(30px,6vh,48px);line-height:1}
+.book-card b{font-size:clamp(11px,1.9vh,15px);font-weight:1000;text-align:center;line-height:1.1}
+.book-card small{font-size:12px;font-weight:900}
+.book-card i{position:absolute;left:0;bottom:0;height:5px;width:calc(var(--p)*100%);background:var(--c)}
+.book-card.full::after{content:'✓';position:absolute;right:6px;top:4px;color:#fff;background:#4cc36a;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-weight:1000;font-size:14px}
+@media (max-width:760px) and (orientation:portrait){.album-grid.books{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.pill-btn#album-open{font-size:clamp(17px,2.6vh,22px);padding-left:clamp(16px,2.4vw,26px);padding-right:clamp(16px,2.4vw,26px);background:linear-gradient(#ffd96a,#ff9f1c);box-shadow:0 5px 0 #c56a00,0 8px 16px #c56a0040;animation:album-glow 2.4s ease-in-out infinite}
+.pill-btn#album-open span:first-child{font-size:1.5em}
+@keyframes album-glow{50%{transform:scale(1.06)}}
+
+/* ---------- Jeu des paires ---------- */
+.pairs-grid{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:clamp(8px,1.6vh,16px);width:min(80vw,56vh,440px);margin:auto}
+@media(max-height:520px){.pairs-grid{width:min(46vw,68vh)}}
+.pair-card{position:relative;aspect-ratio:1;border:4px solid #fff;border-radius:22px;background:linear-gradient(160deg,#8fd0ff,#4a90e2);box-shadow:0 5px 0 #2f6db5,0 8px 14px #1d4d7a30;cursor:pointer;font-family:inherit;padding:0;overflow:hidden}
+.pair-card span{position:absolute;inset:0;display:grid;place-items:center;transition:transform .3s,opacity .3s}
+.pc-back{font-size:clamp(30px,8vh,56px);color:#fff7b0;text-shadow:0 2px 0 #2f6db5}
+.pc-face{font-size:clamp(40px,11vh,80px);transform:scale(.2);opacity:0;background:#fffdf0}
+.pair-card.up .pc-face,.pair-card.ok .pc-face{transform:none;opacity:1}
+.pair-card.up .pc-back,.pair-card.ok .pc-back{opacity:0}
+.pair-card.ok{border-color:#7fe08e;box-shadow:0 0 0 3px #7fe08e,0 5px 0 #2b8a46;animation:pop-in .35s}
