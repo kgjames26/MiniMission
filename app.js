@@ -1296,9 +1296,27 @@
         for (let s = -2; s < 6; s++) { ctx.beginPath(); ctx.moveTo(x - 4 + s * 14, yy + 24); ctx.lineTo(x - 4 + s * 14 + 8, yy + 24); ctx.lineTo(x - 4 + s * 14 + 20, yy); ctx.lineTo(x - 4 + s * 14 + 12, yy); ctx.closePath(); ctx.fill(); }
         ctx.restore(); ctx.strokeStyle = DARK; ctx.lineWidth = 3.5; ctx.strokeRect(x - 4, yy, b.w + 8, 24);
       }
-    } else if (b.type === 0) { ctx.beginPath(); ctx.rect(x, top, b.w, b.h); halo(); ctx.fillStyle = '#d9894f'; ctx.fillRect(x, top, b.w, b.h); ctx.fillStyle = '#ffd9a8'; ctx.fillRect(x + 4, top + 3, b.w - 8, 7); ctx.strokeStyle = DARK; ctx.lineWidth = 4; ctx.strokeRect(x, top, b.w, b.h); }
-    else if (b.type === 1) { ctx.beginPath(); ctx.ellipse(x + b.w/2, F - b.h/2, b.w/2, b.h/2, 0, Math.PI, 0); ctx.closePath(); halo(); ctx.fillStyle = '#4fbf6a'; ctx.fill(); ctx.strokeStyle = DARK; ctx.lineWidth = 4; ctx.stroke(); ctx.fillStyle = '#9be8a4'; ctx.beginPath(); ctx.arc(x + b.w*.35, F - b.h*.48, 6, 0, Math.PI*2); ctx.fill(); }
-    else { ctx.beginPath(); ctx.rect(x, top, b.w, b.h); halo(); ctx.fillStyle = '#ffc93a'; ctx.fillRect(x, top, b.w, b.h); ctx.fillStyle = '#fff3b0'; ctx.beginPath(); ctx.arc(x + b.w/2, top + 8, 6, 0, Math.PI*2); ctx.fill(); ctx.strokeStyle = DARK; ctx.lineWidth = 4; ctx.strokeRect(x, top, b.w, b.h); }
+    } else {
+      // petits obstacles à sauter : caisse, cône ou tonneau, très lisibles (gros contour sombre + halo clair) et aux couleurs de la ville
+      const TH3 = theme(), w = b.w, h = b.h, cx = x + w / 2, kind = (b.type || 0) % 3;
+      if (kind === 0) {                                  // caisse en bois
+        ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, top, w, h, 7); else ctx.rect(x, top, w, h); halo();
+        const g = ctx.createLinearGradient(0, top, 0, F); g.addColorStop(0, '#f0c27a'); g.addColorStop(1, '#c98a45'); ctx.fillStyle = g; ctx.fill();
+        ctx.strokeStyle = DARK; ctx.lineWidth = 3.5; ctx.stroke();
+        ctx.strokeStyle = '#8a5a2b'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x + 7, top + 7); ctx.lineTo(x + w - 7, F - 7); ctx.moveTo(x + w - 7, top + 7); ctx.lineTo(x + 7, F - 7); ctx.stroke();
+        ctx.strokeStyle = TH3.fence[1]; ctx.lineWidth = 5; ctx.strokeRect(x + 5, top + 5, w - 10, h - 10);
+      } else if (kind === 1) {                           // cône de chantier
+        ctx.beginPath(); ctx.moveTo(x + w * .08, F); ctx.lineTo(x + w * .34, top + 4); ctx.quadraticCurveTo(cx, top - 4, x + w * .66, top + 4); ctx.lineTo(x + w * .92, F); ctx.closePath(); halo();
+        const g = ctx.createLinearGradient(x, 0, x + w, 0); g.addColorStop(0, '#ff9a3c'); g.addColorStop(.5, '#ff6a1a'); g.addColorStop(1, '#e24f0e'); ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = DARK; ctx.lineWidth = 3.5; ctx.stroke();
+        ctx.save(); ctx.clip(); ctx.fillStyle = '#fff'; ctx.fillRect(x, top + h * .36, w, h * .2); ctx.fillRect(x, top + h * .72, w, h * .12); ctx.restore();
+        ctx.fillStyle = '#3b3f4a'; roundRect(x - 2, F - 9, w + 4, 9, 4, true); ctx.strokeStyle = DARK; ctx.lineWidth = 3; roundRect(x - 2, F - 9, w + 4, 9, 4, false);
+      } else {                                           // tonneau cerclé
+        ctx.beginPath(); ctx.moveTo(x + 3, F); ctx.quadraticCurveTo(x - 6, F - h / 2, x + 3, top); ctx.lineTo(x + w - 3, top); ctx.quadraticCurveTo(x + w + 6, F - h / 2, x + w - 3, F); ctx.closePath(); halo();
+        const g = ctx.createLinearGradient(x, 0, x + w, 0); g.addColorStop(0, '#b9783c'); g.addColorStop(.45, '#e0a45c'); g.addColorStop(1, '#a86a30'); ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = DARK; ctx.lineWidth = 3.5; ctx.stroke();
+        ctx.fillStyle = TH3.fence[1]; ctx.fillRect(x - 2, top + h * .2, w + 4, 7); ctx.fillRect(x - 2, F - h * .28, w + 4, 7);
+        ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(x + w * .2, top + 6, 4, h - 12);
+      }
+    }
     ctx.restore();
   }
   // étoile à ramasser : grosse, arrondie, avec un petit visage
@@ -1485,9 +1503,17 @@
   /* ----- tirs : boule de feu (Ziggy), enroulement magique de toile (Filou), coup de poing projeté (Titan) ----- */
   function shoot() {
     if (scene !== 'game-screen' || gt < shootReady) return;
-    shootReady = gt + .38;
-    const dir = player.facing, hero = activeHero;
-    shots.push({ x: player.x + player.w / 2 + dir * 38, y: player.y + 36, vx: dir * SHOT_SPEED[hero], vy: 0, dir, hero, r: hero === 'titan' ? 26 : 18, born: gt });
+    const dir = player.facing, hero = activeHero, turbo = hero === 'ziggy' && gt < turboUntil;
+    shootReady = gt + (turbo ? .22 : .38);
+    // en turbo, le tir part plus vite que le héros et vise tout de suite le monstre le plus proche devant lui
+    const sx = player.x + player.w / 2 + dir * (turbo ? 64 : 38), sy = player.y + 36, speed = SHOT_SPEED[hero] + (turbo ? 520 : 0);
+    let vy = 0;
+    if (turbo) {
+      let best = null, bd = 1e9;
+      for (const m of world.monsters) { if (m.friendly || !onScreen(m.x, -10)) continue; const b = monsterBox(m), dx = (b.cx - sx) * dir; if (dx > 20 && dx < 1000 && dx < bd) { bd = dx; best = b; } }
+      if (best) vy = clamp((best.cy - sy) / Math.max(.15, bd / speed), -460, 460);
+    }
+    shots.push({ x: sx, y: sy, vx: dir * speed, vy, dir, hero, r: hero === 'titan' ? 26 : (turbo ? 24 : 18), born: gt, assist: turbo });
     triggerHeroAnimation('shot', 260);
     FX.sparkle(player.x + player.w / 2 + dir * 40, player.y + 36, 6, hero === 'ziggy' ? ['#ffb02e', '#fff3a0', '#ff6a2a'] : hero === 'filou' ? ['#ffffff', '#d8c8ff'] : ['#fff3a0', '#ffd23f'], 130);
     sound(hero === 'titan' ? 'punch' : 'magic'); MM.haptic('tap');
@@ -1501,9 +1527,9 @@
       for (const m of world.monsters) {
         if (m.friendly || !onScreen(m.x, -10)) continue;
         const b = monsterBox(m), dx = (b.cx - s.x) * s.dir;
-        if (dx > 0 && dx < 640 && Math.abs(b.cy - s.y) < 260 && dx < bd) { bd = dx; target = b; }
+        if (dx > 0 && dx < (s.assist ? 1000 : 640) && Math.abs(b.cy - s.y) < (s.assist ? 380 : 260) && dx < bd) { bd = dx; target = b; }
       }
-      if (target) s.vy += (clamp((target.cy - s.y) / Math.max(.2, bd / Math.abs(s.vx)) * .9, -420, 420) - s.vy) * Math.min(1, dt * 7);
+      if (target) s.vy += (clamp((target.cy - s.y) / Math.max(.2, bd / Math.abs(s.vx)) * .9, -520, 520) - s.vy) * Math.min(1, dt * (s.assist ? 14 : 7));
       s.x += s.vx * dt; s.y += s.vy * dt;
       if (Math.random() < .8) FX.glitter(s.x - s.dir * 10, s.y);
       if (s.x < cam - 30 || s.x > cam + view.w + 30 || gt - s.born > 3) { shots.splice(i, 1); continue; }    // jamais plus loin que l'écran
@@ -1705,13 +1731,13 @@
   function releaseSwing(manual, flip) {
     const s = swing; if (!s) return; swingCue = false; $('#jump-button').classList.remove('cue');
     const v = SW.velocity(s);
-    player.carryVx = v.vx; player.vx = v.vx; player.vy = v.vy - (manual ? 140 : 0);
+    player.carryVx = v.vx; player.vx = v.vx; player.vy = v.vy;
     if (Math.abs(player.carryVx) < 120) player.carryVx = 120 * s.dir;
     if (flip) {
       // un saut pendant le balancement : salto arrière, et on peut repartir dans l'autre sens en tenant la direction opposée
       const move = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
       if (move && Math.sign(move) !== Math.sign(player.carryVx)) { player.carryVx = move * Math.max(260, Math.abs(player.carryVx) * .8); player.facing = move; }
-      flipUntil = gt + .55; flipDir = Math.sign(player.carryVx) || 1; player.vy -= 160;
+      flipUntil = gt + .55; flipDir = Math.sign(player.carryVx) || 1;
     }
     player.grounded = false; player.jumping = true; swing = null; airTurnUntil = gt + 1.6;
     const x = player.x + player.w/2, y = player.y + 20;
