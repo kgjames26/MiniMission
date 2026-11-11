@@ -32,7 +32,7 @@
 
   /* ---------- Musique de fond ---------- */
   const music = { el: null, want: false, ducked: false, vol: 0, base: .3, timer: 0 };
-  function targetVolume() { return music.want ? (music.ducked ? music.base * .3 : music.base) : 0; }
+  function targetVolume() { return music.want ? (music.quiet ? music.base * .04 : music.ducked ? music.base * .3 : music.base) : 0; }
   function tick() {
     const target = targetVolume();
     music.vol += (target - music.vol) * .22;
@@ -51,6 +51,7 @@
     startFade();
   };
   music.stop = () => { music.want = false; if (music.el) startFade(); };
+  music.setQuiet = (on) => { music.quiet = !!on; if (music.el) startFade(); };   // presque muet (jeu de rythme)
   music.duck = (on) => { music.ducked = !!on; if (music.el) startFade(); };
   MM.music = music;
 
