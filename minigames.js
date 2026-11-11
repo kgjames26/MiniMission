@@ -242,7 +242,8 @@
       pos++;
       if (pos === seq.length) { input = false; status.textContent = '🌟'; later(() => { api.tone(784, 160); }, 450); later(() => api.tone(1047, 260), 620); later(() => api.onSolved(), 1300); }
     }
+    MM.music && MM.music.setQuiet && MM.music.setQuiet(true);      // la musique de fond se tait presque : on entend mieux les notes
     play(true);
-    return { replay() { timers.forEach(clearTimeout); timers = []; pads.forEach((p) => p.classList.remove('lit')); play(); }, destroy() { stopped = true; timers.forEach(clearTimeout); host.innerHTML = ''; } };
+    return { replay() { timers.forEach(clearTimeout); timers = []; pads.forEach((p) => p.classList.remove('lit')); play(); }, destroy() { stopped = true; timers.forEach(clearTimeout); host.innerHTML = ''; MM.music && MM.music.setQuiet && MM.music.setQuiet(false); } };
   }
 })();
