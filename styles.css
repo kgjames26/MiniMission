@@ -146,7 +146,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
 .toast.show{opacity:1;transform:translate(-50%,0)}
 
 /* Manette : croix verte sur socle bleu à gauche ; à droite le bouton ACTION puis, tout à droite, le bouton SAUT. */
-.touch-controls{position:absolute;z-index:2;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:flex-end;pointer-events:none;padding:0 calc(var(--sar) + clamp(10px,2.4vw,32px)) calc(var(--sab) + clamp(8px,2.2vh,22px)) calc(var(--sal) + clamp(10px,2.4vw,32px));--pad:clamp(112px,26vh,172px);--jump:clamp(92px,21vh,140px);--act:clamp(80px,17.5vh,122px)}
+.touch-controls{position:absolute;z-index:2;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:flex-end;pointer-events:none;padding:0 calc(var(--sar) + clamp(10px,2.4vw,32px)) calc(var(--sab) + clamp(8px,2.2vh,22px)) calc(var(--sal) + clamp(10px,2.4vw,32px));--pad:clamp(104px,24vh,160px);--jump:clamp(80px,17vh,124px);--act:clamp(72px,15vh,108px)}
 .dpad{position:relative;width:var(--pad);height:var(--pad);display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:calc(var(--pad)*.07);pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .dpad.dpad-demo{pointer-events:none}
 .dpad-base{position:absolute;inset:calc(var(--pad)*.08);border-radius:28%;transform:rotate(45deg);background:radial-gradient(circle at 50% 30%,#4fb2f2,#2a7fd0 62%,#1f5fab);border:calc(var(--pad)*.025) solid #1d5aa0;box-shadow:inset 0 3px 0 #8fd5ff99,0 6px 0 #18487f,0 10px 18px #12365a55}
@@ -199,8 +199,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
 .read-aloud-button:active{transform:translateY(2px)}
 .speech-status{min-height:18px;margin:0 auto 8px!important;color:#6391a3!important;font-size:12px!important;font-weight:800!important}
 .choice-list{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(8px,1.6vw,14px)}
-.choice-button{min-height:clamp(96px,22vh,150px);border-radius:22px;border:3px solid #e0f0f5;background:#f6fcff;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;padding:10px;font-size:clamp(13px,1.9vw,16px);font-weight:900;color:#3f6882;box-shadow:0 4px 0 #d1e5ed}
-.choice-button span:first-child{font-size:clamp(38px,min(7vw,9vh),56px);line-height:1}
+.choice-button{min-height:clamp(130px,31vh,220px);border-radius:22px;border:3px solid #e0f0f5;background:#f6fcff;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;padding:10px;font-size:clamp(13px,1.9vw,16px);font-weight:900;color:#3f6882;box-shadow:0 4px 0 #d1e5ed}
+.choice-button span:first-child{font-size:clamp(66px,min(13vw,18vh),130px);line-height:1}
 .choice-button span:last-child{line-height:1.15}
 .choice-button:active{transform:translateY(3px);box-shadow:0 1px 0 #d1e5ed}
 .choice-button.try-again{border-color:#f6d28f;background:#fff9e9;opacity:.75}
@@ -287,8 +287,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
   .ending-inner{flex-direction:column;gap:8px}
   .ending-hero .sprite{--sh:clamp(120px,24vh,260px)}
   .game-screen{--panel:clamp(176px,28vh,264px)}
-  .touch-controls{height:var(--panel);align-items:center;padding-bottom:var(--sab);background:linear-gradient(#7fd27b,#56a763);border-top:4px solid #a6e69a;--pad:min(calc(var(--panel) - 28px),42vw);--jump:min(calc(var(--panel)*.62),27vw);--act:min(calc(var(--panel)*.5),22vw)}
-  .action-button{margin-bottom:calc(var(--jump)*.3)}
+  .touch-controls{height:var(--panel);align-items:center;padding-bottom:var(--sab);background:linear-gradient(#7fd27b,#56a763);border-top:4px solid #a6e69a;--pad:min(calc(var(--panel) - 28px),40vw);--jump:min(calc(var(--panel)*.46),24vw);--act:min(calc(var(--panel)*.42),21vw)}
+  .action-button{margin-bottom:calc(var(--jump)*.2)}
   .mission-label{display:none}
   .game-topbar .progress-wrap{margin-left:auto}
 }
@@ -303,8 +303,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
   .modal-icon{width:44px;height:44px;font-size:22px;margin-bottom:6px;border-radius:15px}
   .puzzle-subtitle{display:none}
   .puzzle-card h2{font-size:20px}
-  .choice-button{min-height:88px;padding:6px}
-  .choice-button span:first-child{font-size:38px}
+  .choice-button{min-height:112px;padding:6px}
+  .choice-button span:first-child{font-size:62px}
   .read-aloud-button{padding:6px 12px;margin-bottom:4px}
   .ending-alphabet{display:none}
   .hero-name{font-size:clamp(20px,5vh,30px)}
@@ -320,6 +320,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
   .alphabet-letter{font-size:11px}
   .alphabet-grid{gap:3px;padding:6px}
   .choice-button{padding:6px;font-size:12px;border-radius:16px}
+  .choice-button span:first-child{font-size:clamp(56px,17vw,84px)}
   .modal-card{border-radius:25px}
 }
 @media(prefers-reduced-motion:reduce){
@@ -371,4 +372,59 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
   .speaker-button{width:84px}.puzzle-head{margin-bottom:8px}
   .album-grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}.album-slot{aspect-ratio:auto;height:clamp(54px,19vh,84px);border-radius:16px}.album-slot span{font-size:clamp(26px,9vh,44px)}.album-page-title{display:none}
   .album-legend{display:none}.album-card{padding:10px 14px;gap:8px}.album-tab{padding:3px 10px}.album-tab small{display:none}
+}
+
+/* ---------- Tir (au-dessus du saut) et comptage des monstres ---------- */
+.jump-stack{display:flex;flex-direction:column;align-items:center;gap:clamp(6px,1.4vh,14px);pointer-events:none}
+.shoot-button{--shoot:calc(var(--jump)*.72);position:relative;flex:none;width:var(--shoot);height:var(--shoot);border-radius:50%;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;display:grid;place-items:center;border:calc(var(--shoot)*.06) solid #fff;transition:transform .07s;background:radial-gradient(circle at 34% 24%,#ffe9b0 0,#ff9a3a 30%,#e8461f 70%,#b8300f);box-shadow:0 0 0 calc(var(--shoot)*.05) #b9c4cf,0 calc(var(--shoot)*.08) 0 calc(var(--shoot)*.05) #8a97a5,0 10px 18px #5a2a2a55}
+.shoot-button[data-hero="filou"]{background:radial-gradient(circle at 34% 24%,#f1e8ff 0,#b394ff 32%,#7a55e0 72%,#4c32a8)}
+.shoot-button[data-hero="titan"]{background:radial-gradient(circle at 34% 24%,#fff3b0 0,#ffd23f 32%,#f0a020 72%,#b9700a)}
+.shoot-icon{font-size:calc(var(--shoot)*.52);line-height:1;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+.shoot-button.pressed{transform:translateY(calc(var(--shoot)*.05)) scale(.96)}
+.shoot-button.demo{pointer-events:none}
+.power-chip em{font-style:normal;font-size:1.5em;line-height:1;margin-top:2px}
+.monster-bar{position:absolute;z-index:3;left:calc(var(--sal) + 12px);top:calc(var(--sat) + 62px);display:grid;grid-template-columns:repeat(10,24px);gap:3px 3px;padding:6px 8px;border-radius:16px;background:rgba(255,255,255,.78);box-shadow:0 3px 10px #1d4d7a33;pointer-events:none}
+.monster-bar i{display:block;width:24px;height:24px;border-radius:50%;background:rgba(120,150,175,.22);justify-self:center;align-self:center;margin:0}
+.monster-bar i:nth-child(10n+5){margin-right:6px}
+.monster-bar i.on{border-radius:0;background-color:transparent}
+.monster-bar i.pop{animation:chip-pop .5s cubic-bezier(.2,1.8,.4,1)}
+@keyframes chip-pop{0%{transform:scale(.2)}100%{transform:scale(1)}}
+.friend-counter.pop{animation:counter-pop .5s cubic-bezier(.2,1.8,.4,1)}
+@keyframes counter-pop{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
+.ten-frame{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:4px 3px;padding:8px 10px;background:rgba(255,255,255,.7);border:2px solid #fff;border-radius:18px}
+.ten-frame .mon-chip{display:block;aspect-ratio:1;border-radius:50%;background:rgba(120,150,175,.2);justify-self:center;width:clamp(22px,5.4vw,40px);height:auto;margin:0}
+.ten-frame .mon-chip:nth-child(10n+5){margin-right:8px}
+.ten-frame .mon-chip.on{border-radius:0;background-color:transparent}
+@media(max-height:520px){.monster-bar{top:calc(var(--sat) + 54px);grid-template-columns:repeat(10,20px);padding:4px 6px}.monster-bar i{width:20px;height:20px}}
+
+/* ---------- Énigmes variées et mini-jeux ---------- */
+.close-puzzle{position:absolute;z-index:4;right:14px;top:12px;width:50px;height:50px;border-radius:50%;background:#fff;border:3px solid #f1d4d0;box-shadow:0 3px 0 #ecc2bd;font-size:22px;font-weight:900;line-height:1;color:#d0524a;display:grid;place-items:center}
+.close-puzzle:active{transform:translateY(2px);box-shadow:0 1px 0 #ecc2bd}
+.puzzle-visual{font-size:clamp(46px,min(9vw,13vh),92px);line-height:1.05;margin:2px 0 10px;word-break:break-all}
+.game-area{position:relative;display:flex;flex-direction:column;align-items:center;gap:clamp(8px,1.6vh,16px)}
+.game-area .puzzle-head{width:100%;justify-content:center;margin-bottom:0}
+.game-title{margin:0;font-size:clamp(46px,9vh,72px);line-height:1}
+.game-board{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0}
+.maze-wrap{width:min(76vw,50vh,380px);aspect-ratio:1;border-radius:22px;border:5px solid #fff;box-shadow:0 0 0 4px #e8c98a,0 10px 24px #6b4a1a44;overflow:hidden;background:#fff8e6;touch-action:none}
+.maze-canvas{width:100%;height:100%;display:block;touch-action:none}
+.jigsaw{display:grid;grid-template-columns:repeat(var(--cols),1fr);grid-template-rows:repeat(var(--rows),1fr);gap:8px;width:min(70vw,44vh,340px);aspect-ratio:1}
+.jig-tile{border-radius:18px;border:4px solid #fff;box-shadow:0 4px 0 #c9d6de,0 8px 14px #1d4d7a30;background-repeat:no-repeat;transition:transform .12s}
+.jig-tile.sel{outline:6px solid #ffb02e;outline-offset:-2px;transform:scale(.94)}
+.jigsaw.done{gap:0}.jigsaw.done .jig-tile{border-radius:0;border-width:0;box-shadow:none}
+.jigsaw-model{position:absolute;left:0;top:-6px;width:clamp(52px,9vh,76px);aspect-ratio:1;border-radius:14px;background-size:cover;border:3px solid #fff;box-shadow:0 3px 8px #0003;opacity:.95}
+.simon{display:flex;flex-direction:column;align-items:center;gap:8px}
+.simon-status{font-size:clamp(40px,7vh,56px);line-height:1}
+.simon-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:min(70vw,44vh,320px)}
+.simon-pad{aspect-ratio:1;border-radius:28px;border:5px solid #fff;background:var(--c);filter:brightness(.72) saturate(.85);box-shadow:0 6px 0 rgba(0,0,0,.2);transition:filter .1s,transform .1s,box-shadow .1s}
+.simon.listening .simon-pad{filter:brightness(.95) saturate(1)}
+.simon-pad.lit{filter:brightness(1.3) saturate(1.25)!important;transform:scale(1.06);box-shadow:0 0 30px 10px var(--c)}
+.simon.oops{animation:oops-shake .4s}
+@keyframes oops-shake{20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+@media(max-height:520px){.game-title{font-size:38px}.maze-wrap{width:min(40vw,64vh)}.jigsaw{width:min(36vw,60vh)}.simon-grid{width:min(34vw,56vh)}.game-area{flex-direction:row;flex-wrap:wrap;justify-content:center}.game-area .puzzle-head{width:auto}.close-puzzle{width:42px;height:42px;font-size:18px}.puzzle-visual{font-size:48px;margin:0 0 4px}}
+
+@media(max-height:520px){
+  .howto-screen{--demo-pad:clamp(84px,32vh,140px);--demo-btn:clamp(60px,18vh,96px)}
+  .power-chip .sprite{--sh:clamp(38px,11vh,64px)}
+  .power-chip{font-size:11px}.power-chip small{padding:1px 6px}.power-chip em{font-size:1.2em}
+  .howto-label{font-size:18px}.howto-keys{display:none}
 }
