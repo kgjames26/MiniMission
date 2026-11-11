@@ -34,7 +34,8 @@
       return !hold && (far || s.t >= SWING.maxT);
     },
     hand(s) { return { x: s.ax + s.L * Math.sin(s.theta), y: s.ay + s.L * Math.cos(s.theta) }; },
-    velocity(s) { return { vx: s.L * Math.cos(s.theta) * s.omega, vy: -s.L * Math.sin(s.theta) * s.omega }; },
+    // à la sortie de la toile, des bonds plus bas et plus tendus
+    velocity(s) { return { vx: s.L * Math.cos(s.theta) * s.omega * 1.06, vy: -s.L * Math.sin(s.theta) * s.omega * .78 }; },
     // simule le balancement puis le vol ; renvoie le chemin (centre du héros), l'indice du lâcher et l'atterrissage
     simulate(ax, ay, hx, hy, dir, surfaces) {
       const dt = 1 / 120, s = swing.start(ax, ay, hx, hy, dir), path = [];
