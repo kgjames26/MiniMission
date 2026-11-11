@@ -179,16 +179,21 @@
         return approach + 110 + 140 + tw + 380;
       },
       // plusieurs balancements d'affilée : on se pose à peine, puis on repart sur la toile
-      swingChain(x) {
-        const n = rnd() < .45 ? 3 : 2; let end = x, first = true;
-        for (let k = 0; k < n; k++) {
-          const before = c.log.length, len = first ? SEG.swingGap(end) : SEG.swingGap(end, { approach: 262 });
-          const g = c.gaps[c.gaps.length - 1];
-          if (c.log[c.log.length - 1] === 'swingGap!') { end = (first ? end + len : end + len); break; }
-          void before; end = g.x + g.w; first = false;
+      swingChain(x, avail) {
+        let want = [2, 3, 3, 4, 4][ri(0, 4)];
+        for (let n = want; n >= 2; n--) {
+          const q = snap(); let end = x, first = true, ok = true;
+          for (let k = 0; k < n; k++) {
+            const len = first ? SEG.swingGap(end) : SEG.swingGap(end, { approach: 262 });
+            const g = c.gaps[c.gaps.length - 1];
+            if (c.log[c.log.length - 1] === 'swingGap!') { ok = false; break; }
+            end = g.x + g.w; first = false;
+          }
+          const total = end + 470 - x;
+          if (ok && (!avail || total <= avail)) return total;
+          rollback(q);
         }
-        const last = c.gaps[c.gaps.length - 1];
-        return Math.max(end, last.x + last.w) + 470 - x;
+        return SEG.swingGap(x);
       },
       swingGap(x, opts) {
         const approach = (opts && opts.approach) || r(170, 230), gx = x + approach;
@@ -370,7 +375,7 @@
       }
     };
     const DECKS = {
-      filou: ['street', 'swingGap', 'ladderTall', 'hopStones', 'swingOver', 'swingChain', 'ladder', 'towerHop', 'swingChain', 'ladderTall', 'rooftops', 'swingOver', 'hopStones', 'swingGap', 'swingChain', 'ladder', 'swingChain'],
+      filou: ['swingChain', 'swingOver', 'swingGap', 'swingChain', 'ladderTall', 'swingOver', 'swingChain', 'ladder', 'swingChain', 'hopStones', 'swingGap', 'swingOver', 'swingChain', 'ladderTall', 'rooftops'],
       ziggy: ['sprint', 'hopStones', 'trampTower', 'bigGap', 'towerHop', 'fenceRun', 'highTrack', 'hopStones', 'bigGap', 'hurdles', 'towerHop', 'fenceRun', 'hopStones', 'trampTower', 'highTrack'],
       titan: ['rubble', 'hopStones', 'boulder', 'lavaRoofs', 'towerHop', 'wall', 'double', 'hopStones', 'crates', 'lavaRoofs', 'towerHop', 'ledge', 'boulder', 'hopStones', 'wall', 'lavaRoofs']
     };
@@ -396,7 +401,7 @@
         let placed = false;
         for (let t = 0; t < deck.length && !placed; t++) {
           const name = deck[(di + t) % deck.length], q = snap();
-          const len = SEG[name](x);
+          const len = name === 'swingChain' ? SEG[name](x, b - x) : SEG[name](x);
           if (x + len <= b) { x += len + 60; di = di + t + 1; placed = true; } else rollback(q);
         }
         if (!placed) { x += SEG.street(x, Math.max(200, b - x)); break; }

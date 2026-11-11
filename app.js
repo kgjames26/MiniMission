@@ -229,7 +229,7 @@
       else if (!t) inner = '<span class="lv-new">NOUVEAU</span>';
       else {
         const chip = (icon, a, b) => `<span class="lv-chip ${a >= b ? 'full' : ''}"><i style="--p:${b ? a / b : 0}"></i>${icon} ${a}/${b}</span>`;
-        inner = `<div class="lv-chips">${chip('⭐', L.stars.length, t.s)}${chip('🔤', L.letters.length, t.l)}${chip('👾', L.monsters.length, t.m)}${chip('❓', L.q, t.q)}</div><div class="lv-chips"><span class="lv-chip ${L.silver ? 'med' : ''}" style="opacity:${L.silver ? 1 : .55}">🥈${L.silver ? '✓' : ''}</span><span class="lv-chip ${L.gold ? 'med' : ''}" style="opacity:${L.gold ? 1 : .55}">🥇${L.gold ? '✓' : ''}</span></div>`;
+        inner = `<div class="lv-chips">${chip('⭐', L.stars.length, t.s)}${chip('🔤', L.letters.length, t.l)}${chip('👾', L.monsters.length, t.m)}${chip('🎮', L.q, t.q)}</div><div class="lv-chips"><span class="lv-chip ${L.silver ? 'med' : ''}" style="opacity:${L.silver ? 1 : .55}">🥈${L.silver ? '✓' : ''}</span><span class="lv-chip ${L.gold ? 'med' : ''}" style="opacity:${L.gold ? 1 : .55}">🥇${L.gold ? '✓' : ''}</span></div>`;
       }
       const tierBadge = (L.tier ? `<span class="lv-tier" aria-label="Difficulté ${L.tier}">${swords(L.tier)}</span>` : '') + (levelComplete(L) ? '<span class="lv-again" aria-label="Refaire plus difficile">↻⚔️</span>' : '');
       const rem = t ? ` Il reste ${t.s - L.stars.length} étoiles, ${t.l - L.letters.length} lettres, ${t.m - L.monsters.length} monstres.` : '';
@@ -406,7 +406,8 @@
     world.hintAnchor = hero === 'filou' && !swing ? findAnchor() : null;
     world.camera = Math.max(0, Math.min(world.width - view.w, player.x - view.w*.34));
     // caméra verticale : elle monte avec le héros (grands immeubles, trampoline) et redescend doucement
-    { const extra = Math.max(0, view.h - WORLD_H), target = Math.max(0, (-extra + 150) - player.y);
+    { const extra = Math.max(0, view.h - WORLD_H); let target = Math.max(0, (-extra + 150) - player.y);
+      if (world.hintAnchor && !swing) target = Math.max(target, (-extra + 120) - world.hintAnchor.y);     // l'anneau de toile doit rester visible
       world.camY += (target - world.camY) * Math.min(1, dt * (target > world.camY ? 6 : 3)); if (Math.abs(world.camY - target) < .5) world.camY = target; }
     for (let i = world.topples.length - 1; i >= 0; i--) {
       const q = world.topples[i]; q.t += dt;
@@ -661,6 +662,10 @@
       ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2); ctx.stroke();
       ctx.restore();
     });
+    if (world.hintAnchor && !swing) {            // flèche au bord haut de l'écran si l'anneau est encore hors champ
+      const a = world.hintAnchor, ax = a.x - cam, top = -Math.max(0, view.h - WORLD_H) - (world.camY || 0) + 60;
+      if (a.y < top - 20 && ax > 0 && ax < W) { ctx.save(); ctx.translate(ax, top + 10 + Math.sin(time * 6) * 4); ctx.fillStyle = '#7d5bd6'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0, -18); ctx.lineTo(18, 8); ctx.lineTo(-18, 8); ctx.closePath(); ctx.stroke(); ctx.fill(); ctx.restore(); }
+    }
     world.coins.forEach(star => { if (star.collected) return; const x = star.x - cam; if (x < -30 || x > W + 30) return; drawStarItem(x, star.y, time, star.bob); });
     world.letters.forEach((letter, i) => { if (letter.collected) return; const x = letter.x - cam; if (x < -40 || x > W + 40) return; drawLetterItem(x, letter, i, time); });
     world.monsters.forEach(m => drawMonster(m, time));
@@ -953,7 +958,7 @@
     const caught = mission.monsters.filter(m => m.friendly).sort((a, b) => a.order - b.order), friendCount = caught.length;
     const found = mission.letters.filter(item => item.collected).map(item => item.letter);
     const stars = mission.coins.filter(s => s.collected).length, qDone = Math.max(readLevel(lv.hero, lv.index).q || 0, (mission.stationsDone || []).filter(Boolean).length);
-    const rows = [['⭐', 'étoiles', stars, mission.coins.length], ['🔤', 'lettres', found.length, mission.letters.length || 26], ['👾', 'monstres', friendCount, MON_TOTAL], ['❓', 'questions', qDone, 3]];
+    const rows = [['⭐', 'étoiles', stars, mission.coins.length], ['🔤', 'lettres', found.length, mission.letters.length || 26], ['👾', 'monstres', friendCount, MON_TOTAL], ['🎮', 'mini-jeux', qDone, 3]];
     $('#ending-stats').innerHTML = rows.map(([icon, label, a, b]) => `<div class="stat ${a >= b ? 'full' : ''}" aria-label="${label} : ${a} sur ${b}"><span class="stat-i" aria-hidden="true">${icon}</span><div class="stat-bar"><i style="--w:${b ? Math.round(a / b * 100) : 0}%"></i></div><b>${a}/${b}</b><em>${a >= b ? '✓' : 'reste ' + (b - a)}</em></div>`).join('');
     const left = rows.filter(r => r[2] < r[3]);
     const rem = $('#ending-remaining');
@@ -1159,13 +1164,14 @@
   }
   function openStickerDetail(id) {
     const info = MM.stickers.info(id), T = MM.stickers.TIERS[info.tier];
-    $('#sd-emoji').textContent = info.e; $('#sd-medal').textContent = T.medal + (info.hero >= 0 ? ' ' + MM.stickers.HERO_ICONS[info.hero] + ' ' + MM.stickers.HERO_NAMES[info.hero] : ''); $('#sd-name').textContent = cap(info.n); $('#sd-desc').textContent = info.d || '';
+    $('#sd-emoji').textContent = info.e; $('#sd-medal').textContent = T.medal + (info.hero >= 0 ? ' ' + MM.stickers.HERO_NAMES[info.hero] : ''); $('#sd-name').textContent = cap(info.n); $('#sd-desc').textContent = info.d || '';
     $('#sticker-detail').classList.remove('hidden');
     stickerSpeech = `${cap(info.n)}. ${info.d || ''}`; if (!timerNoticePlaying) sayText(stickerSpeech);
     MM.haptic('tap');
   }
   function closeStickerDetail() { $('#sticker-detail').classList.add('hidden'); cancelSpeech(); }
   let stickerSpeech = '';
+  const heroFace = (i, sh) => { const id = MM.stickers.HEROES[i]; return `<span class="sprite" style="--col:${id === 'ziggy' ? 0 : 2};--row:${HERO_ROW[id] ?? 0};--sh:${sh}px"></span>`; };
   function openCityAlbum(i, heroName) {
     const S = MM.stickers; save.albumMode = 'city'; save.albumA = i; save.albumB = Math.max(0, S.HEROES.indexOf(heroName || activeHero || lastFinished?.hero));
     renderAlbum(); setScreen('album-screen');
@@ -1175,16 +1181,16 @@
     const nA = mode === 'hero' ? 3 : S.CITIES_N, nB = mode === 'hero' ? S.CITIES_N : 3;
     const A = Math.max(0, Math.min(nA - 1, save.albumA ?? 0)), B = Math.max(0, Math.min(nB - 1, save.albumB ?? 0)); save.albumA = A; save.albumB = B;
     const heroOf = (a, b) => mode === 'hero' ? a : b, cityOf = (a, b) => mode === 'hero' ? b : a;
-    const tabA = (i) => mode === 'hero' ? { face: S.HERO_ICONS[i], label: S.HERO_NAMES[i], n: Array.from({ length: S.CITIES_N }, (_, c) => S.countFor(album, i, c)).reduce((x, y) => x + y, 0), of: S.CITIES_N * S.PER_PAGE, color: ['#ef5a53', '#438ccc', '#55b77b'][i] }
+    const tabA = (i) => mode === 'hero' ? { face: heroFace(i, 46), label: S.HERO_NAMES[i], n: Array.from({ length: S.CITIES_N }, (_, c) => S.countFor(album, i, c)).reduce((x, y) => x + y, 0), of: S.CITIES_N * S.PER_PAGE, color: ['#ef5a53', '#438ccc', '#55b77b'][i] }
       : { face: MM.cities[i].flag, label: MM.cities[i].name, n: [0, 1, 2].reduce((x, h) => x + S.countFor(album, h, i), 0), of: 3 * S.PER_PAGE, color: S.PAGES[S.CITY_BASE + i].color };
     const tabB = (i) => mode === 'hero' ? { face: MM.cities[i].flag, n: S.countFor(album, A, i), color: S.PAGES[S.CITY_BASE + i].color, label: MM.cities[i].name }
-      : { face: S.HERO_ICONS[i], n: S.countFor(album, i, A), color: ['#ef5a53', '#438ccc', '#55b77b'][i], label: S.HERO_NAMES[i] };
+      : { face: heroFace(i, 34), n: S.countFor(album, i, A), color: ['#ef5a53', '#438ccc', '#55b77b'][i], label: S.HERO_NAMES[i] };
     const mk = (cls, i, t, on, per) => `<button type="button" class="album-tab ${cls} ${on ? 'on' : ''} ${t.n === per ? 'full' : ''}" data-i="${i}" role="tab" aria-selected="${on}" aria-label="${escapeHtml(t.label)} : ${t.n} sur ${per}" style="--c:${t.color}"><span>${t.face}</span><small>${t.n}/${per}</small></button>`;
     $('#album-tabs').innerHTML = Array.from({ length: nA }, (_, i) => mk('a', i, tabA(i), i === A, tabA(i).of)).join('');
     $('#album-subtabs').innerHTML = Array.from({ length: nB }, (_, i) => mk('b', i, tabB(i), i === B, S.PER_PAGE)).join('');
     const h = heroOf(A, B), c = cityOf(A, B), pg = S.PAGES[S.CITY_BASE + c];
     $('#album-switch').textContent = mode === 'hero' ? '🏙️' : '🦸'; $('#album-switch').setAttribute('aria-label', mode === 'hero' ? 'Classer par ville' : 'Classer par personnage');
-    $('#album-page-title').innerHTML = `<span style="--c:${pg.color}">${S.HERO_ICONS[h]} ${S.HERO_NAMES[h]} · ${MM.cities[c].flag} ${escapeHtml(MM.cities[c].name)}</span>`;
+    $('#album-page-title').innerHTML = `<span style="--c:${pg.color}">${S.HERO_NAMES[h]} · ${MM.cities[c].flag} ${escapeHtml(MM.cities[c].name)}</span>`;
     const grid = $('#album-grid'); grid.className = 'album-grid'; grid.style.setProperty('--c', pg.color);
     grid.innerHTML = pg.slots.map((slot, si) => {
       const id = S.hid(h, c, si), count = album[id] || 0;
