@@ -613,3 +613,11 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
 .rest-heroes{margin-top:4vh;margin-bottom:9vh;gap:clamp(24px,8vw,90px)}
 .rest-hero{width:clamp(60px,16vh,120px);height:clamp(60px,16vh,120px)}
 .rest-hero .sprite{position:absolute;left:50%;bottom:0;margin-left:calc(var(--sh)*-.5)}
+
+.dpad.lr{width:var(--lrw,min(calc(var(--pad)*1.55),34vw));height:calc(var(--lrw,min(calc(var(--pad)*1.55),34vw))*.5);gap:calc(var(--pad)*.1)}
+.lr-btn span{font-size:calc(var(--pad)*.5)}
+.dpad.lr.dpad-demo{--lrw:var(--demo-lr)}
+.howto-screen{--demo-lr:calc(var(--demo-pad)*1.5)}
+.dpad.lr{--w:var(--lrw,min(calc(var(--pad)*1.55),34vw));width:var(--w);height:calc(var(--w)*.54)}
+.lr-btn span{font-size:calc(var(--w)*.21)}
+@media(orientation:portrait){.dpad.lr{--w:var(--lrw,41vw)}.dpad.lr.dpad-demo{--w:var(--demo-lr)}}

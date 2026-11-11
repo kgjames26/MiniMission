@@ -121,6 +121,7 @@
   let lastTime = 0;
   let sessionElapsed = Number(save.sessionElapsed)||0;
   let sessionTimerLimit = Number(save.sessionTimerLimit)||0;
+  if (Date.now() - (Number(save.sessionLastAt) || 0) > 20 * 60 * 1000) { save.sessionActive = false; save.sessionElapsed = 0; save.stopAfterMission = false; save.timerWarningSent = false; save.timerAnnouncementPending = false; }   // une nouvelle séance repart de zéro après une longue pause
   let sessionActive = save.sessionActive===true;
   let stopAfterMission = save.stopAfterMission===true;
   let timerWarningSent = save.timerWarningSent===true;
@@ -150,7 +151,7 @@
   let hapticsEnabled = save.hapticsEnabled !== false;
   MM.setHaptics(hapticsEnabled);
   let shots = [], fireballs = [], tornados = [], hitTimes = [], rewindAt = 0, litShown = -1;
-  let idleMuted = false, swingCue = false, airTurnUntil = 0, shootReady = 0, flipUntil = 0, flipDir = 1, hurtUntil = 0;
+  let turboRealUntil = 0, idleMuted = false, swingCue = false, airTurnUntil = 0, shootReady = 0, flipUntil = 0, flipDir = 1, hurtUntil = 0;
   let gameCtl = null;
   let view = { scale: 1, ox: 0, oy: 0, w: 960, h: 540 };
   let world = { tramps: [], topples: [], camY: 0, passPts: [200], passX: 200, width: 6200, floor: 426, camera: 0, checkpoint: 60, stations: [], gaps: [], bumps: [], platforms: [], coins: [], letters: [], enemies: [], bigFriends: [] };
@@ -164,6 +165,7 @@
   function writeSave() { try { localStorage.setItem(STORE, JSON.stringify(save)); } catch {} }
   function dayKey(date = new Date()) { return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`; }
   function todaysMission(heroId, index = 0) {
+    MM.games.state = (save.gameSeen = save.gameSeen || {});      // mémoire silencieuse des mini-jeux déjà vus
     const template = missionTemplates[Math.floor(Math.random()*missionTemplates.length)];
     // chaque caisse ouvre une énigme ou un mini-jeu différent (labyrinthe, puzzle, jeu de mémoire…)
     const legacy = () => { const task = pickQuestions(1)[0]; const order = shuffle([0,1,2]); return { ...task, options: order.map(i => task.options[i]), answer: order.indexOf(task.answer) }; };
@@ -289,7 +291,8 @@
     if (!timerNoticePlaying) sayText(`Niveau de difficulté ${COUNT_WORDS[Math.min(tier, 20)] || tier} ! Les monstres sont plus costauds.`);
   }
   function startLevel(heroId, index) {
-    if(!sessionActive){sessionActive=true;sessionElapsed=0;sessionTimerLimit=(Number(save.timerMinutes)||0)*60;stopAfterMission=false;timerWarningSent=false;timerAnnouncementPending=false;save.sessionActive=true;save.sessionElapsed=0;save.sessionTimerLimit=sessionTimerLimit;save.stopAfterMission=false;save.timerWarningSent=false;}$('#session-timer-row').classList.toggle('hidden',sessionActive);
+    if(!sessionActive){sessionActive=true;sessionElapsed=0;sessionTimerLimit=(Number(save.timerMinutes)||0)*60;stopAfterMission=false;timerWarningSent=false;timerAnnouncementPending=false;save.sessionActive=true;save.sessionElapsed=0;save.sessionTimerLimit=sessionTimerLimit;save.stopAfterMission=false;save.timerWarningSent=false;}sessionTimerLimit=(Number(save.timerMinutes)||0)*60;save.sessionTimerLimit=sessionTimerLimit;timerWarningSent=sessionTimerLimit>0&&sessionElapsed>=sessionTimerLimit;
+    sessionTimerLimit = (Number(save.timerMinutes) || 0) * 60; save.sessionTimerLimit = sessionTimerLimit; timerWarningSent = sessionTimerLimit > 0 && sessionElapsed >= sessionTimerLimit; save.timerWarningSent = timerWarningSent;
     activeHero = heroId;
     if (levelComplete(readLevel(heroId, index))) {
       const E = levelEntry(heroId, index); E.tier = (E.tier || 0) + 1;
@@ -371,11 +374,20 @@
     update(dt); draw(now/1000);
     if (scene === 'game-screen') rafId = requestAnimationFrame(loop);
   }
-  function tickMissionClock(){const now=performance.now();if(!mission||!sessionActive||!['game-screen','puzzle-screen'].includes(scene)){lastActiveTick=now;return;}if(!lastActiveTick){lastActiveTick=now;return;}sessionElapsed+=Math.min(1,Math.max(0,(now-lastActiveTick)/1000));lastActiveTick=now;save.sessionElapsed=sessionElapsed;if(sessionTimerLimit>0&&!timerWarningSent&&sessionElapsed>=sessionTimerLimit){timerWarningSent=true;stopAfterMission=true;timerAnnouncementPending=true;save.timerWarningSent=true;save.stopAfterMission=true;save.timerAnnouncementPending=true;writeSave();if(scene!=='puzzle-screen'||!window.speechSynthesis?.speaking)speakTimerNotice();}if(now-lastClockSave>3000){lastClockSave=now;writeSave();}}
+  // le temps de jeu est écoulé : la partie s'arrête (progression sauvegardée) et les héros vont dormir une heure
+  function timeUp() {
+    timerWarningSent = true; save.timerWarningSent = true;
+    try { commitProgress(false); } catch {}
+    cancelSpeech(); releaseControls(); destroyGame();
+    mission = null; activeHero = null; puzzleTask = null; puzzleStation = null;
+    stopAfterMission = true; endSession();
+  }
+  function tickMissionClock(){const now=performance.now();if(!mission||!sessionActive||!['game-screen','puzzle-screen'].includes(scene)){lastActiveTick=now;return;}if(!lastActiveTick){lastActiveTick=now;return;}sessionElapsed+=Math.min(1,Math.max(0,(now-lastActiveTick)/1000));lastActiveTick=now;save.sessionElapsed=sessionElapsed;save.sessionLastAt=Date.now();if(sessionTimerLimit>0&&!timerWarningSent&&sessionElapsed>=sessionTimerLimit){timeUp();return;}if(now-lastClockSave>3000){lastClockSave=now;writeSave();}}
   function update(dt) {
     gt += dt;
     const hero = activeHero;
     const move = (keys.right?1:0) - (keys.left?1:0);
+    if (turboUntil && performance.now() > turboRealUntil) turboUntil = 0;     // le turbo s'arrête aussi à l'heure réelle, même si l'appareil ralentit
     if (gt < turboUntil && move && move !== player.facing) turboUntil = 0;   // changer de direction arrête le turbo
     const turboOn = gt < turboUntil;
     if (move && !swing) player.facing = move;
@@ -1107,7 +1119,7 @@
     else titanPunch();
   }
   function startTurbo(seconds, free) {
-    turboUntil = gt + seconds;
+    turboUntil = gt + seconds; turboRealUntil = performance.now() + seconds * 1000;
     if (!free) turboReady = gt + 3.2;
     triggerHeroAnimation('ability', seconds * 1000);
     const x = player.x + player.w/2, y = player.y + player.h/2;
@@ -1885,7 +1897,7 @@
   }
   updateTimerChip();
   $('#timer-open').addEventListener('click', () => { updateTimerChip(); setScreen('timer-screen'); });
-  $('#timer-options').addEventListener('click', e => { const b = e.target.closest('button[data-m]'); if (!b) return; save.timerMinutes = Number(b.dataset.m); writeSave(); updateTimerChip(); MM.haptic('good'); setTimeout(() => setScreen('home'), 350); });
+  $('#timer-options').addEventListener('click', e => { const b = e.target.closest('button[data-m]'); if (!b) return; save.timerMinutes = Number(b.dataset.m); sessionTimerLimit = save.timerMinutes * 60; save.sessionTimerLimit = sessionTimerLimit; timerWarningSent = sessionTimerLimit > 0 && sessionElapsed >= sessionTimerLimit; save.timerWarningSent = timerWarningSent; writeSave(); updateTimerChip(); MM.haptic('good'); setTimeout(() => setScreen('home'), 350); });
   function bindHold(btn, ms, fn) {
     let timer = 0; const stop = () => { clearTimeout(timer); timer = 0; btn.classList.remove('holding'); };
     btn.addEventListener('pointerdown', (e) => { e.preventDefault(); stop(); void btn.offsetWidth; btn.classList.add('holding'); timer = setTimeout(() => { stop(); fn(); }, ms); });
