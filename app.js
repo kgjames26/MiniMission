@@ -110,6 +110,7 @@
   ];
 
   let save = readSave();
+  (() => { const al = save.album; if (al) for (let k = 60; k <= 179; k++) if (al[k] > 0) { al[10000 + k] = (al[10000 + k] || 0) + al[k]; delete al[k]; } })();   // anciens autocollants de ville → Ziggy
   let activeHero = null;
   let mission = null;
   let scene = 'home';
@@ -152,7 +153,7 @@
   let airTurnUntil = 0, shootReady = 0, flipUntil = 0, flipDir = 1, hurtUntil = 0;
   let gameCtl = null;
   let view = { scale: 1, ox: 0, oy: 0, w: 960, h: 540 };
-  let world = { passPts: [200], passX: 200, width: 6200, floor: 426, camera: 0, checkpoint: 60, stations: [], gaps: [], bumps: [], platforms: [], coins: [], letters: [], enemies: [], bigFriends: [] };
+  let world = { tramps: [], topples: [], camY: 0, passPts: [200], passX: 200, width: 6200, floor: 426, camera: 0, checkpoint: 60, stations: [], gaps: [], bumps: [], platforms: [], coins: [], letters: [], enemies: [], bigFriends: [] };
   let player = { x: 70, y: 0, vx: 0, vy: 0, w: 58, h: 86, grounded: true, jumping: false, facing: 1, bob: 0 };
   let lastPromptStation = -1, lastFinished = null;
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -215,7 +216,7 @@
   function openLevels(heroId) {
     levelHero = heroId; const h = heroes[heroId], row = HERO_ROW[heroId] ?? 0;
     $('#level-hero').innerHTML = `<span class="sprite" style="--col:${heroId === 'ziggy' ? 0 : 2};--row:${row}"></span>`;
-    $('#level-title').textContent = h.name;
+    $('#level-title').textContent = h.name.split(' ')[0];
     renderLevels(); setScreen('level-screen');
     if (!timerNoticePlaying) sayText('Choisis une ville !');
   }
@@ -299,8 +300,9 @@
     const rnd = seeded(mission.seed);
     const level = LV.build(activeHero, seeded(mission.seed));
     world.width = level.width; world.floor = level.floor; world.camera = 0; world.checkpoint = 60;
-    world.gaps = level.gaps; world.platforms = level.platforms; world.anchors = level.anchors; world.pads = [];
+    world.gaps = level.gaps; world.platforms = level.platforms.slice(); world.tramps = (level.tramps || []).map(t => ({ ...t, hit: -9 })); world.topples = []; world.camY = 0; world.anchors = level.anchors; world.pads = [];
     const broken = new Set(mission.brokenBumps || []), damage = mission.damage || {};
+    level.bumps.filter(b => b.kind === 'pillar' && broken.has(b.id)).forEach(b => world.platforms.push(logPlatform(b)));   // un pilier déjà tombé reste un pont
     world.bumps = level.bumps.filter(b => !broken.has(b.id)).map(b => ({ ...b, hp: Math.max(1, b.maxHp - (damage[b.id] || 0)), hit: -9 }));
     world.stations = level.stations.map((x, i) => ({ x, y: world.floor - 190, i, done: mission.stationsDone[i] === true, hit: false, bob: rnd()*6 }));
     world.decorations = Array.from({ length: 56 }, (_, i) => ({ x: 210 + i * 196, kind: i % 5, flower: i % 4 }));
@@ -403,6 +405,14 @@
     if (fizzle) { fizzle.t += dt; if (fizzle.t > .35) fizzle = null; }
     world.hintAnchor = hero === 'filou' && !swing ? findAnchor() : null;
     world.camera = Math.max(0, Math.min(world.width - view.w, player.x - view.w*.34));
+    // caméra verticale : elle monte avec le héros (grands immeubles, trampoline) et redescend doucement
+    { const extra = Math.max(0, view.h - WORLD_H), target = Math.max(0, (-extra + 150) - player.y);
+      world.camY += (target - world.camY) * Math.min(1, dt * (target > world.camY ? 6 : 3)); if (Math.abs(world.camY - target) < .5) world.camY = target; }
+    for (let i = world.topples.length - 1; i >= 0; i--) {
+      const q = world.topples[i]; q.t += dt;
+      if (q.t >= 1.15 && !q.done) { q.done = true; const lg = logPlatform(q.b); world.platforms.push(lg); FX.dust(lg.x + lg.w, world.floor, 1, 10); FX.shake(5, .35); sound('bump'); MM.haptic('land'); }
+      if (q.t > 1.6) world.topples.splice(i, 1);
+    }
     player.bob += dt*(Math.abs(player.vx) > .1 ? 12 : 3);
     FX.update(dt);
   }
@@ -411,8 +421,10 @@
     const sh = FX.shakeOffset();
     ctx.setTransform(view.scale, 0, 0, view.scale, view.ox + sh.x*view.scale, view.oy + sh.y*view.scale);
     drawSky(time);
-    ctx.save(); ctx.translate(0, world.floor - 426); drawHills(); drawTown(time); ctx.restore();   // décors lointains posés sur l'horizon
-    drawWorld(time); drawPlayer(time); drawShots(time); FX.draw(ctx, world.camera); drawAmbient(time);
+    ctx.save(); ctx.translate(0, world.floor - 426 + (world.camY || 0) * .4); drawHills(); drawTown(time); ctx.restore();   // décors lointains posés sur l'horizon
+    ctx.save(); ctx.translate(0, world.camY || 0);
+    drawWorld(time); drawPlayer(time); drawShots(time); FX.draw(ctx, world.camera);
+    ctx.restore(); drawAmbient(time);
   }
   function drawSky(time){const W=view.w,p=mission?.palette||[],extra=Math.max(0,view.h-WORLD_H);const g=ctx.createLinearGradient(0,0,0,WORLD_H);g.addColorStop(0,p[0]||'#70d0f4');g.addColorStop(.67,p[2]||'#c8f1fa');g.addColorStop(1,'#e8f9e9');ctx.fillStyle=g;ctx.fillRect(0,-extra-2,W,extra+WORLD_H+4);for(let i=0;i<Math.ceil(W/260)+2;i++){const x=((i*260-world.camera*.16+time*3)%(W+260))-130,y=55+(i%3)*48;cloud(x,y,1+(i%2)*.18);}if(extra>40)for(let i=0;i<Math.ceil(W/300)+2;i++){const x=((i*300-world.camera*.1+time*2)%(W+300))-150,y=-extra*(.2+(i%3)*.25);cloud(x,y,1.1+(i%2)*.25);}}
   function cloud(x,y,s=1){ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.fillStyle='rgba(255,255,255,.78)';ctx.beginPath();ctx.ellipse(0,12,49,18,0,0,Math.PI*2);ctx.ellipse(-23,2,24,20,0,0,Math.PI*2);ctx.ellipse(0,-5,28,27,0,0,Math.PI*2);ctx.ellipse(26,4,24,19,0,0,Math.PI*2);ctx.fill();ctx.restore();}
@@ -590,11 +602,33 @@
       ctx.fillStyle = '#ff5d82'; for (let i = 0; i < 3; i++) { const ax = x + 16 + i*26 + ((time*60) % 26) * .3; ctx.beginPath(); ctx.moveTo(ax, F-26); ctx.lineTo(ax+14, F-18); ctx.lineTo(ax, F-10); ctx.lineTo(ax+4, F-18); ctx.closePath(); ctx.fill(); }
       ctx.fillStyle = 'rgba(255,235,120,.25)'; ctx.beginPath(); ctx.ellipse(x + pad.w/2, F-4, pad.w*.7, 12, 0, 0, Math.PI*2); ctx.fill();
     });
+    world.tramps.forEach(t => {
+      const x = t.x - cam; if (x < -160 || x > W + 160) return; const sq = Math.max(0, 1 - (gt - t.hit) * 3.2), dip = sq * 18;
+      ctx.fillStyle = 'rgba(30,40,60,.25)'; ctx.beginPath(); ctx.ellipse(x + t.w / 2, F + 2, t.w * .6, 7, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#2b2f3a'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(x + 10, F); ctx.lineTo(x + 14, F - 38 + dip); ctx.moveTo(x + t.w - 10, F); ctx.lineTo(x + t.w - 14, F - 38 + dip); ctx.stroke();
+      ctx.strokeStyle = '#9aa6b8'; ctx.lineWidth = 3; for (let k = 0; k < 4; k++) { const sx = x + 22 + k * (t.w - 44) / 3; ctx.beginPath(); for (let j = 0; j <= 6; j++) ctx.lineTo(sx + (j % 2 ? 5 : -5), F - 4 - j * (30 - dip) / 6); ctx.stroke(); }
+      ctx.fillStyle = '#e8362e'; roundRect(x - 4, F - 44 + dip * 1.2, t.w + 8, 16, 8, true); ctx.strokeStyle = '#2b2f3a'; ctx.lineWidth = 4; roundRect(x - 4, F - 44 + dip * 1.2, t.w + 8, 16, 8, false);
+      ctx.fillStyle = '#ffd23f'; roundRect(x + 8, F - 41 + dip * 1.2, t.w - 16, 5, 3, true);
+      ctx.fillStyle = '#fff'; ctx.font = '900 22px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('⬆', x + t.w / 2, F - 56 - Math.abs(Math.sin(time * 5)) * 8 + dip);
+    });
+    world.topples.forEach(q => {                           // le pilier bascule vers le trou
+      const b = q.b, x = b.x + b.w - cam, k = Math.min(1, q.t / 1.1), ang = k * k * (Math.PI / 2), bounce = q.t > 1.1 ? Math.sin((q.t - 1.1) * 30) * 2 * Math.max(0, 1 - (q.t - 1.1) * 2) : 0;
+      ctx.save(); ctx.translate(x, F + bounce); ctx.rotate(ang); drawPillarShape(-b.w, 0, b.w, b.h); ctx.restore();
+    });
     world.bumps.forEach(b => drawBump(b, time));
     world.platforms.forEach((platform, i) => {
       if (platform.bld) return;
       const x = platform.x - cam; if (x < -150 || x > W + 150) return;
       const top = platform.y, TH2 = theme();
+      if (platform.kind === 'log') {                          // pilier tombé : un pont de pierre
+        ctx.save(); ctx.translate(x, F); ctx.rotate(-Math.PI / 2); ctx.scale(1, -1); ctx.translate(0, 0); ctx.restore();
+        const R = theme().rock, lg = ctx.createLinearGradient(0, top, 0, top + 64); lg.addColorStop(0, '#e9edf2'); lg.addColorStop(1, R[1]);
+        ctx.fillStyle = lg; ctx.strokeStyle = '#2b2f3a'; ctx.lineWidth = 4; ctx.beginPath(); ctx.rect(x, top, platform.w, 64); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = R[0]; ctx.fillRect(x, top - 4, 16, 72); ctx.strokeRect(x, top - 4, 16, 72); ctx.fillRect(x + platform.w - 16, top - 4, 16, 72); ctx.strokeRect(x + platform.w - 16, top - 4, 16, 72);
+        ctx.strokeStyle = 'rgba(43,47,58,.3)'; ctx.lineWidth = 2; for (let i = 1; i < 4; i++) { ctx.beginPath(); ctx.moveTo(x + 18, top + i * 16); ctx.lineTo(x + platform.w - 18, top + i * 16); ctx.stroke(); }
+        return;
+      }
       if (platform.kind === 'bar') {                         // barre pour grimper
         ctx.fillStyle = 'rgba(30,40,60,.18)'; ctx.fillRect(x + 8, top + 18, platform.w - 16, 4);
         ctx.fillStyle = '#9aa6b8'; roundRect(x, top, platform.w, 14, 7, true); ctx.strokeStyle = '#2b2f3a'; ctx.lineWidth = 3; roundRect(x, top, platform.w, 14, 7, false);
@@ -969,7 +1003,15 @@
     if (player.vy >= 0) {
       const overGap = world.gaps.some(g => player.x + player.w*.55 > g.x && player.x + player.w*.45 < g.x + g.w);
       const feet = player.y + player.h;
-      if (!overGap && previousFeet <= F && feet >= F) landingY = F;
+      if (!overGap && previousFeet <= F && feet >= F) {
+        const tr = world.tramps.find(t => player.x + player.w * .5 > t.x && player.x + player.w * .5 < t.x + t.w);
+        if (tr) {                                          // trampoline : un très grand bond (assez pour passer par-dessus l'immeuble)
+          tr.hit = gt; player.y = F - player.h; player.vy = -1250; player.jumping = true; player.carryVx = 0; triggerHeroAnimation('jump', 500); heroAnim.squash = .22;
+          FX.ring(tr.x + tr.w / 2, F - 6, '#ffe36e', 100, .45, 8); FX.sparkle(tr.x + tr.w / 2, F - 20, 16, ['#fff3a0', '#ff8fb8', '#8fd8ff'], 260); FX.shake(3, .25); sound('turbo'); MM.haptic('turbo');
+          return false;
+        }
+        landingY = F;
+      }
       for (const p of world.platforms) { const o = player.x + player.w > p.x && player.x < p.x + p.w; if (o && previousFeet <= p.y && feet >= p.y && p.y < landingY) landingY = p.y; }
       for (const b of world.bumps) { const top = F - b.h, o = player.x + player.w*.8 > b.x && player.x + player.w*.2 < b.x + b.w; if (o && previousFeet <= top + 4 && feet >= top && top < landingY) landingY = top; }
     }
@@ -1046,6 +1088,7 @@
     sound('turbo'); MM.haptic('turbo');
   }
   // un obstacle encaissé un coup : fissures, puis éclats quand il cède
+  const logPlatform = (b) => ({ x: b.x + b.w, y: world.floor - b.w, w: b.h, h: 18, kind: 'log', type: 0 });
   function hitBump(b, by) {
     b.hp--; b.hit = gt;
     mission.damage = mission.damage || {}; mission.damage[b.id] = (mission.damage[b.id] || 0) + 1;
@@ -1053,6 +1096,7 @@
     const colors = b.kind === 'fence' ? ['#c98a4a', '#e8b06a', '#ffffff', '#e04a3a'] : b.kind === 'wall' ? ['#c4673f', '#e08a5a', '#a04f2f', '#f0c0a0'] : ['#8c9a9a', '#b9c6c6', '#6f7d7d', '#d5dede'];
     if (b.hp > 0) { FX.shards(x, y, colors, 5, 160); FX.dust(x, F, 0, 3); FX.shake(2.5, .14); return; }
     world.bumps = world.bumps.filter(item => item !== b);
+    if (b.kind === 'pillar') { world.topples.push({ b, t: 0 }); FX.shake(4, .3); sound('smash'); MM.haptic('smash'); mission.brokenBumps = [...(mission.brokenBumps || []), b.id]; writeSave(); return; }
     mission.brokenBumps = [...(mission.brokenBumps || []), b.id]; writeSave();
     FX.shards(x, y, colors, 18, 340); FX.dust(x, F, 0, 9); FX.ring(x, y, '#ffffff', 90, .4, 7);
     FX.shake(by === 'punch' ? 6 : 3, .3); sound('smash'); MM.haptic('smash');
@@ -1091,7 +1135,7 @@
   }
   function awardSticker(tier) {
     const album = save.album = save.album || {};
-    const { id, isNew } = MM.stickers.pick(tier, album, MM.stickers.CITY_BASE + ((mission && mission.city) || 0));
+    const { id, isNew } = MM.stickers.pick(tier, album, (mission && mission.city) || 0, Math.max(0, MM.stickers.HEROES.indexOf(activeHero)));
     album[id] = (album[id] || 0) + 1;
     mission.stickersWon = [...(mission.stickersWon || []), { id, tier }];
     writeSave();
@@ -1115,42 +1159,43 @@
   }
   function openStickerDetail(id) {
     const info = MM.stickers.info(id), T = MM.stickers.TIERS[info.tier];
-    $('#sd-emoji').textContent = info.e; $('#sd-medal').textContent = T.medal; $('#sd-name').textContent = cap(info.n); $('#sd-desc').textContent = info.d || '';
+    $('#sd-emoji').textContent = info.e; $('#sd-medal').textContent = T.medal + (info.hero >= 0 ? ' ' + MM.stickers.HERO_ICONS[info.hero] + ' ' + MM.stickers.HERO_NAMES[info.hero] : ''); $('#sd-name').textContent = cap(info.n); $('#sd-desc').textContent = info.d || '';
     $('#sticker-detail').classList.remove('hidden');
     stickerSpeech = `${cap(info.n)}. ${info.d || ''}`; if (!timerNoticePlaying) sayText(stickerSpeech);
     MM.haptic('tap');
   }
   function closeStickerDetail() { $('#sticker-detail').classList.add('hidden'); cancelSpeech(); }
   let stickerSpeech = '';
-  function openCityAlbum(i) { renderAlbum(MM.stickers.CITY_BASE + i); setScreen('album-screen'); }
-  function renderAlbum(page) {
-    const S = MM.stickers, album = save.album || {}, nB = S.PAGES.length;
-    if (page === undefined) page = save.albumPage ?? -1;
-    page = page < 0 ? -1 : Math.min(nB - 1, page); save.albumPage = page;
-    const order = Array.from({ length: nB - S.CITY_BASE }, (_, i) => S.CITY_BASE + i).concat(Array.from({ length: S.CITY_BASE }, (_, i) => i));
-    const face = (i) => i >= S.CITY_BASE ? MM.cities[i - S.CITY_BASE].flag : S.PAGES[i].icon;
-    $('#album-tabs').innerHTML = `<button type="button" class="album-tab ${page === -1 ? 'on' : ''}" data-page="-1" role="tab" aria-selected="${page === -1}" aria-label="Tous les livres" style="--c:#ff9f43"><span>📚</span><small>${S.owned(album)}/${S.TOTAL}</small></button>` + order.map((i) => {
-      const n = S.pageOwned(album, i), done = n === S.PER_PAGE, p = S.PAGES[i];
-      return `<button type="button" class="album-tab ${i === page ? 'on' : ''} ${done ? 'full' : ''}" data-page="${i}" role="tab" aria-selected="${i === page}" aria-label="${escapeHtml(p.title)} : ${n} sur ${S.PER_PAGE}" style="--c:${p.color}"><span>${face(i)}</span><small>${n}/${S.PER_PAGE}</small></button>`;
-    }).join('');
-    const grid = $('#album-grid');
-    if (page === -1) {
-      $('#album-page-title').innerHTML = '<span style="--c:#e4741a">📚 Tous mes livres</span>';
-      grid.className = 'album-grid books';
-      grid.innerHTML = order.map((i) => { const p = S.PAGES[i], n = S.pageOwned(album, i); return `<button type="button" class="book-card ${n === S.PER_PAGE ? 'full' : ''}" data-page="${i}" style="--c:${p.color}" aria-label="${escapeHtml(p.title)} : ${n} sur ${S.PER_PAGE}"><span class="bk-face">${face(i)}</span><span class="bk-icon">${i >= S.CITY_BASE ? p.icon : ''}</span><b>${escapeHtml(p.title.replace(/^Livre (de |du )?/, ''))}</b><small>${n}/${S.PER_PAGE}</small><i style="--p:${n / S.PER_PAGE}"></i></button>`; }).join('');
-    } else {
-      const pg = S.PAGES[page];
-      $('#album-page-title').innerHTML = `<span style="--c:${pg.color}">${face(page)} ${escapeHtml(pg.title)}</span>`;
-      grid.className = 'album-grid'; grid.style.setProperty('--c', pg.color);
-      grid.innerHTML = pg.slots.map((slot, si) => {
-        const id = page * S.PER_PAGE + si, count = album[id] || 0;
-        return count > 0
-          ? `<div class="album-slot got ${slot.tier}" role="listitem" data-id="${id}" tabindex="0" aria-label="${escapeHtml(cap(slot.n))}"><i class="medal">${S.TIERS[slot.tier].medal}</i><span>${slot.e}</span>${count > 1 ? `<b class="count">×${count}</b>` : ''}</div>`
-          : `<div class="album-slot ${slot.tier}" role="listitem" aria-label="Autocollant ${S.TIERS[slot.tier].label.toLowerCase()} à gagner"><i class="medal">${S.TIERS[slot.tier].medal}</i><span class="ghost">${slot.e}</span></div>`;
-      }).join('');
-    }
-    $('#album-total').textContent = `${S.owned(album)}/${S.TOTAL}`;
+  function openCityAlbum(i, heroName) {
+    const S = MM.stickers; save.albumMode = 'city'; save.albumA = i; save.albumB = Math.max(0, S.HEROES.indexOf(heroName || activeHero || lastFinished?.hero));
+    renderAlbum(); setScreen('album-screen');
   }
+  function renderAlbum() {
+    const S = MM.stickers, album = save.album || {}, mode = save.albumMode === 'city' ? 'city' : 'hero';
+    const nA = mode === 'hero' ? 3 : S.CITIES_N, nB = mode === 'hero' ? S.CITIES_N : 3;
+    const A = Math.max(0, Math.min(nA - 1, save.albumA ?? 0)), B = Math.max(0, Math.min(nB - 1, save.albumB ?? 0)); save.albumA = A; save.albumB = B;
+    const heroOf = (a, b) => mode === 'hero' ? a : b, cityOf = (a, b) => mode === 'hero' ? b : a;
+    const tabA = (i) => mode === 'hero' ? { face: S.HERO_ICONS[i], label: S.HERO_NAMES[i], n: Array.from({ length: S.CITIES_N }, (_, c) => S.countFor(album, i, c)).reduce((x, y) => x + y, 0), of: S.CITIES_N * S.PER_PAGE, color: ['#ef5a53', '#438ccc', '#55b77b'][i] }
+      : { face: MM.cities[i].flag, label: MM.cities[i].name, n: [0, 1, 2].reduce((x, h) => x + S.countFor(album, h, i), 0), of: 3 * S.PER_PAGE, color: S.PAGES[S.CITY_BASE + i].color };
+    const tabB = (i) => mode === 'hero' ? { face: MM.cities[i].flag, n: S.countFor(album, A, i), color: S.PAGES[S.CITY_BASE + i].color, label: MM.cities[i].name }
+      : { face: S.HERO_ICONS[i], n: S.countFor(album, i, A), color: ['#ef5a53', '#438ccc', '#55b77b'][i], label: S.HERO_NAMES[i] };
+    const mk = (cls, i, t, on, per) => `<button type="button" class="album-tab ${cls} ${on ? 'on' : ''} ${t.n === per ? 'full' : ''}" data-i="${i}" role="tab" aria-selected="${on}" aria-label="${escapeHtml(t.label)} : ${t.n} sur ${per}" style="--c:${t.color}"><span>${t.face}</span><small>${t.n}/${per}</small></button>`;
+    $('#album-tabs').innerHTML = Array.from({ length: nA }, (_, i) => mk('a', i, tabA(i), i === A, tabA(i).of)).join('');
+    $('#album-subtabs').innerHTML = Array.from({ length: nB }, (_, i) => mk('b', i, tabB(i), i === B, S.PER_PAGE)).join('');
+    const h = heroOf(A, B), c = cityOf(A, B), pg = S.PAGES[S.CITY_BASE + c];
+    $('#album-switch').textContent = mode === 'hero' ? '🏙️' : '🦸'; $('#album-switch').setAttribute('aria-label', mode === 'hero' ? 'Classer par ville' : 'Classer par personnage');
+    $('#album-page-title').innerHTML = `<span style="--c:${pg.color}">${S.HERO_ICONS[h]} ${S.HERO_NAMES[h]} · ${MM.cities[c].flag} ${escapeHtml(MM.cities[c].name)}</span>`;
+    const grid = $('#album-grid'); grid.className = 'album-grid'; grid.style.setProperty('--c', pg.color);
+    grid.innerHTML = pg.slots.map((slot, si) => {
+      const id = S.hid(h, c, si), count = album[id] || 0;
+      return count > 0
+        ? `<div class="album-slot got ${slot.tier}" role="listitem" data-id="${id}" tabindex="0" aria-label="${escapeHtml(cap(slot.n))}"><i class="medal">${S.TIERS[slot.tier].medal}</i><span>${slot.e}</span>${count > 1 ? `<b class="count">×${count}</b>` : ''}</div>`
+        : `<div class="album-slot ${slot.tier}" role="listitem" aria-label="Autocollant ${S.TIERS[slot.tier].label.toLowerCase()} à gagner"><i class="medal">${S.TIERS[slot.tier].medal}</i><span class="ghost">${slot.e}</span></div>`;
+    }).join('');
+    $('#album-total').textContent = `${S.owned(album)}/${S.TOTAL}`;
+    const badge = $('#album-badge'); if (badge) badge.textContent = `${S.owned(album)}/${S.TOTAL}`;
+  }
+
   function showReward(praise) {
     const { id, isNew } = awardSticker('bronze');
     const info = MM.stickers.info(id);
@@ -1190,8 +1235,24 @@
     if (hash(`${pl.x}`) % 2) { ctx.fillStyle = '#9aa6bd'; roundRect(x + w - 56, top - 22, 34, 20, 4, true); ctx.fillStyle = '#7d8aa3'; ctx.fillRect(x + w - 56, top - 8, 34, 4); }
     else { ctx.strokeStyle = '#7d8aa3'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x + 40, top - 4); ctx.lineTo(x + 40, top - 36); ctx.stroke(); ctx.fillStyle = '#ff6b6b'; ctx.beginPath(); ctx.arc(x + 40, top - 38, 4, 0, Math.PI*2); ctx.fill(); }
   }
+  function drawPillarShape(x, y, w, h) {                  // colonne dessinée de bas (y) en haut, dans les couleurs de la ville
+    const R = theme().rock; ctx.save(); ctx.lineJoin = 'round';
+    const g = ctx.createLinearGradient(x, 0, x + w, 0); g.addColorStop(0, R[0]); g.addColorStop(.55, '#e9edf2'); g.addColorStop(1, R[1]);
+    ctx.fillStyle = g; ctx.strokeStyle = '#2b2f3a'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.rect(x, y - h, w, h); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = R[0]; ctx.fillRect(x - 8, y - h, w + 16, 16); ctx.strokeRect(x - 8, y - h, w + 16, 16); ctx.fillRect(x - 8, y - 14, w + 16, 14); ctx.strokeRect(x - 8, y - 14, w + 16, 14);
+    ctx.strokeStyle = 'rgba(43,47,58,.35)'; ctx.lineWidth = 2; for (let i = 1; i < 4; i++) { ctx.beginPath(); ctx.moveTo(x + i * w / 4, y - h + 16); ctx.lineTo(x + i * w / 4, y - 14); ctx.stroke(); }
+    ctx.restore();
+  }
   function drawBump(b, time) {
     const W = view.w, F = world.floor, x0 = b.x - world.camera; if (x0 < -260 || x0 > W + 260) return;
+    if (b.kind === 'pillar') {
+      const wob = gt - b.hit < .25 ? Math.sin((gt - b.hit) * 60) * 3 * (1 - (gt - b.hit) / .25) : 0;
+      ctx.save(); ctx.translate(wob, 0); drawPillarShape(x0, F, b.w, b.h);
+      const dmg = b.maxHp - b.hp; if (dmg > 0) { ctx.strokeStyle = '#1b1f27'; ctx.lineWidth = 4; ctx.lineCap = 'round'; for (let i = 0; i < dmg; i++) { const cy = F - 80 - i * 90; ctx.beginPath(); ctx.moveTo(x0 + 6, cy); ctx.lineTo(x0 + b.w * .5, cy - 14); ctx.lineTo(x0 + b.w * .4, cy - 34); ctx.lineTo(x0 + b.w - 6, cy - 46); ctx.stroke(); } }
+      ctx.fillStyle = '#fff'; ctx.font = '900 26px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('👊', x0 + b.w / 2, F - b.h * .45 + Math.sin(time * 5) * 4);
+      ctx.restore(); return;
+    }
     if (b.kind === 'tower') { drawBuilding({ x: b.x, y: F - b.h, w: b.w, bld: {} }); return; }
     const wob = gt - b.hit < .25 ? Math.sin((gt - b.hit) * 60) * 3 * (1 - (gt - b.hit) / .25) : 0, x = x0 + wob, top = F - b.h, damaged = b.hp < b.maxHp;
     const DARK = '#2b2f3a';
@@ -1732,7 +1793,7 @@
   $('#start-button').addEventListener('click',startToday);
   document.querySelectorAll('.hero-card').forEach(card=>card.addEventListener('click',()=>chooseHero(card.dataset.hero)));
   $('#level-grid').addEventListener('click',e=>{const card=e.target.closest('.level-card');if(card)pickLevel(Number(card.dataset.i));});
-  $('#album-grid').addEventListener('click',e=>{const book=e.target.closest('.book-card');if(book){renderAlbum(Number(book.dataset.page));MM.haptic('tap');return;}const slot=e.target.closest('.album-slot.got');if(slot)openStickerDetail(Number(slot.dataset.id));});
+  $('#album-grid').addEventListener('click',e=>{const slot=e.target.closest('.album-slot.got');if(slot)openStickerDetail(Number(slot.dataset.id));});
   $('#sticker-close').addEventListener('click',closeStickerDetail);
   $('#sd-listen').addEventListener('click',()=>{cancelSpeech();sayText(stickerSpeech);});
   $('#sticker-detail').addEventListener('click',e=>{if(e.target.id==='sticker-detail')closeStickerDetail();});
@@ -1769,20 +1830,25 @@
     ['pointerup', 'pointerleave', 'pointercancel'].forEach(t => btn.addEventListener(t, stop));
     btn.addEventListener('contextmenu', e => e.preventDefault());
   }
-  fillVoiceSelect();
+  fillVoiceSelect(); renderAlbum();
   $('#voice-select').addEventListener('change', e => { save.voiceName = e.target.value; writeSave(); sayText('Bonjour ! Je suis ta nouvelle voix.'); });
-  $('#album-open').addEventListener('click',()=>{renderAlbum(-1);setScreen('album-screen');});
+  $('#album-open').addEventListener('click',()=>{renderAlbum();setScreen('album-screen');});
   $('#reward-continue').addEventListener('click',()=>{cancelSpeech();rewardAdvance?.();});
   $('#puzzle-close').addEventListener('click', closePuzzle);
   $('#game-read-button').addEventListener('click', () => { readPuzzleAloud(); gameCtl?.replay?.(); });
   $('#music-bg-toggle').checked = musicEnabled; $('#haptics-toggle').checked = hapticsEnabled;
   $('#music-bg-toggle').addEventListener('change', e => { musicEnabled = e.target.checked; save.musicEnabled = musicEnabled; writeSave(); updateMusic(); });
   $('#haptics-toggle').addEventListener('change', e => { hapticsEnabled = e.target.checked; save.hapticsEnabled = hapticsEnabled; writeSave(); MM.setHaptics(hapticsEnabled); if (hapticsEnabled) MM.haptic('good'); });
-  $('#album-tabs').addEventListener('click', e => { const tab = e.target.closest('.album-tab'); if (tab) { renderAlbum(Number(tab.dataset.page)); MM.haptic('tap'); } });
+  const albumTab = (lvl) => (e) => { const t = e.target.closest('.album-tab'); if (!t) return; save[lvl === 'a' ? 'albumA' : 'albumB'] = Number(t.dataset.i); renderAlbum(); MM.haptic('tap'); };
+  $('#album-tabs').addEventListener('click', albumTab('a')); $('#album-subtabs').addEventListener('click', albumTab('b'));
+  $('#album-switch').addEventListener('click', () => {      // bascule : 3 albums de personnages ⇄ 10 albums de villes
+    const S = MM.stickers, mode = save.albumMode === 'city' ? 'city' : 'hero', A = save.albumA ?? 0, B = save.albumB ?? 0;
+    save.albumMode = mode === 'hero' ? 'city' : 'hero'; save.albumA = B; save.albumB = A; writeSave(); renderAlbum(); MM.haptic('good');
+  });
   document.addEventListener('visibilitychange', updateMusic);
   fetch('version.json', { cache: 'no-store' }).then(r => r.json()).then(v => { $('#home-version').textContent = `v${v.version}`; }).catch(() => {});
   $('#new-mission-button').addEventListener('click',()=>{if(stopAfterMission)endSession();else setScreen('home');});
-  $('#end-album-button').addEventListener('click',()=>openCityAlbum(lastFinished?lastFinished.index:0));
+  $('#end-album-button').addEventListener('click',()=>openCityAlbum(lastFinished?lastFinished.index:0,lastFinished?lastFinished.hero:null));
   
   $('#sound-button').addEventListener('click',()=>setAudioEnabled(!audioEnabled));
   $('#music-toggle').checked=audioEnabled;$('#effects-toggle').checked=effectsEnabled;

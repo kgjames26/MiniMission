@@ -548,3 +548,16 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
 .level-card.hard{border-color:#ff7a5c;box-shadow:0 5px 0 #c4281c,0 0 0 3px #ffd0c4,0 8px 16px #c4281c40}
 .lv-tier{font-size:14px;padding:1px 8px;background:linear-gradient(#ff7a5c,#c4281c);box-shadow:0 2px 0 #7d140d}
 .game-topbar .mission-label strong{white-space:nowrap}
+
+.home-tagline{margin:0 0 8px;padding:6px 16px;border-radius:18px;background:rgba(255,255,255,.82);color:#d4661a;font-weight:1000;font-size:clamp(14px,2.6vh,20px);text-align:center;box-shadow:0 3px 0 #ffd9a8;max-width:92vw}
+.pill-btn#album-open{position:relative;font-size:clamp(18px,3vh,26px);padding:10px clamp(18px,3vw,32px);gap:10px;animation:album-glow 2s ease-in-out infinite;box-shadow:0 6px 0 #c56a00,0 0 0 4px #fff,0 0 26px 6px rgba(255,190,40,.8)}
+.pill-btn#album-open .album-ico{font-size:1.9em;line-height:1;display:inline-block;animation:album-wiggle 2.8s ease-in-out infinite}
+.album-badge{position:absolute;right:-8px;top:-12px;min-width:34px;padding:2px 8px;border-radius:14px;background:#ff4d6d;color:#fff;font-size:13px;font-weight:1000;border:3px solid #fff;box-shadow:0 2px 0 #b01a3a}
+@keyframes album-wiggle{0%,100%{transform:rotate(0)}10%{transform:rotate(-12deg)}20%{transform:rotate(10deg)}30%{transform:rotate(-6deg)}40%{transform:rotate(0)}}
+.album-tabs.sub{padding:0 2px 6px;margin-top:-4px}
+.album-tabs.sub .album-tab{padding:3px 8px;border-radius:14px}
+.album-tabs.sub .album-tab span{font-size:clamp(16px,2.8vh,22px)}
+.album-tabs.sub .album-tab small{font-size:10px}
+#level-title{white-space:nowrap;font-size:clamp(30px,8vh,56px)}
+.level-screen .screen-title{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:nowrap}
+.home-top{padding-top:10px}

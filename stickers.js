@@ -36,17 +36,25 @@
     silver: { label: 'Argent', medal: '🥈', color: '#9db2c4' },
     gold: { label: 'Or', medal: '🥇', color: '#f4b81c' }
   };
-  const info = (id) => { const page = Math.floor(id / PER_PAGE), slot = id % PER_PAGE; const s = PAGES[page].slots[slot]; return { id, page, slot, ...s, d: s.d || DESC[s.e] || '' }; };
-  const ids = (tier) => PAGES.flatMap((p, pi) => p.slots.map((s, si) => (!tier || s.tier === tier) ? pi * PER_PAGE + si : -1)).filter((i) => i >= 0);
-  // Tire un autocollant du niveau demandé, en privilégiant ceux qu'on n'a pas encore.
-  function pick(tier, album, page) {
-    const all = ids(tier).filter((id) => page == null || Math.floor(id / PER_PAGE) === page);
+  /* Un autocollant appartient à un héros ET à une ville : id = 10000 × (héros + 1) + numéro dans le livre de la ville. */
+  const HEROES = ['ziggy', 'filou', 'titan'], HERO_ICONS = ['☄️', '🧶', '🌿'], HERO_NAMES = ['Ziggy', 'Filou', 'Titan'];
+  const CITIES_N = PAGES.length - CITY_BASE, SLOTS = PER_PAGE;
+  const hid = (h, city, slot) => 10000 * (h + 1) + (CITY_BASE + city) * PER_PAGE + slot;
+  const info = (id) => {
+    const h = id >= 10000 ? Math.floor(id / 10000) - 1 : -1, base = id % 10000, page = Math.floor(base / PER_PAGE), slot = base % PER_PAGE;
+    const s = PAGES[page].slots[slot]; return { id, hero: h, city: page - CITY_BASE, page, slot, ...s, d: s.d || DESC[s.e] || '' };
+  };
+  const ids = (tier, h, city) => PAGES[CITY_BASE + city].slots.map((sl, si) => (!tier || sl.tier === tier) ? hid(h, city, si) : -1).filter((i) => i >= 0);
+  // Tire un autocollant de la ville et du héros, en privilégiant ceux qu'on n'a pas encore.
+  function pick(tier, album, city, h) {
+    const all = ids(tier, h, city);
     const fresh = all.filter((id) => !(album[id] > 0));
     const pool = fresh.length ? fresh : all;
     const id = pool[Math.floor(Math.random() * pool.length)];
     return { id, isNew: !(album[id] > 0) };
   }
-  const owned = (album) => Object.keys(album).filter((k) => album[k] > 0).length;
-  const pageOwned = (album, page) => PAGES[page].slots.reduce((n, _, si) => n + (album[page * PER_PAGE + si] > 0 ? 1 : 0), 0);
-  MM.stickers = { CITY_BASE, PAGES, PER_PAGE, TIERS, TOTAL: PAGES.length * PER_PAGE, info, ids, pick, owned, pageOwned };
+  const owned = (album) => Object.keys(album).filter((k) => +k >= 10000 && album[k] > 0).length;
+  const countFor = (album, h, city) => PAGES[CITY_BASE + city].slots.reduce((n, _, si) => n + (album[hid(h, city, si)] > 0 ? 1 : 0), 0);
+  const TOTAL = HEROES.length * CITIES_N * SLOTS;
+  MM.stickers = { CITY_BASE, PAGES, PER_PAGE, TIERS, TOTAL, HEROES, HERO_ICONS, HERO_NAMES, CITIES_N, hid, info, ids, pick, owned, countFor };
 })();
