@@ -150,7 +150,7 @@
   let hapticsEnabled = save.hapticsEnabled !== false;
   MM.setHaptics(hapticsEnabled);
   let shots = [], fireballs = [], tornados = [], hitTimes = [], rewindAt = 0, litShown = -1;
-  let swingCue = false, airTurnUntil = 0, shootReady = 0, flipUntil = 0, flipDir = 1, hurtUntil = 0;
+  let idleMuted = false, swingCue = false, airTurnUntil = 0, shootReady = 0, flipUntil = 0, flipDir = 1, hurtUntil = 0;
   let gameCtl = null;
   let view = { scale: 1, ox: 0, oy: 0, w: 960, h: 540 };
   let world = { tramps: [], topples: [], camY: 0, passPts: [200], passX: 200, width: 6200, floor: 426, camera: 0, checkpoint: 60, stations: [], gaps: [], bumps: [], platforms: [], coins: [], letters: [], enemies: [], bigFriends: [] };
@@ -256,12 +256,25 @@
   function setScreen(id) { if(id!=='puzzle-screen')cancelSpeech(); if(id!=='game-screen'){$('#toast')?.classList.remove('show');$('#award-banner')?.classList.remove('show');} screens.forEach(s => s.classList.toggle('active', s.id === id)); scene = id; if (id !== 'game-screen') releaseControls(); if (!['game-screen','puzzle-screen'].includes(id)) lastActiveTick=performance.now(); if (id === 'game-screen') resizeCanvas(); updateMusic(); }
   // la musique accompagne la partie ; elle se met en pause avec le jeu
   function updateMusic() {
-    const should = audioEnabled && musicEnabled && !document.hidden && (scene === 'game-screen' || scene === 'puzzle-screen');
+    const should = audioEnabled && musicEnabled && !document.hidden && !idleMuted && (scene === 'game-screen' || scene === 'puzzle-screen');
     if (should) MM.music.play('assets/music.mp3'); else MM.music.stop();
   }
+  /* ----- minuteur de jeu : choix à l'accueil, puis les héros dorment 1 heure ----- */
+  const TIMER_CHOICES = [5, 10, 15, 20, 30, 45, 60];
+  const restLocked = () => !!save.restUntil && Date.now() < save.restUntil;
+  let restTimer = 0;
+  function showRest() {
+    setScreen('rest-screen');
+    const tick = () => { const left = Math.max(0, Math.ceil(((save.restUntil || 0) - Date.now()) / 1000)); $('#rest-count').textContent = `${String(Math.floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`; if (!left) { clearInterval(restTimer); restTimer = 0; save.restUntil = 0; writeSave(); setScreen('home'); updateTimerChip(); } };
+    clearInterval(restTimer); tick(); restTimer = setInterval(tick, 1000);
+  }
+  function updateTimerChip() {
+    const chip = $('#timer-chip'), m = Number(save.timerMinutes) || 0; chip.classList.toggle('hidden', !m); chip.textContent = m ? `${m}′` : '';
+    $('#timer-options').innerHTML = [0, ...TIMER_CHOICES].map(v => `<button type="button" class="${v === m ? 'on' : ''}" data-m="${v}">${v ? v : '∞'}<small>${v ? 'min' : 'sans'}</small></button>`).join('');
+  }
   function startToday() {
-    if (save.activeHero && save.activeMission) { activeHero = save.activeHero; mission = save.activeMission; beginGame(true); return; }
-    if(sessionActive&&stopAfterMission){endSession();showToast('Le héros va se reposer maintenant.');sayText('Le héros va se reposer maintenant.');return;}
+    if (restLocked()) { showRest(); return; }
+    if(sessionActive&&stopAfterMission){endSession();return;}
     $('#session-timer-row').classList.toggle('hidden',sessionActive);
     setScreen('hero-select');
   }
@@ -276,7 +289,7 @@
     if (!timerNoticePlaying) sayText(`Niveau de difficulté ${COUNT_WORDS[Math.min(tier, 20)] || tier} ! Les monstres sont plus costauds.`);
   }
   function startLevel(heroId, index) {
-    if(!sessionActive){sessionActive=true;sessionElapsed=0;sessionTimerLimit=Number($('#session-timer-select').value)||0;stopAfterMission=false;timerWarningSent=false;timerAnnouncementPending=false;save.sessionActive=true;save.sessionElapsed=0;save.sessionTimerLimit=sessionTimerLimit;save.stopAfterMission=false;save.timerWarningSent=false;}$('#session-timer-row').classList.toggle('hidden',sessionActive);
+    if(!sessionActive){sessionActive=true;sessionElapsed=0;sessionTimerLimit=(Number(save.timerMinutes)||0)*60;stopAfterMission=false;timerWarningSent=false;timerAnnouncementPending=false;save.sessionActive=true;save.sessionElapsed=0;save.sessionTimerLimit=sessionTimerLimit;save.stopAfterMission=false;save.timerWarningSent=false;}$('#session-timer-row').classList.toggle('hidden',sessionActive);
     activeHero = heroId;
     if (levelComplete(readLevel(heroId, index))) {
       const E = levelEntry(heroId, index); E.tier = (E.tier || 0) + 1;
@@ -1795,7 +1808,7 @@
     puzzleTask = null; puzzleStation = null;
     setScreen('game-screen'); startLoop();
   }
-  function endSession(){sessionActive=false;sessionElapsed=0;sessionTimerLimit=0;stopAfterMission=false;timerWarningSent=false;timerAnnouncementPending=false;timerNoticePlaying=false;save.sessionActive=false;save.sessionElapsed=0;save.sessionTimerLimit=0;save.stopAfterMission=false;save.timerWarningSent=false;save.timerAnnouncementPending=false;save.activeMission=null;save.activeHero=null;save.activeDate=null;save.progress=0;writeSave();$('#session-timer-row').classList.remove('hidden');setScreen('home');}
+  function endSession(){const due=stopAfterMission;if(due)save.restUntil=Date.now()+3600000;sessionActive=false;sessionElapsed=0;sessionTimerLimit=0;stopAfterMission=false;timerWarningSent=false;timerAnnouncementPending=false;timerNoticePlaying=false;save.sessionActive=false;save.sessionElapsed=0;save.sessionTimerLimit=0;save.stopAfterMission=false;save.timerWarningSent=false;save.timerAnnouncementPending=false;save.activeMission=null;save.activeHero=null;save.activeDate=null;save.progress=0;writeSave();$('#session-timer-row').classList.remove('hidden');if(due){showRest();sayText('Les héros vont se reposer maintenant. À tout à l’heure !');}else setScreen('home');}
   function showToast(message){const node=$('#toast');if(!node||!message)return;node.textContent=message;node.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.classList.remove('show'),3800);sound('soft');}
   function setAudioEnabled(value,silent=false){audioEnabled=value;save.audioEnabled=value;if(!silent)writeSave();$('#sound-button').textContent=value?'♫':'♪';$('#sound-button').setAttribute('aria-label',value?'Couper les sons':'Activer les sons');$('#home-sound-toggle').textContent=value?'♫':'♪';$('#home-sound-toggle').setAttribute('aria-label',value?'Couper les sons':'Activer les sons');$('#music-toggle').checked=value;if(value&&!silent)sound('success');updateMusic();}
   function releaseControls(){keys={left:false,right:false,jump:false,down:false};jumpBuffer=0;dpadPointer=null;Object.assign(dpadState,{left:false,right:false,up:false,down:false});document.querySelectorAll('.dpad-btn.pressed,.action-button.pressed,.jump-button.pressed').forEach(button=>button.classList.remove('pressed'));}
@@ -1870,6 +1883,20 @@
     ['pointerup', 'pointerleave', 'pointercancel'].forEach(t => btn.addEventListener(t, stop));
     btn.addEventListener('contextmenu', e => e.preventDefault());
   }
+  updateTimerChip();
+  $('#timer-open').addEventListener('click', () => { updateTimerChip(); setScreen('timer-screen'); });
+  $('#timer-options').addEventListener('click', e => { const b = e.target.closest('button[data-m]'); if (!b) return; save.timerMinutes = Number(b.dataset.m); writeSave(); updateTimerChip(); MM.haptic('good'); setTimeout(() => setScreen('home'), 350); });
+  function bindHold(btn, ms, fn) {
+    let timer = 0; const stop = () => { clearTimeout(timer); timer = 0; btn.classList.remove('holding'); };
+    btn.addEventListener('pointerdown', (e) => { e.preventDefault(); stop(); void btn.offsetWidth; btn.classList.add('holding'); timer = setTimeout(() => { stop(); fn(); }, ms); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(t => btn.addEventListener(t, stop));
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+  }
+  bindHold($('#timer-reset-button'), 3000, () => { save.restUntil = 0; sessionActive = false; sessionElapsed = 0; sessionTimerLimit = 0; stopAfterMission = false; timerWarningSent = false; timerAnnouncementPending = false; save.sessionActive = false; save.stopAfterMission = false; save.timerWarningSent = false; save.timerAnnouncementPending = false; save.sessionElapsed = 0; writeSave(); clearInterval(restTimer); MM.haptic('gold'); showToast('Minuteur réinitialisé'); setScreen('home'); });
+  // le son se coupe tout seul quand plus personne ne joue
+  let lastInputAt = Date.now();
+  ['pointerdown', 'keydown', 'touchstart'].forEach(t => window.addEventListener(t, () => { lastInputAt = Date.now(); if (idleMuted) { idleMuted = false; updateMusic(); } }, { passive: true, capture: true }));
+  setInterval(() => { if (!idleMuted && Date.now() - lastInputAt > 45000 && (scene === 'game-screen' || scene === 'puzzle-screen')) { idleMuted = true; updateMusic(); } }, 5000);
   fillVoiceSelect(); renderAlbum();
   $('#voice-select').addEventListener('change', e => { save.voiceName = e.target.value; writeSave(); sayText('Bonjour ! Je suis ta nouvelle voix.'); });
   $('#album-open').addEventListener('click',()=>{renderAlbum();setScreen('album-screen');});
@@ -1891,9 +1918,9 @@
   $('#music-toggle').addEventListener('change',e=>setAudioEnabled(e.target.checked));
   $('#effects-toggle').addEventListener('change',e=>{effectsEnabled=e.target.checked;save.effectsEnabled=effectsEnabled;writeSave();});
   // Croix de déplacement : un seul doigt peut glisser d'une direction à l'autre (diagonale haut + côté = sauter en avançant).
-  const dpad=$('#dpad');const dpadButtons=[...dpad.querySelectorAll('.dpad-btn')];
-  function setDpad(next){if(next.up&&!dpadState.up)keys.jump=true;if(next.down&&!dpadState.down)keys.down=true;Object.assign(dpadState,next);keys.left=next.left;keys.right=next.right;dpadButtons.forEach(button=>button.classList.toggle('pressed',!!dpadState[button.dataset.dir]));}
-  function dpadFromPoint(e){const r=dpad.getBoundingClientRect();const nx=(e.clientX-(r.left+r.width/2))/(r.width/2),ny=(e.clientY-(r.top+r.height/2))/(r.height/2);if(Math.hypot(nx,ny)<.18)return {left:false,right:false,up:false,down:false};return {left:nx<-.3,right:nx>.3,up:ny<-.38,down:ny>.45&&Math.abs(nx)<.5};}
+  const dpad=$('#dpad');const dpadButtons=[...dpad.querySelectorAll('.lr-btn')];
+  function setDpad(next){Object.assign(dpadState,next);keys.left=!!next.left;keys.right=!!next.right;dpadButtons.forEach(button=>button.classList.toggle('pressed',!!dpadState[button.dataset.dir]));}
+  function dpadFromPoint(e){const r=dpad.getBoundingClientRect();const nx=(e.clientX-r.left)/r.width;return {left:nx<.5,right:nx>=.5,up:false,down:false};}
   dpad.addEventListener('pointerdown',e=>{e.preventDefault();if(dpadPointer!==null||scene!=='game-screen')return;dpadPointer=e.pointerId;dpad.setPointerCapture?.(e.pointerId);setDpad(dpadFromPoint(e));});
   dpad.addEventListener('pointermove',e=>{if(e.pointerId===dpadPointer)setDpad(dpadFromPoint(e));});
   ['pointerup','pointercancel','lostpointercapture'].forEach(type=>dpad.addEventListener(type,e=>{if(e.pointerId!==dpadPointer)return;dpadPointer=null;setDpad({left:false,right:false,up:false,down:false});}));
