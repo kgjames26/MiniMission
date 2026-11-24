@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mini-mission-v29';
+const CACHE_NAME = 'mini-mission-v30';
 const CORE = ['./', './index.html', './styles.css', './app.js', './levels.js', './cities.js', './fx.js', './stickers.js', './stickers-cities.js', './assets/friend-leaf.webp', './minigames.js', './version.json', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './assets/heroes-atlas.webp', './assets/heroes-hd.webp', './assets/hero-moves.webp', './assets/monsters.webp', './assets/sprites2.webp', './assets/sprites2.json', './assets/music.mp3'];
 // Le code passe d'abord par le réseau pour que les mises à jour arrivent sans attendre ; les images et la musique
 // restent servies depuis le cache. Hors ligne, tout vient du cache.
@@ -29,7 +29,12 @@ self.addEventListener('fetch', (event) => {
   if (event.request.headers.has('range')) { event.respondWith(rangeResponse(event.request).catch(() => fetch(event.request))); return; }
   const networkFirst = event.request.mode === 'navigate' || NETWORK_FIRST.test(url.pathname);
   if (networkFirst) {
-    event.respondWith(fetch(event.request).then((response) => store(event.request, response)).catch(() => caches.match(event.request).then((cached) => cached || (event.request.mode === 'navigate' ? caches.match('./index.html') : Response.error()))));
+    // Réseau d'abord, mais sans attendre indéfiniment : avec une connexion très lente (ou « Wi-Fi sans Internet »),
+    // la version en cache s'affiche après 3 secondes ; la version réseau sera prise la fois suivante.
+    const fromCache = () => caches.match(event.request).then((cached) => cached || (event.request.mode === 'navigate' ? caches.match('./index.html') : undefined));
+    const network = fetch(event.request).then((response) => store(event.request, response));
+    const slow = new Promise((resolve) => setTimeout(resolve, 3000)).then(fromCache).then((cached) => cached || network);
+    event.respondWith(Promise.race([network, slow]).catch(() => fromCache().then((cached) => cached || Response.error())));
     return;
   }
   event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request).then((response) => store(event.request, response))));

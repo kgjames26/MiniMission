@@ -46,10 +46,10 @@
 
       <section id="home" class="screen home-screen active" aria-label="Accueil de Mini Mission">
         <div class="home-top">
-          <button class="round-btn settings-open" type="button" aria-label="Réglages pour l'adulte" title="Réglages">⚙</button>
+          <button class="round-btn settings-open" type="button" aria-label="Réglages pour l'adulte : garder appuyé 2 secondes" title="Réglages (garder appuyé)">⚙</button>
           <span class="grow"></span>
           <button id="help-art-button" class="pill-btn" type="button" aria-label="Mode d’emploi"><span aria-hidden="true">📖</span><span>Mode d’emploi</span></button>
-          <button id="timer-open" class="round-btn timer-open" type="button" aria-label="Minuteur de jeu"><span aria-hidden="true">⏱️</span><b id="timer-chip" class="timer-chip hidden"></b></button>
+          <button id="timer-open" class="round-btn timer-open" type="button" aria-label="Minuteur de jeu : garder appuyé 2 secondes" title="Minuteur (garder appuyé)"><span aria-hidden="true">⏱️</span><b id="timer-chip" class="timer-chip hidden"></b></button>
           <button id="home-sound-toggle" class="round-btn" type="button" aria-label="Activer ou couper les sons">♫</button>
         </div>
         <h1 class="logo" aria-label="Mini Mission">
@@ -254,7 +254,7 @@
       </section>
 
       <section id="settings-screen" class="screen modal-screen" aria-label="Réglages adulte">
-        <div class="modal-card settings-card"><button class="close-settings" type="button" data-go="home" aria-label="Fermer">×</button><h2>⚙ Réglages</h2><label class="setting-row"><span>🔊 Sons</span><input id="music-toggle" type="checkbox" checked /></label><label class="setting-row"><span>🎵 Musique</span><input id="music-bg-toggle" type="checkbox" checked /></label><label class="setting-row"><span>💥 Bruitages</span><input id="effects-toggle" type="checkbox" checked /></label><label class="setting-row"><span>📳 Vibrations</span><input id="haptics-toggle" type="checkbox" checked /></label><label class="setting-row voice-row"><span>🗣️ Voix</span><select id="voice-select" aria-label="Choisir la voix"><option value="">Automatique</option></select></label><button id="timer-reset-button" class="reset-hold" type="button" aria-label="Réinitialiser le minuteur : garder appuyé 3 secondes"><span class="rh-fill"></span><span class="rh-text">⏱️ Réinitialiser le minuteur <small>(garder appuyé)</small></span></button><button id="reset-button" class="reset-hold" type="button" aria-label="Réinitialiser le jeu : garder appuyé 3 secondes"><span class="rh-fill"></span><span class="rh-text">🗑️ Tout réinitialiser <small>(garder appuyé)</small></span></button></div>
+        <div class="modal-card settings-card"><button class="close-settings" type="button" data-go="home" aria-label="Fermer">×</button><h2>⚙ Réglages</h2><label class="setting-row"><span>🔊 Sons</span><input id="music-toggle" type="checkbox" checked /></label><label class="setting-row"><span>🎵 Musique</span><input id="music-bg-toggle" type="checkbox" checked /></label><label class="setting-row"><span>💥 Bruitages</span><input id="effects-toggle" type="checkbox" checked /></label><label class="setting-row"><span>📳 Vibrations</span><input id="haptics-toggle" type="checkbox" checked /></label><label class="setting-row one-button-row"><span>👶 Un seul bouton <small>(3-4 ans : le pouvoir part tout seul)</small></span><input id="one-button-toggle" type="checkbox" /></label><label class="setting-row voice-row"><span>🗣️ Voix</span><select id="voice-select" aria-label="Choisir la voix"><option value="">Automatique</option></select></label><button id="timer-reset-button" class="reset-hold" type="button" aria-label="Réinitialiser le minuteur : garder appuyé 3 secondes"><span class="rh-fill"></span><span class="rh-text">⏱️ Réinitialiser le minuteur <small>(garder appuyé)</small></span></button><button id="reset-button" class="reset-hold" type="button" aria-label="Réinitialiser le jeu : garder appuyé 3 secondes"><span class="rh-fill"></span><span class="rh-text">🗑️ Tout réinitialiser <small>(garder appuyé)</small></span></button></div>
       </section>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </main>

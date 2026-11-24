@@ -78,3 +78,13 @@ Filou reste accroché à sa toile tant qu'on ne saute pas (le bouton SAUT cligno
 - Minuteur : bouton ⏱️ en haut à droite de l'accueil (5 à 60 min). Une fois le temps écoulé, la partie en cours se termine, puis les héros dorment 1 heure (écran de repos animé, JOUER est bloqué). Le parent remet le minuteur à zéro en gardant appuyé « Réinitialiser le minuteur » dans les réglages.
 - La musique se coupe après 45 s sans toucher l'écran et revient au premier contact.
 - Au lancement, on passe toujours par accueil → héros → ville : le jeu ne reprend plus une partie tout seul.
+
+## Fluidité, toile et tout-petits (v0.30)
+- Boucle de jeu : sur un téléphone lent, le temps écoulé est découpé en petits pas (le jeu garde la même vitesse) ; la finesse du canvas baisse toute seule (2 → 1,5 → 1,25) si l'appareil n'arrive pas à suivre, et revient en arrière si ça n'aide pas.
+- Sauts : le héros s'étire en montant, se tasse en retombant et s'écrase d'autant plus que la chute est haute.
+- Toile de Filou : corde souple (petite simulation de Verlet, purement visuelle) qui ondule à l'accroche et retombe quand on lâche ; petit ralenti et son « zip » à l'accroche ; pointillés vers l'anneau à portée et bouton TOILE qui pulse.
+- Fenêtres de saut plus larges : appui mémorisé 0,2 s, saut possible 0,14 s après le bord.
+- Réglage « 👶 Un seul bouton » : seuls ◀ ▶ et un très gros SAUT restent ; le tir part tout seul vers les farceurs devant, Filou lance sa toile en l'air et lâche au meilleur moment, Ziggy déclenche le turbo devant les barrières, petits obstacles et grands ravins (et saute tout seul au bord en turbo), Titan donne ses coups de poing devant les blocs.
+- Récompenses : étoiles et lettres s'envolent vers leur compteur ; « B, comme ballon ! » avec son dessin ; petit visage joyeux au-dessus du héros.
+- Verrou parent : ⚙ et ⏱️ s'ouvrent en gardant le doigt appuyé 2 secondes (un anneau se remplit, « ✋ 2 s » sur un simple tapotement).
+- Hors ligne : si le réseau traîne plus de 3 secondes, la version en cache s'affiche.
