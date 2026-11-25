@@ -913,7 +913,7 @@
     'filou:idle>walk': ['filou_iw0'], 'filou:walk>idle': ['filou_wi0'],
     'titan:idle>walk': ['titan_iw0'], 'titan:walk>idle': ['titan_wi0'],
   };
-  const TR_STEP = .075, FADE = .09, RUN_FPS = 13;   // durée d'une image de transition ; durée du fondu ; images de course par seconde à pleine vitesse
+  const TR_STEP = .075, FADE = .08, RUN_FPS = 13;   // durée d'une image de transition ; durée du fondu ; images de course par seconde à pleine vitesse
   // Action ponctuelle ; ms = durée. L'écrasement/étirement (squash) donne du poids aux sauts et aux arrivées.
   function triggerHeroAnimation(name, ms = 400) {
     const a = heroAnim;
@@ -984,14 +984,23 @@
       const f2 = `${name}${(i + 1) % N}`; if (S2.map[f2]) { q.f2 = f2; const fr = t - Math.floor(t); q.mix = fr * fr * (3 - 2 * fr); } return q;
     };
     const moving = Math.abs(player.vx) > 12;
+    // saut complet dessiné (Ziggy, Titan) : monte, en haut, retombe, touche le sol, se redresse ; fête = bras écartés
+    const seqJ = (q, h) => { if (q) q.cyc = `${h}_j`; return q; };   // images du saut dessinées pour s'enchaîner : pas de fondu entre elles
+    const jumpPose = (h) => {
+      if (air && !swing) { const vy = player.vy; return seqJ(n(vy < -300 ? `${h}_j1` : vy < 60 ? `${h}_j2` : vy < 380 ? `${h}_j3` : `${h}_j4`), h); }
+      if (t.land) return seqJ(n(t.land > .14 ? `${h}_j5` : `${h}_j6`), h);
+      if (t.stumble && h === 'ziggy') return n(a.stumbleAge < .18 ? `${h}_j0` : `${h}_j6`);
+      if (t.celebrate) return n(`${h}_j3`);
+      return null;
+    };
     if (hero === 'filou') {
       let q;
       if (swing) { q = n(swing.theta * swing.omega > 0 ? 'filou_s1' : 'filou_s0'); if (q) return q; return mv(Math.abs(swing.theta) < .45 ? 1 : swing.theta * swing.omega > 0 ? 2 : 0); }
       if (t.shot) { q = n(t.shot > .12 ? 'filou_launch' : 'filou_aim'); if (q) return q; return mv(2); }
       if (gt < flipUntil && (q = n('filou_s4'))) return q;
       if (t.release && (q = n('filou_s3'))) return q;
-      if (air) { if (Math.abs(player.carryVx) > 60 && !s2ok()) return mv(3); const vy = player.vy; q = n(vy < -300 ? 'filou_j1' : vy < 60 ? 'filou_j2' : vy < 380 ? 'filou_j3' : 'filou_j4'); if (q) return q; return main(POSE.jump); }
-      if (t.land && (q = n(t.land > .14 ? 'filou_j5' : 'filou_j6'))) return q;
+      if (air) { if (Math.abs(player.carryVx) > 60 && !s2ok()) return mv(3); const vy = player.vy; q = seqJ(n(vy < -300 ? 'filou_j1' : vy < 60 ? 'filou_j2' : vy < 380 ? 'filou_j3' : 'filou_j4'), 'filou'); if (q) return q; return main(POSE.jump); }
+      if (t.land && (q = seqJ(n(t.land > .14 ? 'filou_j5' : 'filou_j6'), 'filou'))) return q;
       if (t.stumble && (q = n(a.stumbleAge < .18 ? 'filou_j0' : 'filou_j6'))) return q;
       if (t.celebrate && (q = n('filou_j3'))) return q;
       if (moving && (q = walkN('filou_w', 8, 1.94))) return q;
@@ -1002,14 +1011,14 @@
       if (t.shot) return mv(4);
       if (t.stumble) return mv(Math.floor(a.time * 6) % 2);
       let q;
-      if (air && !swing && (q = n(player.vy < -120 ? 'titan_j1' : 'titan_j2'))) return q;                              // bras en l'air en montant, groupé en retombant
-      if (t.land && (q = n(t.land > .14 ? 'titan_j2' : 'titan_j6'))) return q;
+      if ((q = jumpPose('titan'))) return q;
       if (!air && !t.celebrate && !t.land) { if (moving && (q = walkN('titan_w', 7, 1.7))) return q; if (!moving && (q = n('titan_w7'))) return q; }
     }
     if (hero === 'ziggy') {
       if (t.shot) return main(POSE.dodge);
       let q;
       if (gt < turboUntil && (q = air ? n('ziggy_r1') : walkN('ziggy_r', 4, 1, a.runPhase))) return q;
+      if ((q = jumpPose('ziggy'))) return q;
       if (!air && !t.celebrate && !t.land && !t.stumble) { if (moving && (q = walkN('ziggy_w', 5, 1.21))) return q; if (!moving && (q = n('ziggy_w1'))) return q; }
     }
     if (swing) return main(POSE.jump);
