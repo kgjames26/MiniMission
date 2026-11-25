@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '54', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '56', asset = (p) => `${p}?v=${ASSET_V}`;
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
   const monsterImg = new Image(); monsterImg.src = asset('assets/monsters.webp');
   const movesImg = new Image(); movesImg.src = asset('assets/hero-moves.webp');
@@ -2060,10 +2060,10 @@
     triggerHeroAnimation('collect', 400);
     FX.heart(m.x, m.y - hw); FX.sparkle(m.x, m.y - hw / 2, 14, ['#ffb5c8', '#ffdf8d', '#ffffff', '#9fe3ff'], 190);
     FX.text(m.x, m.y - hw - 18, String(n), '#fff6c4', 50);
-    sound('sticker'); MM.haptic('friend');
+    if (audioEnabled) friendSound(m); else sound('sticker'); MM.haptic('friend');
     if (n % 10 === 0) { FX.confetti(player.x + player.w / 2, player.y, 30); FX.shake(2, .25); MM.haptic('gold'); }
     const pop = $('#friend-counter'); if (pop) { pop.classList.remove('pop'); void pop.offsetWidth; pop.classList.add('pop'); }
-    updateFriendCounter(); speakCount(n); writeSave(); commitProgress(false);
+    updateFriendCounter(); setTimeout(() => { if (scene === 'game-screen') speakCount(n); }, 650); writeSave(); commitProgress(false);
     if (!mission.monGiven && n >= MON_TOTAL) { mission.monGiven = true; setTimeout(() => { if (scene === 'game-screen') { awardSticker('silver'); commitProgress(false); } }, 2400); }
   }
   function drawMonster(m, time) {
@@ -2368,6 +2368,54 @@
   function showToast(message){const node=$('#toast');if(!node||!message)return;node.textContent=message;node.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.classList.remove('show'),3800);sound('soft');}
   function setAudioEnabled(value,silent=false){audioEnabled=value;save.audioEnabled=value;if(!silent)writeSave();$('#sound-button').textContent=value?'♫':'♪';$('#sound-button').setAttribute('aria-label',value?T('aMute'):T('aUnmute'));$('#home-sound-toggle').textContent=value?'♫':'♪';$('#home-sound-toggle').setAttribute('aria-label',value?T('aMute'):T('aUnmute'));$('#music-toggle').checked=value;if(value&&!silent)sound('success');updateMusic();}
   function releaseControls(){keys={left:false,right:false,jump:false,down:false};jumpBuffer=0;dpadPointer=null;Object.assign(dpadState,{left:false,right:false,up:false,down:false});document.querySelectorAll('.dpad-btn.pressed,.action-button.pressed,.jump-button.pressed').forEach(button=>button.classList.remove('pressed'));}
+  // Petit son de chaque monstre quand il devient ami (fabriqué en code, aucun fichier audio) : 15 monstres tranquilles + 5 flammes.
+  function friendSound(m) {
+    if (!audioEnabled) return;
+    try {
+      if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === 'suspended') audio.resume();
+      const t0 = audio.currentTime + .02, A = audio, V = 2.2;   // V : plus fort que les petits bruits du jeu, c'est LE son du moment
+      // note : forme d'onde, fréquence de départ → d'arrivée, début, durée, volume
+      const tone = (type, f0, f1, at, dur, vol = .08, vib = 0) => {
+        const o = A.createOscillator(), g = A.createGain(); o.type = type;
+        o.frequency.setValueAtTime(f0, t0 + at); if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t0 + at + dur * .9);
+        if (vib) { const l = A.createOscillator(), lg = A.createGain(); l.frequency.value = vib; lg.gain.value = f0 * .06; l.connect(lg); lg.connect(o.frequency); l.start(t0 + at); l.stop(t0 + at + dur + .05); }
+        g.gain.setValueAtTime(.0001, t0 + at); g.gain.exponentialRampToValueAtTime(Math.min(.3, vol * V), t0 + at + Math.min(.03, dur * .2)); g.gain.exponentialRampToValueAtTime(.0001, t0 + at + dur);
+        if (type === 'square' || type === 'sawtooth') { const f = A.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 2200; o.connect(f); f.connect(g); } else o.connect(g);
+        g.connect(A.destination); o.start(t0 + at); o.stop(t0 + at + dur + .05);
+      };
+      // souffle : bruit filtré
+      const noise = (at, dur, vol, ftype, f0, f1 = f0) => {
+        const len = Math.ceil(A.sampleRate * dur), buf = A.createBuffer(1, len, A.sampleRate), d = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+        const src = A.createBufferSource(), f = A.createBiquadFilter(), g = A.createGain(); src.buffer = buf; f.type = ftype; f.Q.value = 1.2;
+        f.frequency.setValueAtTime(f0, t0 + at); f.frequency.exponentialRampToValueAtTime(f1, t0 + at + dur);
+        g.gain.setValueAtTime(.0001, t0 + at); g.gain.exponentialRampToValueAtTime(Math.min(.3, vol * V), t0 + at + dur * .25); g.gain.exponentialRampToValueAtTime(.0001, t0 + at + dur);
+        src.connect(f); f.connect(g); g.connect(A.destination); src.start(t0 + at); src.stop(t0 + at + dur + .02);
+      };
+      if (m.imp) {                                        // flamme amie : « fouuu » puis une petite note (une par couleur)
+        noise(0, .3, .07, 'bandpass', 500, 2400); tone('sine', [523, 587, 659, 784, 880][m.type] || 660, ([523, 587, 659, 784, 880][m.type] || 660) * 1.5, .2, .25, .07);
+        return;
+      }
+      switch (m.type) {
+        case 0: tone('sine', 900, 1500, 0, .09, .09); tone('sine', 1000, 1700, .12, .1, .09); break;                     // hérisson : « pouic pouic »
+        case 1: tone('sine', 320, 110, 0, .16, .12); tone('sine', 600, 900, .18, .06, .06); break;                       // limon : « blop »
+        case 2: for (let i = 0; i < 3; i++) tone('sine', 2400, 3200, i * .08, .06, .08); break;                         // chauve-souris : « kii kii kii »
+        case 3: tone('triangle', 110, 115, 0, .22, .13); tone('triangle', 147, 150, .22, .28, .13); break;               // golem : « hm-hmm ! »
+        case 4: noise(0, .45, .05, 'bandpass', 300, 1400); tone('sine', 1568, 1568, .3, .35, .05); tone('sine', 2093, 2093, .38, .35, .04); break; // nuage : souffle doux + petite étoile
+        case 5: tone('sine', 180, 620, 0, .32, .1, 14); break;                                                         // champignon : « boïng »
+        case 6: for (let i = 0; i < 3; i++) noise(i * .09, .06, .09, 'highpass', 5000); break;                          // cactus : maracas
+        case 7: tone('sine', 520, 280, 0, .5, .08, 6); break;                                                          // escargot : glissade lente
+        case 8: [420, 340, 260].forEach((f, i) => tone('sine', f, f * .6, i * .1, .09, .1)); break;                      // poulpe : « bloub bloub »
+        case 9: tone('sawtooth', 190, 330, 0, .16, .07); tone('sawtooth', 330, 230, .16, .16, .06); noise(.1, .25, .03, 'lowpass', 900); break; // petit dragon : « rraah ! » tout content
+        case 10: [880, 660, 1175].forEach((f, i) => tone('square', f, f, i * .1, .08, .045)); break;                     // robot : « bip boup biip »
+        case 11: for (let i = 0; i < 2; i++) tone('square', 190, 150, i * .17, .12, .06, 30); break;                    // grenouille : « croâ croâ »
+        case 12: [2093, 2637, 2349, 3136].forEach((f, i) => tone('sine', f, f, i * .07, .22, .055)); break;              // bonhomme de neige : clochettes
+        case 13: [523, 659, 784, 1047].forEach((f, i) => tone('sine', f, f, i * .08, .25, .06)); break;                  // chenille → papillon : petite magie qui monte
+        case 14: tone('sawtooth', 230, 260, 0, .28, .05, 45); tone('sine', 1319, 1319, .3, .2, .05); break;              // abeille : « bzzz » puis « ding »
+      }
+    } catch {}
+  }
   function sound(kind) {
     const NONESSENTIAL = ['zip', 'jump', 'open', 'soft', 'magic', 'coin', 'star', 'web', 'turbo', 'punch', 'smash', 'bump'];
     if (!audioEnabled || (!effectsEnabled && NONESSENTIAL.includes(kind))) return;
