@@ -89,3 +89,9 @@ Filou reste accroché à sa toile tant qu'on ne saute pas (le bouton SAUT cligno
 - Verrou parent : ⚙ et ⏱️ s'ouvrent en gardant le doigt appuyé 2 secondes (un anneau se remplit, « ✋ 2 s » sur un simple tapotement).
 - Hors ligne : si le réseau traîne plus de 3 secondes, la version en cache s'affiche.
 - Le lutin de feu est redessiné (v0.31) : une petite flamme vivante grognonne, sans cornes ni queue de diable, pour qu'on le reconnaisse toujours comme le méchant sans rien d'effrayant. Une fois attrapé, il devient une flamme jaune toute souriante (`assets/friend-flame.webp`). Ses 28 images sont dans `assets/sprites2.webp` (noms `imp_*` dans `sprites2.json`, positions et points d'ancrage inchangés).
+
+## Ce qu'il reste à trouver (v0.36)
+- Lettres : le compteur montre la dernière lettre ramassée dans un anneau qui se remplit ; une lettre dépassée sans être prise apparaît en gris et la voix dit « Oh ! Tu as oublié le D ! ».
+- Étoiles : un bocal qui se remplit (il brille quand on les a toutes) ; à chaque drapeau, de petites étoiles grises montrent les oubliées du morceau, ou le drapeau devient doré si tout est ramassé.
+- Écran de pause : l'alphabet (lettres trouvées allumées) et la ligne des drapeaux.
+- Autocollants : les moins parlants ou en double (mime, cabine téléphonique, papyrus, amulette, quatre ponts identiques…) remplacés par des thèmes que tous les enfants connaissent (trottinette, skate, camion de pompiers, renard, guitare, manchot…), à la même place dans l'album.

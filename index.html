@@ -155,9 +155,9 @@
         <div class="game-topbar">
           <button id="pause-button" class="game-icon-button" type="button" aria-label="Pause">Ⅱ</button>
           <div class="mission-label"><strong id="mission-title">Mission</strong></div>
-          <div class="coin-counter" aria-label="Étoiles ramassées"><span aria-hidden="true">⭐</span><strong id="coin-count">0/0</strong></div>
+          <div class="coin-counter" aria-label="Étoiles ramassées"><b class="jar-star" aria-hidden="true">⭐</b><span class="jar" aria-hidden="true"><i class="jar-fill"></i><i class="jar-shine"></i></span><strong id="coin-count" class="sr-only">0/0</strong></div>
           <div id="friend-counter" class="friend-counter" aria-label="Monstres capturés sur 20"><span aria-hidden="true">👾</span><strong id="friend-count">0/20</strong></div>
-          <div class="letter-counter" aria-label="Lettres de l’alphabet récoltées"><span aria-hidden="true">🔤</span><strong id="letter-count">0/26</strong></div>
+          <div class="letter-counter" aria-label="Lettres de l’alphabet récoltées"><span class="lc-ring" aria-hidden="true"><b id="letter-last">🔤</b></span><strong id="letter-count" class="sr-only">0/26</strong></div>
           <div class="progress-wrap" aria-label="Progression"><div id="progress-dots" class="progress-dots"></div></div>
           <button id="sound-button" class="game-icon-button" type="button" aria-label="Couper les sons">♫</button>
         </div>
@@ -183,7 +183,7 @@
       </section>
 
       <section id="pause-screen" class="screen modal-screen" aria-label="Pause">
-        <div class="modal-card pause-card"><div class="modal-icon">Ⅱ</div><div class="pause-actions"><button id="resume-button" class="primary-button" type="button">▶ <span>Reprendre</span></button><button id="restart-button" class="secondary-button" type="button">↻ <span>Recommencer</span></button><button id="stats-button" class="secondary-button" type="button">★ <span>Statistiques</span></button></div><button id="quit-button" class="text-button" type="button">Quitter la mission</button></div>
+        <div class="modal-card pause-card"><div class="modal-icon">Ⅱ</div><div id="pause-collect" class="pause-collect" aria-label="Ce qu'il te reste à trouver"></div><div class="pause-actions"><button id="resume-button" class="primary-button" type="button">▶ <span>Reprendre</span></button><button id="restart-button" class="secondary-button" type="button">↻ <span>Recommencer</span></button><button id="stats-button" class="secondary-button" type="button">★ <span>Statistiques</span></button></div><button id="quit-button" class="text-button" type="button">Quitter la mission</button></div>
       </section>
       <section id="stats-screen" class="screen modal-screen" aria-label="Statistiques de la mission"><div class="modal-card stats-card"><button id="stats-back-button" class="close-settings" type="button" aria-label="Retour à la pause">←</button><div class="modal-icon">★</div><div class="stats-grid"><div><b id="stat-coins">0</b><span>⭐ étoiles</span></div><div><b id="stat-friends">0</b><span>♥ amis</span></div><div><b id="stat-letters">0</b><span>🔤 lettres</span></div><div><b id="stat-stickers">0</b><span>🏅 autocollants</span></div><div class="wide"><b id="stat-questions">0/3</b><span>❓ énigmes</span></div></div><button id="stats-resume-button" class="primary-button" type="button">Reprendre <span>➜</span></button></div></section>
 
