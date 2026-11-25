@@ -246,6 +246,16 @@
     if (!levelUnlocked(levelHero, i)) { if (card) { card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); } MM.haptic('oops'); showToast('Termine la ville d’avant !'); sayText('Termine d’abord la ville d’avant !'); return; }
     startLevel(levelHero, i);
   }
+  // position d'un drapeau : sur le sol, hors des trous, obstacles et immeubles
+  function flagX(x) {
+    for (let k = 0; k < 6; k++) {
+      x = safeGroundX(x); let moved = false;
+      for (const p of world.platforms || []) if (p.bld && x + 58 > p.x - 30 && x < p.x + p.w + 30) { x = p.x - 120; moved = true; }
+      if (!moved) break;
+    }
+    return x;
+  }
+  let flagWave = {};
   function safeGroundX(x) {
     x = Math.max(70, Number(x) || 70);
     for (let k = 0; k < 6; k++) {
@@ -342,7 +352,11 @@
     player = { x: 70, y: world.floor - 86, vx: 0, vy: 0, w: 58, h: 86, grounded: true, jumping: false, facing: 1, bob: 0, carryVx: 0 };
     player.x = safeGroundX(resume ? (mission.checkpointX || 200) : 200);
     world.checkpoint = player.x;
-    world.passPts = [200, ...level.stations.map(x => x - 330)]; world.passX = Math.max(...world.passPts.filter(cp => cp <= player.x + 1));
+    // drapeaux de passage : avant chaque énigme ET à mi-chemin entre deux, pour ne jamais faire reculer l'enfant de trop
+    { const base = [200, ...level.stations.map(x => x - 330), world.width - 900], pts = [200];
+      for (let i = 1; i < base.length; i++) { const mid = (base[i - 1] + base[i]) / 2; pts.push(flagX(mid)); if (i < base.length - 1) pts.push(flagX(base[i])); }
+      world.passPts = [...new Set(pts.map(Math.round))].sort((a, b) => a - b).filter((x, i, arr) => !i || x - arr[i - 1] > 500); }
+    world.passX = Math.max(...world.passPts.filter(cp => cp <= player.x + 1)); flagWave = {};
     mission.monsters.forEach(m => { if (m.friendly && !m.prev) { m.x = player.x; m.y = player.y + player.h; } });
     shots = []; fireballs = []; tornados = []; hitTimes = []; rewindAt = 0; litShown = -1; shootReady = 0; flipUntil = 0; hurtUntil = 0;
     swing = null; fizzle = null; turboUntil = 0; turboReady = 0; punchReady = 0; coyote = 0; gt = 0; jumpBuffer = 0; slowmo = 0; perf.since = 0; perf.slowFor = 0; perf.ema = 16.7; perf.tried = null; rope = null;
@@ -461,7 +475,11 @@
     // plaques de vitesse (Ziggy)
     if (rewindAt && gt >= rewindAt) { rewindAt = 0; hitTimes = []; updateHitMeter(); respawn(world.passX); }
     updateFollowers(dt); updateMonsters(dt); updateShots(dt); updateHitMeter();
-    for (const cp of world.passPts) if (player.grounded && player.x > cp) world.passX = Math.max(world.passX, cp);
+    for (const cp of world.passPts) if (player.grounded && player.x > cp && cp > world.passX) {
+      world.passX = cp; flagWave[cp] = gt;                       // nouveau drapeau atteint : il passe au vert et fait la fête
+      FX.confetti(cp + 20, world.floor - 100, 16); FX.sparkle(cp + 20, world.floor - 110, 10, ['#ffffff', '#7be08f', '#ffe066'], 150);
+      sound('coin'); MM.haptic('good');
+    }
     collectPickups();
     // effets de course
     const onGround = player.grounded && !swing;
@@ -665,10 +683,21 @@
     });
     for (let i = 0; i < Math.ceil(W/120)+2; i++) { const x = (i*120 + 35 - cam*.9) % (W+120); if (!inGap(x + cam, 10)) flower(x, F+7, i%4); }
     world.platforms.forEach(pl => { if (pl.bld) drawBuilding(pl); });
-    world.passPts.forEach((cp, i) => {       // drapeaux : points de passage
-      if (!i) return; const x = cp - cam; if (x < -40 || x > W + 40) return; const on = world.passX >= cp;
-      ctx.fillStyle = '#8b6748'; ctx.fillRect(x - 2, F - 78, 4, 78); ctx.fillStyle = on ? '#4cc36a' : '#cfd6d8';
-      ctx.beginPath(); ctx.moveTo(x + 2, F - 78); ctx.lineTo(x + 40, F - 66 + Math.sin(time * 4) * 2); ctx.lineTo(x + 2, F - 52); ctx.closePath(); ctx.fill();
+    world.passPts.forEach((cp, i) => {       // drapeaux : points de passage (rouge = à atteindre, vert = c'est là qu'on repartira)
+      if (!i) return; const x = cp - cam; if (x < -70 || x > W + 70) return; const on = world.passX >= cp;
+      const since = flagWave[cp] != null ? gt - flagWave[cp] : 9, hop = since < .6 ? Math.sin(since / .6 * Math.PI) * 14 : 0;
+      const H = 120, top = F - H - hop, wave = Math.sin(time * 4 + cp) * 3;
+      ctx.save(); ctx.lineCap = 'round';
+      ctx.fillStyle = 'rgba(40,60,80,.18)'; ctx.beginPath(); ctx.ellipse(x, F + 1, 16, 5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#7a5a3c'; roundRect(x - 4, top, 8, H + hop, 4, true);                 // mât
+      ctx.fillStyle = '#ffd84a'; ctx.beginPath(); ctx.arc(x, top - 2, 8, 0, Math.PI * 2); ctx.fill();   // boule dorée
+      const col = on ? '#3fbf62' : '#ff5a4f', dark = on ? '#2b9a4b' : '#d83f36';
+      ctx.fillStyle = col; ctx.strokeStyle = dark; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(x + 4, top + 6);
+      ctx.quadraticCurveTo(x + 32, top + wave, x + 62, top + 18 + wave);
+      ctx.quadraticCurveTo(x + 34, top + 30 - wave, x + 4, top + 44); ctx.closePath(); ctx.fill(); ctx.stroke();
+      if (on) { ctx.fillStyle = '#fff'; ctx.font = '900 22px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('★', x + 28, top + 23 + wave * .5); }
+      ctx.restore();
     });
     world.decorations.forEach(item => {
       const x = item.x - cam; if (x < -90 || x > W+90 || inGap(item.x, 40)) return;
@@ -1695,7 +1724,7 @@
     player.vy = -300; player.grounded = false; player.carryVx = -dir * 190; triggerHeroAnimation('stumble');
     FX.sparkle(player.x + player.w / 2, player.y + 30, 12, ['#ff8a2a', '#ffd23f', '#ffffff'], 190); FX.shake(3, .18); MM.haptic('oops'); sound('bump');
     updateHitMeter();
-    if (hitTimes.length >= HIT_MAX) { rewindAt = gt + .7; showToast('↩️ 🚩'); if (!timerNoticePlaying) sayText('Oups ! On repart du drapeau.'); }   // l'enfant ne lit pas : une icône et la voix
+    if (hitTimes.length >= HIT_MAX) { rewindAt = gt + .7; showToast('↩️'); if (!timerNoticePlaying) sayText('Oups ! On repart du drapeau.'); }   // l'enfant ne lit pas : une icône et la voix
   }
   function updateHitMeter() {
     hitTimes = hitTimes.filter(t => gt - t < HIT_WINDOW);
