@@ -20,7 +20,7 @@ Puis ouvrir `http://localhost:4173`. Le service worker et l'installation PWA né
 Après le choix du héros, on choisit une ville (`cities.js`) : Paris, New York, Tokyo, Rio, Le Caire, Londres, Venise, Sydney, Marrakech, Pékin. Chaque ville a ses couleurs, son monument en arrière-plan, ses maisons, ses arbres et son petit mobilier. Le niveau suivant s'ouvre quand on arrive au bout du précédent. La ville est toujours la même (graine fixe) : la progression (étoiles, lettres, monstres, questions, autocollants) est conservée et la carte indique ce qu'il reste à faire.
 À la fin d'un niveau, une feuille de statistiques résume ce qui a été réussi et ce qu'il reste à faire, avec un bouton « Menu ».
 
-## Le diablotin de feu (le seul ennemi)
+## Le lutin de feu (le seul ennemi)
 Les 20 petits monstres de chaque niveau : 10 diablotins de feu (lanceurs) et 10 petits monstres tranquilles (hérisson, limon, chauve-souris, golem). Les diablotins ont des attaques variées : boule de feu, double tir (dont un tir en cloche), flèche de feu (arc), tornade de feu (avec avertissement au sol) et grand saut. S'il touche le héros 3 fois en 14 secondes, celui-ci revient au dernier drapeau (point de passage). On les capture en les touchant : Ziggy et Filou avec leur tir, Titan avec son coup de poing de près ou son poing projeté à distance (qui casse aussi les obstacles). Un diablotin capturé devient un ami.
 
 ## Ziggy
@@ -78,3 +78,14 @@ Filou reste accroché à sa toile tant qu'on ne saute pas (le bouton SAUT cligno
 - Minuteur : bouton ⏱️ en haut à droite de l'accueil (5 à 60 min). Une fois le temps écoulé, la partie en cours se termine, puis les héros dorment 1 heure (écran de repos animé, JOUER est bloqué). Le parent remet le minuteur à zéro en gardant appuyé « Réinitialiser le minuteur » dans les réglages.
 - La musique se coupe après 45 s sans toucher l'écran et revient au premier contact.
 - Au lancement, on passe toujours par accueil → héros → ville : le jeu ne reprend plus une partie tout seul.
+
+## Fluidité, toile et tout-petits (v0.30)
+- Boucle de jeu : sur un téléphone lent, le temps écoulé est découpé en petits pas (le jeu garde la même vitesse) ; la finesse du canvas baisse toute seule (2 → 1,5 → 1,25) si l'appareil n'arrive pas à suivre, et revient en arrière si ça n'aide pas.
+- Sauts : le héros s'étire en montant, se tasse en retombant et s'écrase d'autant plus que la chute est haute.
+- Toile de Filou : corde souple (petite simulation de Verlet, purement visuelle) qui ondule à l'accroche et retombe quand on lâche ; petit ralenti et son « zip » à l'accroche ; pointillés vers l'anneau à portée et bouton TOILE qui pulse.
+- Fenêtres de saut plus larges : appui mémorisé 0,2 s, saut possible 0,14 s après le bord.
+- Réglage « 👶 Un seul bouton » : seuls ◀ ▶ et un très gros SAUT restent ; le tir part tout seul vers les farceurs devant, Filou lance sa toile en l'air et lâche au meilleur moment, Ziggy déclenche le turbo devant les barrières, petits obstacles et grands ravins (et saute tout seul au bord en turbo), Titan donne ses coups de poing devant les blocs.
+- Récompenses : étoiles et lettres s'envolent vers leur compteur ; « B, comme ballon ! » avec son dessin ; petit visage joyeux au-dessus du héros.
+- Verrou parent : ⚙ et ⏱️ s'ouvrent en gardant le doigt appuyé 2 secondes (un anneau se remplit, « ✋ 2 s » sur un simple tapotement).
+- Hors ligne : si le réseau traîne plus de 3 secondes, la version en cache s'affiche.
+- Le lutin de feu est redessiné (v0.31) : une petite flamme vivante grognonne, sans cornes ni queue de diable, pour qu'on le reconnaisse toujours comme le méchant sans rien d'effrayant. Une fois attrapé, il devient une flamme jaune toute souriante (`assets/friend-flame.webp`). Ses 28 images sont dans `assets/sprites2.webp` (noms `imp_*` dans `sprites2.json`, positions et points d'ancrage inchangés).

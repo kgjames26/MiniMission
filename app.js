@@ -22,7 +22,7 @@
   const theme = () => MM.cities[(mission && mission.city) || 0];
   const SHOT_SPEED = { ziggy: 560, filou: 500, titan: 470 };
   const COUNT_WORDS = ['zéro', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf', 'dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize', 'dix-sept', 'dix-huit', 'dix-neuf', 'vingt'];
-  const leafImg = new Image(); leafImg.src = 'assets/friend-leaf.webp';
+  const leafImg = new Image(); leafImg.src = 'assets/friend-flame.webp';
   const monsterImg = new Image(); monsterImg.src = 'assets/monsters.webp';
   const movesImg = new Image(); movesImg.src = 'assets/hero-moves.webp';
   // Planche des héros : une ligne par héros (Ziggy, Filou, Titan), six poses chacune. Voir « Animation des héros ».
@@ -144,6 +144,9 @@
   let rewardAdvance = null;
   let gt = 0;                 // temps de jeu en secondes (figé pendant la pause)
   let swing = null;           // toile en cours (Filou)
+  let rope = null;
+  let oneButton = !!save.oneButton;                // mode « un seul bouton » (3-4 ans) : ACTION et tir se déclenchent tout seuls
+  const assist = { webReady: 0, lastAnchor: null, cueSince: 0 };            // dessin souple de la toile (purement visuel, ne change pas la physique du balancement)
   let fizzle = null;          // toile lancée dans le vide
   let turboUntil = 0, turboReady = 0, punchReady = 0, coyote = 0;
   let lastDustAt = 0, lastBonkAt = 0, lastStreakAt = 0, abilityReadyShown = true;
@@ -342,7 +345,7 @@
     world.passPts = [200, ...level.stations.map(x => x - 330)]; world.passX = Math.max(...world.passPts.filter(cp => cp <= player.x + 1));
     mission.monsters.forEach(m => { if (m.friendly && !m.prev) { m.x = player.x; m.y = player.y + player.h; } });
     shots = []; fireballs = []; tornados = []; hitTimes = []; rewindAt = 0; litShown = -1; shootReady = 0; flipUntil = 0; hurtUntil = 0;
-    swing = null; fizzle = null; turboUntil = 0; turboReady = 0; punchReady = 0; coyote = 0; gt = 0; jumpBuffer = 0;
+    swing = null; fizzle = null; turboUntil = 0; turboReady = 0; punchReady = 0; coyote = 0; gt = 0; jumpBuffer = 0; slowmo = 0; perf.since = 0; perf.slowFor = 0; perf.ema = 16.7; perf.tried = null; rope = null;
     FX.clear(); heroAnim = newHeroAnim(); lastPromptStation = -1;
     lastActiveTick = performance.now(); lastTime = performance.now();
     const power = { ziggy: ['☄️', 'TURBO', 'Action : turbo, très rapide'], filou: ['🕸️', 'TOILE', 'Action : lancer la toile et se balancer'], titan: ['👊', 'POING', 'Action : gros coup de poing'] }[activeHero];
@@ -357,7 +360,7 @@
   function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2, perf.cap);
     canvas.width = Math.round(rect.width*dpr); canvas.height = Math.round(rect.height*dpr);
     // Le monde fait 540 unités de haut. Sur un écran étroit (téléphone en portrait) on garde au moins 520 unités de large
     // et le décor se prolonge simplement vers le haut : le jeu remplit toujours tout l'espace disponible.
@@ -365,13 +368,39 @@
     view.w = canvas.width/view.scale; view.h = canvas.height/view.scale;
     view.ox = 0; view.oy = (view.h-WORLD_H)*view.scale;
   }
+  // Qualité automatique : si l'appareil n'arrive pas à suivre, le canvas est dessiné un peu moins finement
+  // (2 → 1,5 → 1,25 pixel réel par pixel d'écran). Si ça n'aide pas (écran bridé à 30 images/s), on revient en arrière.
+  const perf = { cap: 2, ema: 16.7, since: 0, slowFor: 0, tried: null, locked: false };
+  function watchPerf(elapsed) {
+    const ms = elapsed * 1000; if (ms <= 0 || ms >= 100) return;
+    perf.ema += (ms - perf.ema) * .05; perf.since += elapsed;
+    if (perf.locked || perf.since < 3) return;                         // on laisse le niveau se charger avant de juger
+    if (perf.tried && perf.since > 5) {                                // la baisse précédente a-t-elle servi ?
+      if (perf.ema > perf.tried.ema * .9) { perf.cap = perf.tried.cap; perf.locked = true; resizeCanvas(); return; }
+      perf.tried = null;
+    }
+    perf.slowFor = perf.ema > 24 ? perf.slowFor + elapsed : 0;
+    const now = Math.min(window.devicePixelRatio || 1, 2, perf.cap);
+    if (perf.slowFor > 2 && now > 1.25) {
+      perf.tried = { cap: perf.cap, ema: perf.ema };
+      perf.cap = now > 1.5 ? 1.5 : 1.25; perf.slowFor = 0; perf.since = 2; resizeCanvas();
+    }
+  }
+  const SLOWMO_TIME = .18; let slowmo = 0;
   // Une seule boucle à la fois, même après une pause/reprise très rapide.
   function startLoop() { lastTime = performance.now(); if (!rafId) rafId = requestAnimationFrame(loop); }
   function loop(now) {
     rafId = 0;
     if (scene !== 'game-screen') return;
-    const dt = Math.min(.033,Math.max(0,(now-lastTime)/1000)); lastTime=now;
-    update(dt); draw(now/1000);
+    // Sur un téléphone lent (moins de 30 images/s), on découpe le temps écoulé en petits pas :
+    // le jeu garde la même vitesse partout au lieu de ralentir.
+    const elapsed = Math.min(.1, Math.max(0, (now - lastTime) / 1000)); lastTime = now;
+    watchPerf(elapsed);
+    let k = 1;                                            // petit ralenti quand la toile s'accroche
+    if (slowmo > 0) { const r = slowmo / SLOWMO_TIME; k = .3 + .7 * (1 - r) * (1 - r); slowmo -= elapsed; }
+    const steps = Math.max(1, Math.ceil(elapsed / .034));
+    for (let i = 0; i < steps && scene === 'game-screen'; i++) update(elapsed * k / steps);
+    if (scene === 'game-screen') draw(now/1000);
     if (scene === 'game-screen') rafId = requestAnimationFrame(loop);
   }
   // le temps de jeu est écoulé : la partie s'arrête (progression sauvegardée) et les héros vont dormir une heure
@@ -405,15 +434,18 @@
     updateHeroAnimation(dt);
     updateAbilityButton();
     // saut : l'appui est mémorisé un instant, et on peut sauter juste après avoir quitté le sol
-    if (keys.jump) { jumpBuffer = .14; keys.jump = false; }
-    coyote = player.grounded ? .09 : Math.max(0, coyote - dt);
+    // fenêtres larges pour les petites mains : appui un peu trop tôt (0,2 s) ou un peu trop tard (0,14 s) au bord
+    if (keys.jump) { jumpBuffer = .2; keys.jump = false; }
+    coyote = player.grounded ? .14 : Math.max(0, coyote - dt);
     if (jumpBuffer > 0) {
       jumpBuffer -= dt;
       if (swing) { releaseSwing(true, true); jumpBuffer = 0; }
       else if (player.grounded || coyote > 0) { doJump(turboOn); jumpBuffer = 0; coyote = 0; }
     }
+    if (oneButton) autoAssist(turboOn);
     if (swing) updateSwing(dt);
     else if (moveAndCollide(dt, turboOn)) return;
+    if (rope) updateRope(dt);
     if (player.y > 650) respawn(fallSpot());
     // la maison au bout du chemin termine la mission, qu'on ait ouvert toutes les caisses ou non
     if (player.x + player.w >= world.width - 150 && player.grounded && !swing) { finishMission(); return; }
@@ -716,11 +748,22 @@
   function flower(x,y,i){ctx.fillStyle='#438f5d';ctx.fillRect(x,y-10,2,13);ctx.fillStyle=['#ff7e77','#fff0a5','#8b79d8','#fff'][i];for(let j=0;j<5;j++){const a=j*Math.PI*2/5;ctx.beginPath();ctx.arc(x+Math.cos(a)*4,y-11+Math.sin(a)*4,3,0,Math.PI*2);ctx.fill();}ctx.fillStyle='#f7be43';ctx.beginPath();ctx.arc(x,y-11,2.3,0,Math.PI*2);ctx.fill();}
   function drawPlayer(time) {
     const x = player.x - world.camera + player.w/2, y = player.y + player.h/2;
-    if (swing) {
-      const h = SW.hand(swing), hx = h.x - world.camera, hy = h.y, ax = swing.ax - world.camera, k = Math.min(1, swing.t / .08);
+    if (world.hintAnchor && !swing && activeHero === 'filou') {   // pointillés vers l'anneau à portée : « c'est là ! »
+      const a = world.hintAnchor, hx = player.x + player.w / 2 - world.camera, hy = player.y + 12;
+      ctx.save(); ctx.globalAlpha = .4 + Math.sin(time * 6) * .15; ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+      ctx.setLineDash([2, 12]); ctx.lineDashOffset = -time * 40; ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(a.x - world.camera, a.y); ctx.stroke(); ctx.restore();
+    }
+    const k = swing ? Math.min(1, swing.t / .08) : 1;
+    if (swing && (k < 1 || !rope)) {                       // la toile part de la main vers l'anneau
+      const h = SW.hand(swing), hx = h.x - world.camera, hy = h.y, ax = swing.ax - world.camera;
       ctx.save(); ctx.lineCap = 'round';
       ctx.strokeStyle = 'rgba(120,90,200,.35)'; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx + (ax - hx) * k, hy + (swing.ay - hy) * k); ctx.stroke();
       ctx.strokeStyle = '#fff'; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx + (ax - hx) * k, hy + (swing.ay - hy) * k); ctx.stroke();
+      ctx.restore();
+    } else if (rope) {                                     // la toile souple (accrochée, ou qui retombe après le lâcher)
+      ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.globalAlpha = rope.attached ? 1 : Math.max(0, 1 - rope.fade / .6);
+      ctx.strokeStyle = 'rgba(120,90,200,.35)'; ctx.lineWidth = 7; strokeRope(world.camera);
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 3.5; strokeRope(world.camera);
       ctx.restore();
     }
     if (fizzle) {
@@ -841,7 +884,10 @@
     else if (a.timers.ability && hero === 'ziggy') tilt = .06;
     else if (walking) tilt = .03;
     const flipAngle = gt < flipUntil ? (1 - (flipUntil - gt) / .55) * Math.PI * 2 * flipDir : 0;
-    const sx = 1 - a.squash * .6 - breathe * .5, sy = 1 + a.squash + breathe;
+    // étirement continu en l'air : le héros s'allonge en montant et se tasse un peu en retombant
+    const airStretch = !player.grounded && !swing && !flipAngle ? clamp(-player.vy / 6500, -.035, .07) : 0;
+    const sq = a.squash + airStretch;
+    const sx = 1 - sq * .6 - breathe * .5, sy = 1 + sq + breathe;
     c.save();
     const prevSmoothing = c.imageSmoothingEnabled; c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
     const drawPose = (offsetX, alpha) => {
@@ -1062,8 +1108,9 @@
     return false;
   }
   function onLand(impact) {
-    if (impact < 300) return;
+    if (impact < 300) { if (impact > 120) heroAnim.squash = Math.min(heroAnim.squash, -.05); return; }
     triggerHeroAnimation('land', 300);
+    heroAnim.squash = -clamp(impact / 4200, .1, .24);             // plus la chute est haute, plus le héros s'écrase en touchant le sol
     const x = player.x + player.w/2, y = player.y + player.h;
     FX.dust(x, y, 0, impact > 700 ? 9 : 5);
     if (impact > 750) { FX.ring(x, y - 4, 'rgba(255,255,255,.9)', 46, .3, 4); FX.shake(2.5, .15); MM.haptic('land'); }
@@ -1086,17 +1133,59 @@
     return safeGroundX(Math.max(120, x));
   }
   function respawn(toX) {
-    swing = null; turboUntil = 0; player.carryVx = 0;
+    swing = null; rope = null; turboUntil = 0; player.carryVx = 0;
     FX.sparkle(player.x + player.w/2, player.y + 30, 10, ['#d6ecff', '#ffffff'], 140);
     player.x = safeGroundX(toX ?? world.checkpoint); player.y = world.floor - player.h; player.vx = 0; player.vy = 0; player.grounded = true; hurtUntil = gt + 1.5;
     FX.sparkle(player.x + player.w/2, world.floor - 40, 10, ['#ffe36e', '#ffffff'], 140);
+  }
+  /* ----- la toile souple : une petite corde à points (méthode de Verlet) entre l'anneau et la main -----
+     Elle ondule quand elle s'accroche, suit les mouvements en traînant un peu, et retombe doucement quand on lâche. */
+  const ROPE_N = 12;
+  function startRope(ax, ay, hx, hy) {
+    const pts = [];
+    for (let i = 0; i <= ROPE_N; i++) {
+      const t = i / ROPE_N, x = ax + (hx - ax) * t, y = ay + (hy - ay) * t;
+      // une vague au lancer : les points du milieu partent un peu de côté, la corde « claque » puis se tend
+      const nx = -(hy - ay), ny = hx - ax, nl = Math.hypot(nx, ny) || 1, kick = Math.sin(t * Math.PI) * Math.sin(t * Math.PI * 3) * 9;
+      pts.push({ x, y, px: x - nx / nl * kick, py: y - ny / nl * kick });
+    }
+    rope = { pts, attached: true, fade: 0, seg: Math.hypot(hx - ax, hy - ay) / ROPE_N };
+  }
+  function updateRope(dt) {
+    const r = rope, P = r.pts, last = P[ROPE_N];
+    if (r.attached && swing) {
+      const h = SW.hand(swing); r.seg = Math.hypot(h.x - swing.ax, h.y - swing.ay) / ROPE_N;
+      P[0].x = P[0].px = swing.ax; P[0].y = P[0].py = swing.ay;
+      last.x = last.px = h.x; last.y = last.py = h.y;
+    } else {
+      r.fade += dt; if (r.fade > .6) { rope = null; return; }
+    }
+    const g = 900 * dt * dt;
+    for (let i = 1; i < (r.attached ? ROPE_N : ROPE_N + 1); i++) {
+      const p = P[i], vx = (p.x - p.px) * .97, vy = (p.y - p.py) * .97;
+      p.px = p.x; p.py = p.y; p.x += vx; p.y += vy + g;
+    }
+    for (let k = 0; k < 6; k++) for (let i = 0; i < ROPE_N; i++) {
+      const a = P[i], b = P[i + 1], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1, diff = (d - r.seg) / d;
+      const pinA = i === 0, pinB = r.attached && i + 1 === ROPE_N;
+      const wa = pinA ? 0 : pinB ? 1 : .5, wb = pinB ? 0 : pinA ? 1 : .5;
+      a.x += dx * diff * wa; a.y += dy * diff * wa; b.x -= dx * diff * wb; b.y -= dy * diff * wb;
+    }
+  }
+  function strokeRope(cam) {
+    const P = rope.pts;
+    ctx.beginPath(); ctx.moveTo(P[0].x - cam, P[0].y);
+    for (let i = 1; i < ROPE_N; i++) { const mx = (P[i].x + P[i + 1].x) / 2, my = (P[i].y + P[i + 1].y) / 2; ctx.quadraticCurveTo(P[i].x - cam, P[i].y, mx - cam, my); }
+    ctx.lineTo(P[ROPE_N].x - cam, P[ROPE_N].y); ctx.stroke();
   }
   function attachWeb(a) {
     const hx = player.x + player.w/2, hy = player.y + 12, dir = a.x >= hx ? 1 : -1;
     swing = SW.start(a.x, a.y, hx, hy, dir); swing.anchor = a;
     player.facing = dir; player.carryVx = 0; player.grounded = false; player.jumping = true;
     FX.ring(a.x, a.y, '#e7d8ff', 46, .35, 5); FX.sparkle(a.x, a.y, 10, ['#ffffff', '#d8c8ff', '#a98cf5'], 150);
-    sound('web'); MM.haptic('web');
+    startRope(a.x, a.y, hx, hy);
+    if (!reduceMotion) slowmo = SLOWMO_TIME;
+    sound('zip'); MM.haptic('web');
   }
   function updateSwing(dt) {
     const s = swing, steps = Math.max(1, Math.ceil(dt / (1/120)));
@@ -1111,6 +1200,47 @@
     const h = SW.hand(s);
     player.x = h.x - player.w/2; player.y = h.y - 12; player.vy = 0; player.grounded = false;
     if (Math.abs(s.omega) > .4) player.facing = s.omega > 0 ? 1 : -1;
+  }
+  /* ----- mode « un seul bouton » : on ne garde que ◀ ▶ et SAUT, le pouvoir du héros part tout seul au bon endroit ----- */
+  function autoAssist(turboOn) {
+    const hero = activeHero, dir = player.facing, cx = player.x + player.w / 2, F = world.floor;
+    if (player.grounded) assist.lastAnchor = null;
+    // les petits farceurs devant le héros : tir automatique
+    if (gt >= shootReady) for (const m of world.monsters) {
+      if (m.friendly || !onScreen(m.x, -10)) continue;
+      const b = monsterBox(m), dx = (b.cx - cx) * dir;
+      if (dx > 10 && dx < 430 && Math.abs(b.cy - (player.y + player.h / 2)) < b.hh + 90) { shoot(); break; }
+    }
+    if (hero === 'filou') {
+      if (swing) {                       // il reste accroché le temps de prendre son élan, puis lâche tout seul au meilleur moment
+        if (swingCue) { if (!assist.cueSince) assist.cueSince = gt; if (gt - assist.cueSince > .22) { assist.lastAnchor = swing.anchor; releaseSwing(true, false); assist.webReady = gt + .45; } }
+        else assist.cueSince = 0;
+        return;
+      }
+      assist.cueSince = 0;
+      const a = world.hintAnchor;          // en l'air, près du haut du saut : la toile part toute seule vers l'anneau
+      if (a && a !== assist.lastAnchor && (a.x - cx) * dir > -20 && !player.grounded && player.vy > -260 && gt >= assist.webReady) attachWeb(a);
+      return;
+    }
+    const ahead = (x0, w, d) => (dir > 0 ? x0 - (player.x + player.w) : player.x - (x0 + w));
+    if (hero === 'ziggy') {
+      if (!turboOn && gt >= turboReady && player.grounded) {
+        const fence = world.bumps.some(b => (b.kind === 'fence' && ahead(b.x, b.w) > 0 && ahead(b.x, b.w) < 220) || (b.kind === 'small' && ahead(b.x, b.w) > -4 && ahead(b.x, b.w) < 90));   // barrière ou petit obstacle : le turbo les écrase
+        const bigGap = world.gaps.some(g => g.w >= 280 && ahead(g.x, g.w) > 0 && ahead(g.x, g.w) < 260);
+        if (fence || bigGap) startTurbo(1.2, false);
+      }
+      // en plein turbo, au bord d'un grand ravin : le grand saut part tout seul
+      if (turboOn && player.grounded && world.gaps.some(g => g.w >= 280 && ahead(g.x, g.w) > -6 && ahead(g.x, g.w) < 26)) { doJump(true); coyote = 0; }
+      return;
+    }
+    if (hero === 'titan' && gt >= punchReady) {
+      const block = world.bumps.some(b => b.kind !== 'small' && b.kind !== 'tower' && ahead(b.x, b.w) > -10 && ahead(b.x, b.w) < 120 && player.y + player.h > F - b.h - 10);
+      if (block) titanPunch();
+    }
+  }
+  function setOneButton(on) {
+    oneButton = !!on; save.oneButton = oneButton; writeSave();
+    document.body.classList.toggle('one-button', oneButton);
   }
   function useAbility() {
     if (scene !== 'game-screen') return;
@@ -1145,13 +1275,14 @@
     const waiting = activeHero === 'ziggy' ? gt < turboReady : activeHero === 'titan' ? gt < punchReady : false;
     if (waiting === abilityReadyShown) { abilityReadyShown = !waiting; node.classList.toggle('cooldown', waiting); }
     node.classList.toggle('active', !!swing);
+    node.classList.toggle('ready', activeHero === 'filou' && !swing && !!world.hintAnchor);   // un anneau est à portée : appuie !
   }
   function collectPickups() {
     const cx = player.x + player.w/2;
     for (const star of world.coins) {
       if (star.collected) continue;
       if (player.x + player.w > star.x - 22 && player.x < star.x + 22 && player.y < star.y + 24 && player.y + player.h > star.y - 24) {
-        star.collected = true; updateStarCounter();
+        star.collected = true; flyToCounter(star.x, star.y, '.coin-counter', '⭐', updateStarCounter);
         triggerHeroAnimation('collect', 330);
         FX.sparkle(star.x, star.y, 7, ['#ffd84a', '#fff1a0', '#ffffff'], 130); FX.ring(star.x, star.y, '#fff1a0', 34, .3, 4);
         sound('star'); MM.haptic('star'); writeSave();
@@ -1162,15 +1293,45 @@
     for (const letter of world.letters) {
       if (letter.collected) continue;
       if (player.x + player.w > letter.x - 26 && player.x < letter.x + 26 && player.y < letter.y + 28 && player.y + player.h > letter.y - 28) {
-        letter.collected = true; updateLetterCounter();
-        triggerHeroAnimation('collect', 500);
-        FX.sparkle(letter.x, letter.y, 14, LETTER_COLORS, 190); FX.ring(letter.x, letter.y, '#ffffff', 56, .4, 5); FX.text(letter.x, letter.y - 26, letter.letter, '#ffffff', 40);
-        sound('coin'); MM.haptic('letter'); if (!timerNoticePlaying) sayText(letter.letter); writeSave();
+        letter.collected = true; flyToCounter(letter.x, letter.y, '.letter-counter', letter.letter, updateLetterCounter, true);
+        triggerHeroAnimation('collect', 500); cheer();
+        FX.sparkle(letter.x, letter.y, 14, LETTER_COLORS, 190); FX.ring(letter.x, letter.y, '#ffffff', 56, .4, 5); FX.confetti(letter.x, letter.y, 12);
+        const word = LETTER_WORDS[letter.letter];
+        if (word) FX.text(letter.x, letter.y - 30, word[1], '#ffffff', 44);
+        sound('coin'); MM.haptic('letter'); if (!timerNoticePlaying) sayText(word ? `${letter.letter}, comme ${word[0]} !` : letter.letter); writeSave();
         if (!mission.goldGiven && world.letters.every(l => l.collected)) { mission.goldGiven = true; awardSticker('gold'); }
         commitProgress(false);
       }
     }
     void cx;
+  }
+  // « B comme ballon » : un mot simple (et son dessin) pour chaque lettre ramassée
+  const LETTER_WORDS = { A:['avion','✈️'], B:['ballon','🎈'], C:['chat','🐱'], D:['dauphin','🐬'], E:['éléphant','🐘'], F:['fusée','🚀'], G:['girafe','🦒'], H:['hibou','🦉'], I:['igloo','🏠'], J:['jus','🧃'], K:['koala','🐨'], L:['lion','🦁'], M:['maison','🏡'], N:['nuage','☁️'], O:['ours','🐻'], P:['pomme','🍎'], Q:['quatre','4️⃣'], R:['robot','🤖'], S:['soleil','☀️'], T:['tortue','🐢'], U:['ukulélé','🎸'], V:['vélo','🚲'], W:['wagon','🚃'], X:['xylophone','🎶'], Y:['yaourt','🥛'], Z:['zèbre','🦓'] };
+  // le héros est content : un petit visage joyeux au-dessus de sa tête et un petit bond d'écrasement
+  let lastCheerAt = -9;
+  function cheer(face = '😄') {
+    if (gt - lastCheerAt < .8) return; lastCheerAt = gt;
+    FX.text(player.x + player.w / 2, player.y - 18, face, '#ffffff', 34);
+    heroAnim.squash = Math.max(heroAnim.squash, .12);
+  }
+  // une étoile (ou une lettre) s'envole du jeu jusqu'à son compteur en haut de l'écran, qui rebondit à l'arrivée
+  let flying = 0;
+  function flyToCounter(wx, wy, selector, label, onArrive, isLetter) {
+    const target = $(selector), rect = canvas.getBoundingClientRect();
+    if (!target || !rect.width || reduceMotion || flying > 10 || !document.body.animate) { onArrive?.(); return; }
+    const ratio = rect.width / canvas.width;
+    const sx = rect.left + ((wx - world.camera) * view.scale + view.ox) * ratio, sy = rect.top + (view.oy + (wy + (world.camY || 0)) * view.scale) * ratio;
+    const t = target.getBoundingClientRect(), tx = t.left + t.width * .25, ty = t.top + t.height / 2;
+    const node = document.createElement('span'); node.className = 'fly-item' + (isLetter ? ' letter' : ''); node.textContent = label;
+    node.style.left = sx + 'px'; node.style.top = sy + 'px'; document.body.appendChild(node); flying++;
+    const dx = tx - sx, dy = ty - sy, mid = Math.min(-40, dy * .35);
+    const anim = node.animate([
+      { transform: 'translate(-50%,-50%) scale(1.25)', opacity: 1 },
+      { transform: `translate(calc(-50% + ${dx * .45}px), calc(-50% + ${mid}px)) scale(1.1)`, opacity: 1, offset: .4 },
+      { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(.55)`, opacity: .9 }
+    ], { duration: 650, easing: 'cubic-bezier(.45,0,.75,.6)' });
+    const done = () => { if (!node.isConnected) return; node.remove(); flying--; onArrive?.(); target.classList.remove('pop'); void target.offsetWidth; target.classList.add('pop'); };
+    anim.onfinish = done; anim.oncancel = done; setTimeout(done, 1200);
   }
   function awardSticker(tier) {
     const album = save.album = save.album || {};
@@ -1192,7 +1353,7 @@
     node.querySelector('.award-new').classList.toggle('hidden', !isNew);
     void node.offsetWidth; node.classList.add('show');
     clearTimeout(bannerTimer); bannerTimer = setTimeout(() => node.classList.remove('show'), 3600);
-    FX.confetti(player.x + player.w/2, player.y, 30); FX.shake(2, .2);
+    FX.confetti(player.x + player.w/2, player.y, 30); FX.shake(2, .2); cheer('🤩');
     sound('sticker'); MM.haptic(tier === 'gold' ? 'gold' : 'silver');
     if (!timerNoticePlaying) sayText(`${tier === 'gold' ? 'Autocollant d’or' : 'Autocollant d’argent'} : ${info.n} !`);
   }
@@ -1381,7 +1542,7 @@
     ctx.save(); ctx.globalAlpha = tw; ctx.fillStyle = '#fff'; FX.starPath(ctx, x + 27, y - 27, 7, 2.4); ctx.fill(); ctx.restore();
   }
   function monsterChipStyle(index, boxH) {
-    if (index < 0) return `width:${Math.round(boxH * .78)}px;height:${boxH}px;background:url(assets/friend-leaf.webp) center/contain no-repeat`;
+    if (index < 0) return `width:${Math.round(boxH * .78)}px;height:${boxH}px;background:url(assets/friend-flame.webp) center/contain no-repeat`;
     const [, , sh] = MON[index], row = Math.floor(index / 5), col = index % 5;
     const sw = Math.round(MON_CELL.w * 0), s = boxH / sh; void sw;
     const meta = MON[index], w = Math.round(sh * meta[1]);
@@ -1765,6 +1926,7 @@
       flipUntil = gt + .55; flipDir = Math.sign(player.carryVx) || 1;
     }
     player.grounded = false; player.jumping = true; swing = null; airTurnUntil = gt + 1.6;
+    if (rope) { const e = rope.pts[ROPE_N]; e.px = e.x - v.vx / 60; e.py = e.y - v.vy / 60; rope.attached = false; rope.fade = 0; }
     const x = player.x + player.w/2, y = player.y + 20;
     FX.ring(x, y, '#e7d8ff', 50, .3, 4); FX.sparkle(x, y, flip ? 12 : 8, ['#ffffff', '#d8c8ff'], 170);
     triggerHeroAnimation('jump', 360); if (!flip) triggerHeroAnimation('release', 320); MM.haptic(flip ? 'good' : 'jump');
@@ -1825,7 +1987,7 @@
   function setAudioEnabled(value,silent=false){audioEnabled=value;save.audioEnabled=value;if(!silent)writeSave();$('#sound-button').textContent=value?'♫':'♪';$('#sound-button').setAttribute('aria-label',value?'Couper les sons':'Activer les sons');$('#home-sound-toggle').textContent=value?'♫':'♪';$('#home-sound-toggle').setAttribute('aria-label',value?'Couper les sons':'Activer les sons');$('#music-toggle').checked=value;if(value&&!silent)sound('success');updateMusic();}
   function releaseControls(){keys={left:false,right:false,jump:false,down:false};jumpBuffer=0;dpadPointer=null;Object.assign(dpadState,{left:false,right:false,up:false,down:false});document.querySelectorAll('.dpad-btn.pressed,.action-button.pressed,.jump-button.pressed').forEach(button=>button.classList.remove('pressed'));}
   function sound(kind) {
-    const NONESSENTIAL = ['jump', 'open', 'soft', 'magic', 'coin', 'star', 'web', 'turbo', 'punch', 'smash', 'bump'];
+    const NONESSENTIAL = ['zip', 'jump', 'open', 'soft', 'magic', 'coin', 'star', 'web', 'turbo', 'punch', 'smash', 'bump'];
     if (!audioEnabled || (!effectsEnabled && NONESSENTIAL.includes(kind))) return;
     try {
       if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
@@ -1842,6 +2004,16 @@
           const src = audio.createBufferSource(), ng = audio.createGain(), lp = audio.createBiquadFilter();
           lp.type = 'lowpass'; lp.frequency.value = 1800; ng.gain.value = .14; src.buffer = buf; src.connect(lp); lp.connect(ng); ng.connect(audio.destination); src.start(t0);
         }
+        return;
+      }
+      if (kind === 'zip') {                              // « zip ! » : la toile file et s'accroche
+        const osc = audio.createOscillator(), gain = audio.createGain();
+        osc.type = 'triangle'; osc.frequency.setValueAtTime(320, t0); osc.frequency.exponentialRampToValueAtTime(1500, t0 + .11);
+        gain.gain.setValueAtTime(.0001, t0); gain.gain.exponentialRampToValueAtTime(.05, t0 + .02); gain.gain.exponentialRampToValueAtTime(.0001, t0 + .16);
+        osc.connect(gain); gain.connect(audio.destination); osc.start(t0); osc.stop(t0 + .18);
+        const o2 = audio.createOscillator(), g2 = audio.createGain();
+        o2.type = 'sine'; o2.frequency.value = 1320; g2.gain.setValueAtTime(.0001, t0 + .12); g2.gain.exponentialRampToValueAtTime(.03, t0 + .13); g2.gain.exponentialRampToValueAtTime(.0001, t0 + .3);
+        o2.connect(g2); g2.connect(audio.destination); o2.start(t0 + .12); o2.stop(t0 + .32);
         return;
       }
       const notes = { start: [523, 659], jump: [440], open: [392], soft: [330], magic: [784, 988], coin: [988, 1318], star: [1175, 1568], success: [659, 784, 988], finish: [523, 659, 784, 1047], web: [520, 740, 1040], turbo: [330, 440, 587, 784], sticker: [784, 988, 1175, 1568], bump: [180] };
@@ -1866,7 +2038,24 @@
   $('#replay-button').addEventListener('click',()=>{if(lastFinished)startLevel(lastFinished.hero,lastFinished.index);});
   $('#next-level-button').addEventListener('click',()=>{if(lastFinished)startLevel(lastFinished.hero,lastFinished.index+1);});
   document.querySelectorAll('[data-go="home"]').forEach(b=>b.addEventListener('click',()=>setScreen('home')));
-  $('.settings-open').addEventListener('click',()=>setScreen('settings-screen'));
+  // Verrou parent : les réglages et le minuteur s'ouvrent en gardant le doigt appuyé 2 secondes (un tout-petit tape, un adulte attend).
+  const PARENT_HOLD = 2000;
+  function parentLock(button, open) {
+    let timer = 0, pointer = null;
+    const stop = () => { clearTimeout(timer); timer = 0; pointer = null; button.classList.remove('holding'); };
+    button.addEventListener('pointerdown', e => {
+      e.preventDefault(); if (pointer !== null) return; pointer = e.pointerId; button.setPointerCapture?.(e.pointerId);
+      button.classList.remove('need-hold'); button.classList.add('holding');
+      timer = setTimeout(() => { stop(); MM.haptic('good'); open(); }, PARENT_HOLD);
+    });
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type => button.addEventListener(type, e => {
+      if (e.pointerId !== pointer) return;
+      if (timer) { stop(); button.classList.remove('need-hold'); void button.offsetWidth; button.classList.add('need-hold'); MM.haptic('tap'); }
+    }));
+    button.addEventListener('click', e => { if (e.detail === 0) open(); });          // clavier (adulte sur ordinateur)
+    button.addEventListener('contextmenu', e => e.preventDefault());
+  }
+  parentLock($('.settings-open'), () => setScreen('settings-screen'));
   $('#help-art-button').addEventListener('click',()=>setScreen('howto-screen'));
   $('#home-sound-toggle').addEventListener('click',()=>setAudioEnabled(!audioEnabled));
   $('#pause-button').addEventListener('click',()=>{if(scene==='game-screen'){pausedFrom='game-screen';setScreen('pause-screen');}});
@@ -1896,7 +2085,7 @@
     btn.addEventListener('contextmenu', e => e.preventDefault());
   }
   updateTimerChip();
-  $('#timer-open').addEventListener('click', () => { updateTimerChip(); setScreen('timer-screen'); });
+  parentLock($('#timer-open'), () => { updateTimerChip(); setScreen('timer-screen'); });
   $('#timer-options').addEventListener('click', e => { const b = e.target.closest('button[data-m]'); if (!b) return; save.timerMinutes = Number(b.dataset.m); sessionTimerLimit = save.timerMinutes * 60; save.sessionTimerLimit = sessionTimerLimit; timerWarningSent = sessionTimerLimit > 0 && sessionElapsed >= sessionTimerLimit; save.timerWarningSent = timerWarningSent; writeSave(); updateTimerChip(); MM.haptic('good'); setTimeout(() => setScreen('home'), 350); });
   function bindHold(btn, ms, fn) {
     let timer = 0; const stop = () => { clearTimeout(timer); timer = 0; btn.classList.remove('holding'); };
@@ -1928,6 +2117,8 @@
   $('#sound-button').addEventListener('click',()=>setAudioEnabled(!audioEnabled));
   $('#music-toggle').checked=audioEnabled;$('#effects-toggle').checked=effectsEnabled;
   $('#music-toggle').addEventListener('change',e=>setAudioEnabled(e.target.checked));
+  $('#one-button-toggle').checked = oneButton; document.body.classList.toggle('one-button', oneButton);
+  $('#one-button-toggle').addEventListener('change', e => setOneButton(e.target.checked));
   $('#effects-toggle').addEventListener('change',e=>{effectsEnabled=e.target.checked;save.effectsEnabled=effectsEnabled;writeSave();});
   // Croix de déplacement : un seul doigt peut glisser d'une direction à l'autre (diagonale haut + côté = sauter en avançant).
   const dpad=$('#dpad');const dpadButtons=[...dpad.querySelectorAll('.lr-btn')];
