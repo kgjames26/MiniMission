@@ -6,7 +6,10 @@
   const canvas = $('#game-canvas');
   const ctx = canvas.getContext('2d', { alpha: false });
   const STORE = 'mini-mission-v1';
-  const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  // langues : voir i18n.js (textes, alphabet de chaque langue, nom des lettres à dire, nombres)
+  const T = (k, v) => window.MM.i18n.t(k, v);
+  const alphabet = () => window.MM.i18n.alphabet();
+  const letterSay = (l) => window.MM.i18n.letterSay(l);
   const MM = window.MM;
   const LV = MM.level, SW = LV.swing, FX = MM.fx;
   const TURBO_SPEED = 520;
@@ -21,7 +24,7 @@
   const MON_TOTAL = 20;
   const theme = () => MM.cities[(mission && mission.city) || 0];
   const SHOT_SPEED = { ziggy: 560, filou: 500, titan: 470 };
-  const COUNT_WORDS = ['zéro', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf', 'dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize', 'dix-sept', 'dix-huit', 'dix-neuf', 'vingt'];
+  const countWord = (n) => window.MM.i18n.count(n);
   const leafImg = new Image(); leafImg.src = 'assets/friend-flame.webp';
   const monsterImg = new Image(); monsterImg.src = 'assets/monsters.webp';
   const movesImg = new Image(); movesImg.src = 'assets/hero-moves.webp';
@@ -96,6 +99,8 @@
     prompt:(t=>t.charAt(0).toUpperCase()+t.slice(1))(pattern.replace('{person}',person).replace('{goal}',theme.goal)),
     options:theme.answers.map(option=>[...option]), answer:0, icon:['💧','☁️','🧣','🍎','🪧','🌳','🪵','🌞','🧸','🌱'][themeIndex]
   }))));
+  // félicitations et encouragements : la grande liste française, ou celle de la langue choisie
+  const phrases = (kind) => MM.i18n.lang === 'fr' ? (kind === 'praise' ? praisePhrases : retryPhrases) : MM.i18n.list(kind);
   const praisePhrases = [
     'Bravo, tu as trouvé une belle idée !','Oui, c’est exactement ce qu’il fallait !','Super coup de main, petit héros !','Quelle bonne réponse !','Tu as très bien réfléchi !','Bien joué, tu aides tout le monde !','Ton idée fait plaisir !','Oui, tu as trouvé !','Quel beau geste !','Tu peux être fier de toi !',
     'Tu as choisi la bonne aide !','Génial, on peut continuer !','Tu as un grand cœur !','C’est une réponse formidable !','Merci pour ton aide !','Tu as trouvé tout seul, bravo !','Cette idée va beaucoup aider !','Tu es un vrai champion de l’entraide !','Quelle belle équipe !','Tu as très bien écouté !',
@@ -172,7 +177,7 @@
     const template = missionTemplates[Math.floor(Math.random()*missionTemplates.length)];
     // chaque caisse ouvre une énigme ou un mini-jeu différent (labyrinthe, puzzle, jeu de mémoire…)
     const legacy = () => { const task = pickQuestions(1)[0]; const order = shuffle([0,1,2]); return { ...task, options: order.map(i => task.options[i]), answer: order.indexOf(task.answer) }; };
-    const tasks = MM.games.makeTasks(legacy, index);
+    const tasks = MM.games.makeTasks(MM.i18n.lang === 'fr' ? legacy : null, index);
     return { ...template, title:'Les petits coups de main', friend:'les amis du quartier', outro:'Les amis du quartier ont reçu de jolis coups de main.', tasks, seed: Math.floor(Math.random()*4294967294)+1, palette:['#fff2bb','#ffc96b','#e28a6e'] };
   }
   function shuffle(list) { const a = list.slice(); for (let i=a.length-1;i>0;i--) { const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } return a; }
@@ -203,7 +208,9 @@
   function readLevel(hero, i) { return (save.levels && save.levels[hero] && save.levels[hero][i]) || BLANK_LEVEL; }
   function levelEntry(hero, i) { save.levels = save.levels || {}; const arr = save.levels[hero] = save.levels[hero] || []; return arr[i] = arr[i] || { ...BLANK_LEVEL, stars: [], letters: [], monsters: [] }; }
   // tout a été attrapé : la ville peut être refaite avec une difficulté de plus (mêmes autocollants à regagner)
-  function levelComplete(L) { const t = L.tot; return !!(t && L.stars.length >= t.s && L.letters.length >= t.l && L.monsters.length >= t.m && L.q >= t.q && L.silver && L.gold && L.mon); }
+  // lettres ramassées dans l'alphabet de la langue choisie (l'alphabet change avec la langue)
+  const lettersIn = (L) => { const a = alphabet(); return (L.letters || []).filter(x => a.includes(x)).length; };
+  function levelComplete(L) { const t = L.tot; return !!(t && L.stars.length >= t.s && lettersIn(L) >= alphabet().length && L.monsters.length >= t.m && L.q >= t.q && L.silver && L.gold && L.mon); }
   const levelUnlocked = (hero, i) => i === 0 || readLevel(hero, i - 1).done;
   function commitProgress(done) {
     if (!mission || !mission.level || !Array.isArray(mission.coins)) return;
@@ -223,27 +230,27 @@
     $('#level-hero').innerHTML = `<span class="sprite" style="--col:${heroId === 'ziggy' ? 0 : 2};--row:${row}"></span>`;
     $('#level-title').textContent = h.name.split(' ')[0];
     renderLevels(); setScreen('level-screen');
-    if (!timerNoticePlaying) sayText('Choisis une ville !');
+    if (!timerNoticePlaying) sayText(T('sayChooseCity'));
   }
   function renderLevels() {
     const grid = $('#level-grid');
     grid.innerHTML = MM.cities.map((c, i) => {
-      const L = readLevel(levelHero, i), open = levelUnlocked(levelHero, i), t = L.tot;
+      const L = readLevel(levelHero, i), open = levelUnlocked(levelHero, i), t = L.tot, nl = lettersIn(L), na = alphabet().length;
       let inner;
       if (!open) inner = '<span class="lv-lock" aria-hidden="true">🔒</span>';
-      else if (!t) inner = '<span class="lv-new">NOUVEAU</span>';
+      else if (!t) inner = `<span class="lv-new">${T('newBadge')}</span>`;
       else {
         const chip = (icon, a, b) => `<span class="lv-chip ${a >= b ? 'full' : ''}"><i style="--p:${b ? a / b : 0}"></i>${icon} ${a}/${b}</span>`;
-        inner = `<div class="lv-chips">${chip('⭐', L.stars.length, t.s)}${chip('🔤', L.letters.length, t.l)}${chip('👾', L.monsters.length, t.m)}${chip('🎮', L.q, t.q)}</div><div class="lv-chips"><span class="lv-chip ${L.silver ? 'med' : ''}" style="opacity:${L.silver ? 1 : .55}">🥈${L.silver ? '✓' : ''}</span><span class="lv-chip ${L.gold ? 'med' : ''}" style="opacity:${L.gold ? 1 : .55}">🥇${L.gold ? '✓' : ''}</span></div>`;
+        inner = `<div class="lv-chips">${chip('⭐', L.stars.length, t.s)}${chip('🔤', nl, na)}${chip('👾', L.monsters.length, t.m)}${chip('🎮', L.q, t.q)}</div><div class="lv-chips"><span class="lv-chip ${L.silver ? 'med' : ''}" style="opacity:${L.silver ? 1 : .55}">🥈${L.silver ? '✓' : ''}</span><span class="lv-chip ${L.gold ? 'med' : ''}" style="opacity:${L.gold ? 1 : .55}">🥇${L.gold ? '✓' : ''}</span></div>`;
       }
-      const tierBadge = (L.tier ? `<span class="lv-tier" aria-label="Difficulté ${L.tier}">${swords(L.tier)}</span>` : '') + (levelComplete(L) ? '<span class="lv-again" aria-label="Refaire plus difficile">↻⚔️</span>' : '');
-      const rem = t ? ` Il reste ${t.s - L.stars.length} étoiles, ${t.l - L.letters.length} lettres, ${t.m - L.monsters.length} monstres.` : '';
-      return `<button type="button" role="listitem" class="level-card ${open ? '' : 'locked'} ${L.done ? 'done' : ''} ${L.tier ? 'hard' : ''}" data-i="${i}" style="--a:${c.sky[0]};--b:${c.sky[1]};--g:${c.grass}" aria-label="Niveau ${i + 1} : ${escapeHtml(c.name)}${open ? '' : ', verrouillé'}.${rem}"><span class="lv-num">${i + 1}</span><span class="lv-flag">${c.flag}</span><span class="lv-icon">${c.icon}</span><b class="lv-name">${escapeHtml(c.name)}</b>${inner}${tierBadge}</button>`;
+      const tierBadge = (L.tier ? `<span class="lv-tier" aria-label="${T('aDifficulty', { n: L.tier })}">${swords(L.tier)}</span>` : '') + (levelComplete(L) ? `<span class="lv-again" aria-label="${T('aAgain')}">↻⚔️</span>` : '');
+      const rem = t ? T('aLevelLeft', { s: t.s - L.stars.length, l: na - nl, m: t.m - L.monsters.length }) : '';
+      return `<button type="button" role="listitem" class="level-card ${open ? '' : 'locked'} ${L.done ? 'done' : ''} ${L.tier ? 'hard' : ''}" data-i="${i}" style="--a:${c.sky[0]};--b:${c.sky[1]};--g:${c.grass}" aria-label="${escapeHtml(T('aLevel', { n: i + 1, city: c.name }))}${open ? '' : T('aLocked')}.${rem}"><span class="lv-num">${i + 1}</span><span class="lv-flag">${c.flag}</span><span class="lv-icon">${c.icon}</span><b class="lv-name">${escapeHtml(c.name)}</b>${inner}${tierBadge}</button>`;
     }).join('');
   }
   function pickLevel(i) {
     const card = $(`#level-grid .level-card[data-i="${i}"]`);
-    if (!levelUnlocked(levelHero, i)) { if (card) { card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); } MM.haptic('oops'); showToast('Termine la ville d’avant !'); sayText('Termine d’abord la ville d’avant !'); return; }
+    if (!levelUnlocked(levelHero, i)) { if (card) { card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); } MM.haptic('oops'); showToast(T('lockedToast')); sayText(T('lockedSay')); return; }
     startLevel(levelHero, i);
   }
   // position d'un drapeau : sur le sol, hors des trous, obstacles et immeubles
@@ -285,7 +292,7 @@
   }
   function updateTimerChip() {
     const chip = $('#timer-chip'), m = Number(save.timerMinutes) || 0; chip.classList.toggle('hidden', !m); chip.textContent = m ? `${m}′` : '';
-    $('#timer-options').innerHTML = [0, ...TIMER_CHOICES].map(v => `<button type="button" class="${v === m ? 'on' : ''}" data-m="${v}">${v ? v : '∞'}<small>${v ? 'min' : 'sans'}</small></button>`).join('');
+    $('#timer-options').innerHTML = [0, ...TIMER_CHOICES].map(v => `<button type="button" class="${v === m ? 'on' : ''}" data-m="${v}">${v ? v : '∞'}<small>${v ? T('timerMin') : T('timerNone')}</small></button>`).join('');
   }
   function startToday() {
     if (restLocked()) { showRest(); return; }
@@ -297,11 +304,11 @@
   function showTierSplash(tier) {
     const node = $('#tier-splash'); if (!node) return;
     node.querySelector('.ts-swords').textContent = swords(tier);
-    node.querySelector('.ts-text').textContent = 'Plus difficile !';
+    node.querySelector('.ts-text').textContent = T('harder');
     node.classList.remove('show'); void node.offsetWidth; node.classList.add('show');
     clearTimeout(showTierSplash.t); showTierSplash.t = setTimeout(() => node.classList.remove('show'), 3200);
     sound('turbo'); MM.haptic('gold');
-    if (!timerNoticePlaying) sayText(`Niveau de difficulté ${COUNT_WORDS[Math.min(tier, 20)] || tier} ! Les monstres sont plus costauds.`);
+    if (!timerNoticePlaying) sayText(T('tierSay', { n: tier <= 20 ? countWord(tier) : tier, d: tier }));
   }
   function startLevel(heroId, index) {
     if(!sessionActive){sessionActive=true;sessionElapsed=0;sessionTimerLimit=(Number(save.timerMinutes)||0)*60;stopAfterMission=false;timerWarningSent=false;timerAnnouncementPending=false;save.sessionActive=true;save.sessionElapsed=0;save.sessionTimerLimit=sessionTimerLimit;save.stopAfterMission=false;save.timerWarningSent=false;}sessionTimerLimit=(Number(save.timerMinutes)||0)*60;save.sessionTimerLimit=sessionTimerLimit;timerWarningSent=sessionTimerLimit>0&&sessionElapsed>=sessionTimerLimit;
@@ -323,11 +330,12 @@
     if (mission.levelVersion !== 6) { mission = createMission(activeHero); save.activeMission = mission; save.progress = 0; resume = false; }
     if (!Array.isArray(mission.stationsDone)) mission.stationsDone = [false, false, false];
     save.progress = mission.stationsDone.filter(Boolean).length;
+    { const cc = MM.cities[mission.city ?? 0] || MM.cities[0]; mission.title = `${cc.flag} ${cc.name}${mission.tier ? ' ' + swords(mission.tier) : ''}`; }
     $('#mission-title').textContent = mission.title;
     if (mission.city == null) { mission.city = 0; mission.level = { hero: activeHero, index: 0 }; }
     $('#progress-dots').innerHTML = mission.tasks.map((_,i)=>`<span class="progress-dot ${mission.stationsDone[i] ? 'done' : ''}"></span>`).join('');
     const rnd = seeded(mission.seed);
-    const level = LV.build(activeHero, seeded(mission.seed));
+    const level = LV.build(activeHero, seeded(mission.seed), alphabet().length);
     world.width = level.width; world.floor = level.floor; world.camera = 0; world.checkpoint = 60;
     world.gaps = level.gaps; world.platforms = level.platforms.slice(); world.tramps = (level.tramps || []).map(t => ({ ...t, hit: -9 })); world.topples = []; world.camY = 0; world.anchors = level.anchors; world.pads = [];
     const broken = new Set(mission.brokenBumps || []), damage = mission.damage || {};
@@ -336,7 +344,9 @@
     world.stations = level.stations.map((x, i) => ({ x, y: world.floor - 190, i, done: mission.stationsDone[i] === true, hit: false, bob: rnd()*6 }));
     world.decorations = Array.from({ length: 56 }, (_, i) => ({ x: 210 + i * 196, kind: i % 5, flower: i % 4 }));
     if (!Array.isArray(mission.coins)) mission.coins = level.stars.map((s, i) => ({ id: `s${i}`, x: s.x, y: s.y, collected: false, bob: rnd()*6 }));
-    if (!Array.isArray(mission.letters)) mission.letters = level.letterSpots.map((spot, i) => ({ letter: ALPHABET[i], x: spot.x, y: spot.y, diff: spot.diff, collected: false, bob: rnd()*6 }));
+    if (Array.isArray(mission.letters) && mission.lettersLang !== MM.i18n.lang) mission.letters = null;     // la langue a changé : nouvel alphabet
+    if (!Array.isArray(mission.letters)) { mission.lettersLang = MM.i18n.lang; } 
+    if (!Array.isArray(mission.letters)) mission.letters = level.letterSpots.map((spot, i) => ({ letter: alphabet()[i], x: spot.x, y: spot.y, diff: spot.diff, collected: false, bob: rnd()*6 }));
     world.coins = mission.coins; world.letters = mission.letters;
     world.hintAnchor = null;
     initMonsters(level, rnd);
@@ -364,11 +374,11 @@
     swing = null; fizzle = null; turboUntil = 0; turboReady = 0; punchReady = 0; coyote = 0; gt = 0; jumpBuffer = 0; slowmo = 0; perf.since = 0; perf.slowFor = 0; perf.ema = 16.7; perf.tried = null; rope = null;
     FX.clear(); heroAnim = newHeroAnim(); lastPromptStation = -1;
     lastActiveTick = performance.now(); lastTime = performance.now();
-    const power = { ziggy: ['☄️', 'TURBO', 'Action : turbo, très rapide'], filou: ['🕸️', 'TOILE', 'Action : lancer la toile et se balancer'], titan: ['👊', 'POING', 'Action : gros coup de poing'] }[activeHero];
+    const power = { ziggy: ['☄️', T('turbo'), T('actTurbo')], filou: ['🕸️', T('web'), T('actWeb')], titan: ['👊', T('punch'), T('actPunch')] }[activeHero];
     $('#attack-button .action-power').textContent = power[0]; $('#attack-button small').textContent = power[1]; $('#attack-button').setAttribute('aria-label', power[2]);
     $('#attack-button').classList.remove('cooldown', 'active'); abilityReadyShown = true;
-    const shootInfo = { ziggy: ['🔥', 'Boule de feu'], filou: ['🕸️', 'Toile magique'], titan: ['👊', 'Poing projeté'] }[activeHero];
-    $('#shoot-button .shoot-icon').textContent = shootInfo[0]; $('#shoot-button').setAttribute('aria-label', 'Tirer : ' + shootInfo[1]); $('#shoot-button').dataset.hero = activeHero;
+    const shootInfo = { ziggy: ['🔥', T('shotFire')], filou: ['🕸️', T('shotWeb')], titan: ['👊', T('shotPunch')] }[activeHero];
+    $('#shoot-button .shoot-icon').textContent = shootInfo[0]; $('#shoot-button').setAttribute('aria-label', T('aShootX', { x: shootInfo[1] })); $('#shoot-button').dataset.hero = activeHero;
     setScreen('game-screen'); startLoop(); maybeRotateHint();
     if (resume && timerAnnouncementPending) speakTimerNotice();
     if (!resume) sound('start');
@@ -378,13 +388,24 @@
     if (!rect.width || !rect.height) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2, perf.cap);
     canvas.width = Math.round(rect.width*dpr); canvas.height = Math.round(rect.height*dpr);
-    // Le monde fait 540 unités de haut. Sur un écran étroit (téléphone en portrait) on garde au moins 520 unités de large
-    // et le décor se prolonge simplement vers le haut : le jeu remplit toujours tout l'espace disponible.
-    view.scale = Math.min(canvas.height/WORLD_H, canvas.width/520);
-    view.w = canvas.width/view.scale; view.h = canvas.height/view.scale;
-    view.ox = 0; view.oy = (view.h-WORLD_H)*view.scale;
+    // Portrait : tout le monde (715 unités de haut) tient dans l'écran et le décor se prolonge vers le haut.
+    // Paysage : on zoome (500 unités visibles, une bande de terre coupée en bas) pour que le héros soit bien plus grand ;
+    // la caméra suit en hauteur et dézoome doucement si un anneau de Filou doit rester visible.
+    const land = canvas.width / canvas.height > 1.25;
+    view.cut = land ? 95 : 0;
+    view.base = Math.min(canvas.height / (land ? 500 : WORLD_H), canvas.width / 520);
+    view.zMin = Math.min(1, Math.min(canvas.height / WORLD_H, canvas.width / 520) / view.base);
+    view.z = Math.max(view.zMin, Math.min(1, view.z || 1));
+    applyZoom();
     hud.at = -9;
   }
+  function applyZoom() {
+    view.scale = view.base * view.z;
+    view.w = canvas.width / view.scale; view.h = canvas.height / view.scale;
+    view.ox = 0; view.oy = (view.h - WORLD_H + view.cut) * view.scale;
+  }
+  // haut de l'écran (en unités du monde) quand la caméra verticale est à 0
+  const viewTop0 = () => WORLD_H - view.cut - view.h;
   // Qualité automatique : si l'appareil n'arrive pas à suivre, le canvas est dessiné un peu moins finement
   // (2 → 1,5 → 1,25 pixel réel par pixel d'écran). Si ça n'aide pas (écran bridé à 30 images/s), on revient en arrière.
   const perf = { cap: 2, ema: 16.7, since: 0, slowFor: 0, tried: null, locked: false };
@@ -405,12 +426,18 @@
   }
   const SLOWMO_TIME = .18; let slowmo = 0;
   // la barre du haut et le panneau des amis, en unités du monde (pour garder les anneaux de Filou en dessous)
-  const hud = { top: 90, barBottom: 180, barRight: 0, at: -9 };
+  // mesurée en pixels d'écran ; u() convertit en unités du monde au zoom actuel
+  const hud = { topPx: 60, barBottomPx: 110, barRightPx: 0, padRightPx: 0, ctrlPx: 34, r: 1, at: -9 };
+  const u = (px) => px * hud.r / view.scale;
   function measureHud() {
     hud.at = performance.now() / 1000; const rect = canvas.getBoundingClientRect(); if (!rect.height) return;
-    const k = (canvas.width / rect.width) / view.scale, tb = $('.game-topbar')?.getBoundingClientRect(), mb = $('#monster-bar')?.getBoundingClientRect();
-    if (tb) hud.top = Math.max(0, (tb.bottom - rect.top) * k);
-    if (mb && mb.height) { hud.barBottom = Math.max(hud.top, (mb.bottom - rect.top) * k); hud.barRight = (mb.right - rect.left) * k; } else { hud.barBottom = hud.top; hud.barRight = 0; }
+    hud.r = canvas.width / rect.width;
+    const tb = $('.game-topbar')?.getBoundingClientRect(), mb = $('#monster-bar')?.getBoundingClientRect(), pad = $('#dpad')?.getBoundingClientRect();
+    if (tb) hud.topPx = Math.max(0, tb.bottom - rect.top);
+    if (mb && mb.height) { hud.barBottomPx = Math.max(hud.topPx, mb.bottom - rect.top); hud.barRightPx = mb.right - rect.left; } else { hud.barBottomPx = hud.topPx; hud.barRightPx = 0; }
+    // les boutons ◀ ▶ posés SUR le jeu (paysage) : le héros ne doit jamais passer dessous
+    hud.padRightPx = pad && pad.width && pad.top < rect.bottom - 10 ? pad.right - rect.left : 0;
+    hud.ctrlPx = hud.padRightPx ? Math.max(34, rect.bottom - pad.top - 8) : 34;     // le sol reste visible au-dessus des boutons
   }
   // Une seule boucle à la fois, même après une pause/reprise très rapide.
   function startLoop() { lastTime = performance.now(); if (!rafId) rafId = requestAnimationFrame(loop); }
@@ -493,22 +520,34 @@
     if (swing && Math.random() < .6) { const h = SW.hand(swing); FX.glitter(h.x + (swing.ax - h.x) * Math.random(), h.y + (swing.ay - h.y) * Math.random()); }
     if (fizzle) { fizzle.t += dt; if (fizzle.t > .35) fizzle = null; }
     world.hintAnchor = hero === 'filou' && !swing ? findAnchor() : null;
-    world.camera = Math.max(0, Math.min(world.width - view.w, player.x - view.w*.34));
+    if (performance.now() / 1000 - hud.at > 1) measureHud();
+    // au début du niveau, la caméra recule un peu pour que le héros ne soit pas caché derrière les boutons ◀ ▶
+    const camMinX = hud.padRightPx ? Math.min(0, player.x - u(hud.padRightPx + 24)) : 0;
+    world.camera = Math.max(camMinX, Math.min(world.width - view.w, player.x - view.w*.34));
     // caméra verticale : elle monte avec le héros (grands immeubles, trampoline) et redescend doucement
-    { const extra = Math.max(0, view.h - WORLD_H); let target = Math.max(0, (-extra + 150) - player.y);
+    { const top0 = viewTop0(), bot0 = WORLD_H - view.cut, feet = player.y + player.h;
+      let target = Math.max(0, (top0 + u(hud.topPx) + 70) - player.y);
+      let zoomTo = 1;
       if (hero === 'filou') {
         // les anneaux de toile restent visibles SOUS la barre du haut et le panneau des amis : celui qui est à portée
         // (ou celui où Filou est accroché) et le prochain devant lui, pour que l'enfant le voie arriver
-        if (performance.now() / 1000 - hud.at > 1) measureHud();
-        const need = (ax, ay) => { const sx = ax - world.camera, lim = sx < hud.barRight + 30 ? hud.barBottom : hud.top; return lim + 56 - extra - ay; };
-        let want = 0;
-        if (swing) want = need(swing.ax, swing.ay); else if (world.hintAnchor) want = need(world.hintAnchor.x, world.hintAnchor.y);
+        const limPx = (ax) => (ax - world.camera) < u(hud.barRightPx + 30) ? hud.barBottomPx : hud.topPx;
+        const need = (ax, ay) => u(limPx(ax)) + 56 + top0 - ay;
+        let want = 0, high = null;
+        const take = (ax, ay) => { const n = need(ax, ay); if (n > want) { want = n; high = { ax, ay }; } };
+        if (swing) take(swing.ax, swing.ay); else if (world.hintAnchor) take(world.hintAnchor.x, world.hintAnchor.y);
         const cx = player.x + player.w / 2; let next = null, best = view.w * .62;
         for (const a of world.anchors || []) { const dx = (a.x - cx) * player.facing; if (dx > -30 && dx < best && (!swing || a.x !== swing.ax)) { best = dx; next = a; } }
-        if (next) want = Math.max(want, need(next.x, next.y));
-        const maxCam = view.h - 60 - extra - (player.y + player.h);   // mais le héros reste toujours entier à l'écran
+        if (next) take(next.x, next.y);
+        const maxCam = bot0 - u(hud.ctrlPx) - feet;          // mais le héros reste toujours entier à l'écran
         target = Math.max(target, Math.min(want, maxCam));
+        // paysage : si l'anneau et le héros ne tiennent pas ensemble, on dézoome juste ce qu'il faut
+        if (high && want > maxCam && view.zMin < 1) {
+          const span = feet - high.ay + 56, freePx = canvas.height - (limPx(high.ax) + hud.ctrlPx) * hud.r;
+          zoomTo = Math.max(view.zMin, Math.min(1, freePx / span / view.base));
+        }
       }
+      if (view.zMin < 1 && Math.abs(zoomTo - view.z) > .002) { view.z += (zoomTo - view.z) * Math.min(1, dt * (zoomTo < view.z ? 3 : 1.5)); applyZoom(); }
       world.camY += (target - world.camY) * Math.min(1, dt * (target > world.camY ? 6 : 3)); if (Math.abs(world.camY - target) < .5) world.camY = target; }
     for (let i = world.topples.length - 1; i >= 0; i--) {
       const q = world.topples[i]; q.t += dt;
@@ -528,7 +567,7 @@
     drawWorld(time); drawPlayer(time); drawShots(time); FX.draw(ctx, world.camera);
     ctx.restore(); drawAmbient(time);
   }
-  function drawSky(time){const W=view.w,p=mission?.palette||[],extra=Math.max(0,view.h-WORLD_H);const g=ctx.createLinearGradient(0,0,0,WORLD_H);g.addColorStop(0,p[0]||'#70d0f4');g.addColorStop(.67,p[2]||'#c8f1fa');g.addColorStop(1,'#e8f9e9');ctx.fillStyle=g;ctx.fillRect(0,-extra-2,W,extra+WORLD_H+4);for(let i=0;i<Math.ceil(W/260)+2;i++){const x=((i*260-world.camera*.16+time*3)%(W+260))-130,y=55+(i%3)*48;cloud(x,y,1+(i%2)*.18);}if(extra>40)for(let i=0;i<Math.ceil(W/300)+2;i++){const x=((i*300-world.camera*.1+time*2)%(W+300))-150,y=-extra*(.2+(i%3)*.25);cloud(x,y,1.1+(i%2)*.25);}}
+  function drawSky(time){const W=view.w,p=mission?.palette||[],extra=Math.max(0,-viewTop0());const g=ctx.createLinearGradient(0,0,0,WORLD_H);g.addColorStop(0,p[0]||'#70d0f4');g.addColorStop(.67,p[2]||'#c8f1fa');g.addColorStop(1,'#e8f9e9');ctx.fillStyle=g;ctx.fillRect(0,-extra-2,W,extra+WORLD_H+4);for(let i=0;i<Math.ceil(W/260)+2;i++){const x=((i*260-world.camera*.16+time*3)%(W+260))-130,y=55+(i%3)*48;cloud(x,y,1+(i%2)*.18);}if(extra>40)for(let i=0;i<Math.ceil(W/300)+2;i++){const x=((i*300-world.camera*.1+time*2)%(W+300))-150,y=-extra*(.2+(i%3)*.25);cloud(x,y,1.1+(i%2)*.25);}}
   function cloud(x,y,s=1){ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.fillStyle='rgba(255,255,255,.78)';ctx.beginPath();ctx.ellipse(0,12,49,18,0,0,Math.PI*2);ctx.ellipse(-23,2,24,20,0,0,Math.PI*2);ctx.ellipse(0,-5,28,27,0,0,Math.PI*2);ctx.ellipse(26,4,24,19,0,0,Math.PI*2);ctx.fill();ctx.restore();}
   function drawHills(){const W=view.w,TH=theme();if(TH.far)MM.farDraw[TH.far](ctx,W,372,world.camera,TH.far==='fuji'?'#a9a4d0':TH.far==='dunes'?TH.dirt:TH.hill[1]);ctx.fillStyle=TH.hill[0];ctx.beginPath();ctx.moveTo(0,355);for(let x=0;x<=W;x+=5){ctx.lineTo(x,350+28*Math.sin((x+world.camera*.18)/160)+16*Math.sin(x/63));}ctx.lineTo(W,540);ctx.lineTo(0,540);ctx.fill();ctx.fillStyle=TH.hill[1];ctx.beginPath();ctx.moveTo(0,395);for(let x=0;x<=W;x+=5)ctx.lineTo(x,390+22*Math.sin((x+world.camera*.31)/125));ctx.lineTo(W,540);ctx.lineTo(0,540);ctx.fill();}
   function drawTown(time) {
@@ -787,7 +826,7 @@
       ctx.restore();
     });
     if (world.hintAnchor && !swing) {            // flèche au bord haut de l'écran si l'anneau est encore hors champ
-      const a = world.hintAnchor, ax = a.x - cam, top = -Math.max(0, view.h - WORLD_H) - (world.camY || 0) + hud.top + 24;
+      const a = world.hintAnchor, ax = a.x - cam, top = viewTop0() - (world.camY || 0) + u(hud.topPx) + 24;
       if (a.y < top - 20 && ax > 0 && ax < W) { ctx.save(); ctx.translate(ax, top + 10 + Math.sin(time * 6) * 4); ctx.fillStyle = '#7d5bd6'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0, -18); ctx.lineTo(18, 8); ctx.lineTo(-18, 8); ctx.closePath(); ctx.stroke(); ctx.fill(); ctx.restore(); }
     }
     world.coins.forEach(star => { if (star.collected) return; const x = star.x - cam; if (x < -30 || x > W + 30) return; drawStarItem(x, star.y, time, star.bob); });
@@ -993,36 +1032,39 @@
   function cancelSpeech(requeueTimer=true){speechToken++;MM.music.duck(false);if(timerNoticePlaying){timerNoticePlaying=false;if(requeueTimer){timerAnnouncementPending=true;save.timerAnnouncementPending=true;writeSave();}}if('speechSynthesis'in window)window.speechSynthesis.cancel();}
   /* ----- voix : on choisit la plus agréable disponible (voix naturelles/neuronales d'abord), ou celle choisie dans les réglages ----- */
   function voiceScore(v) {
-    const n = v.name || '', l = v.lang || '';
-    if (!/^fr/i.test(l)) return -1e9;
+    const n = v.name || '', l = v.lang || '', code = MM.i18n.lang, want = MM.i18n.info().tts;
+    if (l.slice(0, 2).toLowerCase() !== code) return -1e9;
     let sc = 0;
+    if (code !== 'fr' && l.replace('_', '-').toLowerCase() === want.toLowerCase()) sc += 80;   // l'accent principal de la langue d'abord
     if (/natural|neural|online|premium|enhanced|améliorée|siri/i.test(n)) sc += 60;
     if (/google/i.test(n)) sc += 35;
     if (/denise|eloise|élo|amélie|amelie|audrey|marie|julie|hortense|céline|celine|vivienne|brigitte|sylvie|chloé|chloe/i.test(n)) sc += 15;
     if (/espeak|compact|robot|novelty/i.test(n)) sc -= 80;
-    if (/^fr[-_]FR/i.test(l)) sc += 80; else if (/^fr[-_]CA/i.test(l)) sc -= 40; else if (/^fr[-_](BE|CH|LU)/i.test(l)) sc += 10;   // voix de France d'abord, canadienne en dernier recours
-    if (/canad|québ|quebec|sylvie|antoine|nicolas/i.test(n)) sc -= 40;
+    if (code === 'fr') { if (/^fr[-_]FR/i.test(l)) sc += 80; else if (/^fr[-_]CA/i.test(l)) sc -= 40; else if (/^fr[-_](BE|CH|LU)/i.test(l)) sc += 10;   // voix de France d'abord, canadienne en dernier recours
+      if (/canad|québ|quebec|sylvie|antoine|nicolas/i.test(n)) sc -= 40; }
     if (!v.localService) sc += 4;
     return sc;
   }
-  function frenchVoices() { return (window.speechSynthesis ? speechSynthesis.getVoices() : []).filter(v => /^fr/i.test(v.lang)).sort((a, b) => voiceScore(b) - voiceScore(a)); }
+  // voix de la langue choisie ; le choix de voix de l'adulte est retenu pour chaque langue
+  function frenchVoices() { const code = MM.i18n.lang; return (window.speechSynthesis ? speechSynthesis.getVoices() : []).filter(v => (v.lang || '').slice(0, 2).toLowerCase() === code).sort((a, b) => voiceScore(b) - voiceScore(a)); }
+  const savedVoice = () => (save.voices && save.voices[MM.i18n.lang]) || (MM.i18n.lang === 'fr' ? save.voiceName : '') || '';
   function pickVoice() {
     const list = frenchVoices(); if (!list.length) return null;
-    return (save.voiceName && list.find(v => v.name === save.voiceName)) || list[0];
+    const name = savedVoice(); return (name && list.find(v => v.name === name)) || list[0];
   }
   function fillVoiceSelect() {
     const sel = $('#voice-select'); if (!sel) return;
-    const list = frenchVoices(), cur = save.voiceName || '';
-    sel.innerHTML = '<option value="">Automatique (la plus agréable)</option>' + list.map(v => `<option value="${escapeHtml(v.name)}" ${v.name === cur ? 'selected' : ''}>${escapeHtml(v.name)} (${escapeHtml(v.lang)})</option>`).join('');
+    const list = frenchVoices(), cur = savedVoice();
+    sel.innerHTML = `<option value="">${escapeHtml(T('autoBest'))}</option>` + list.map(v => `<option value="${escapeHtml(v.name)}" ${v.name === cur ? 'selected' : ''}>${escapeHtml(v.name)} (${escapeHtml(v.lang)})</option>`).join('');
   }
   if ('speechSynthesis' in window) { try { speechSynthesis.addEventListener('voiceschanged', fillVoiceSelect); } catch {} }
-  function sayText(text,onComplete){if(!('speechSynthesis'in window)||!('SpeechSynthesisUtterance'in window))return false;cancelSpeech(false);const token=++speechToken;const utterance=new SpeechSynthesisUtterance(text);utterance.rate=.92;utterance.pitch=1.06;utterance.volume=1;const voice=pickVoice();utterance.voice=voice;utterance.lang=voice?.lang||'fr-FR';MM.music.duck(true);utterance.onend=()=>{if(token===speechToken){MM.music.duck(false);onComplete?.(true);}};utterance.onerror=()=>{if(token===speechToken){MM.music.duck(false);onComplete?.(false);}};window.speechSynthesis.speak(utterance);return true;}
-  function speakTimerNotice(onComplete){if(!timerAnnouncementPending){onComplete?.();return;}timerAnnouncementPending=false;const started=sayText('On va bientôt terminer. Tu peux finir cette mission tranquillement. Après, ton héros ira se reposer.',()=>{timerNoticePlaying=false;save.timerAnnouncementPending=false;save.sessionElapsed=sessionElapsed;writeSave();onComplete?.();if(scene==='puzzle-screen'&&puzzleTask&&!puzzleResolved&&!onComplete)readPuzzleAloud();});timerNoticePlaying=started;if(!started){save.timerAnnouncementPending=false;writeSave();onComplete?.();}}
+  function sayText(text,onComplete){if(!('speechSynthesis'in window)||!('SpeechSynthesisUtterance'in window))return false;cancelSpeech(false);const token=++speechToken;const utterance=new SpeechSynthesisUtterance(text);utterance.rate=.92;utterance.pitch=1.06;utterance.volume=1;const voice=pickVoice();utterance.voice=voice;utterance.lang=voice?.lang||MM.i18n.info().tts;MM.music.duck(true);utterance.onend=()=>{if(token===speechToken){MM.music.duck(false);onComplete?.(true);}};utterance.onerror=()=>{if(token===speechToken){MM.music.duck(false);onComplete?.(false);}};window.speechSynthesis.speak(utterance);return true;}
+  function speakTimerNotice(onComplete){if(!timerAnnouncementPending){onComplete?.();return;}timerAnnouncementPending=false;const started=sayText(T('timerNotice'),()=>{timerNoticePlaying=false;save.timerAnnouncementPending=false;save.sessionElapsed=sessionElapsed;writeSave();onComplete?.();if(scene==='puzzle-screen'&&puzzleTask&&!puzzleResolved&&!onComplete)readPuzzleAloud();});timerNoticePlaying=started;if(!started){save.timerAnnouncementPending=false;writeSave();onComplete?.();}}
   function readPuzzleAloud() {
     if (!puzzleTask || puzzleResolved || timerNoticePlaying) return;
     const kind = puzzleTask.kind || 'quiz';
     const btn = $(kind === 'quiz' ? '#puzzle-read-button' : '#game-read-button');
-    const text = kind === 'quiz' ? `${puzzleTask.say || puzzleTask.prompt} Choisis une réponse : ${puzzleTask.options.map(option => option[1]).join('. ')}.` : puzzleTask.say;
+    const text = kind === 'quiz' ? T('chooseAnswer', { q: puzzleTask.say || puzzleTask.prompt, opts: puzzleTask.options.map(option => option[1]).join(MM.i18n.lang === 'ja' ? '、' : '. ') }) : puzzleTask.say;
     const started = sayText(text, () => {
       btn.classList.remove('speaking');
       if (scene !== 'puzzle-screen' || puzzleResolved) return;
@@ -1078,7 +1120,7 @@
       $('#puzzle-feedback').textContent = '🤔';
       if (puzzleWrong >= 2) choices[puzzleTask.answer].classList.add('hint-answer');
       sound('soft'); MM.haptic('oops');
-      sayText(retryPhrases[Math.floor(Math.random()*retryPhrases.length)], () => { if (timerAnnouncementPending && scene === 'puzzle-screen') speakTimerNotice(); });
+      sayText((L => L[Math.floor(Math.random()*L.length)])(phrases('retry')), () => { if (timerAnnouncementPending && scene === 'puzzle-screen') speakTimerNotice(); });
       return;
     }
     choices.forEach(choice => choice.disabled = true);
@@ -1087,8 +1129,9 @@
   // lettres : la dernière ramassée en grand, dans un anneau qui se remplit (pas de « 21/26 » à lire)
   function updateLetterCounter(){
     const all = mission?.letters || [], got = all.filter(l => l.collected), node = $('#letter-count'), last = $('#letter-last'), box = $('.letter-counter');
-    if (node) node.textContent = `${got.length}/26`;
-    if (box) { box.style.setProperty('--p', (got.length / 26).toFixed(3)); box.classList.toggle('full', got.length >= 26); box.classList.remove('missed'); box.setAttribute('aria-label', `${got.length} lettres sur 26`); }
+    const na = all.length || alphabet().length;
+    if (node) node.textContent = `${got.length}/${na}`;
+    if (box) { box.style.setProperty('--p', (got.length / na).toFixed(3)); box.classList.toggle('full', got.length >= na); box.classList.remove('missed'); box.setAttribute('aria-label', T('lettersOf', { n: got.length, t: na })); }
     const latest = got.reduce((a, l) => (l.at || 0) >= (a?.at || 0) ? l : a, null);
     if (last) last.textContent = latest ? latest.letter : '🔤';
   }
@@ -1101,7 +1144,7 @@
       l.missed = true;
       const box = $('.letter-counter'), last = $('#letter-last');
       if (box && last) { last.textContent = l.letter; box.classList.remove('missed'); void box.offsetWidth; box.classList.add('missed'); clearTimeout(box._m); box._m = setTimeout(updateLetterCounter, 2600); }
-      if (gt - lastMissSay > 4 && !timerNoticePlaying) { lastMissSay = gt; sayText(`Oh ! Tu as oublié le ${l.letter} !`); }
+      if (gt - lastMissSay > 4 && !timerNoticePlaying) { lastMissSay = gt; sayText(T('forgot', { l: letterSay(l.letter) })); }
       MM.haptic('tap'); break;
     }
   }
@@ -1116,25 +1159,26 @@
     const caught = mission.monsters.filter(m => m.friendly).sort((a, b) => a.order - b.order), friendCount = caught.length;
     const found = mission.letters.filter(item => item.collected).map(item => item.letter);
     const stars = mission.coins.filter(s => s.collected).length, qDone = Math.max(readLevel(lv.hero, lv.index).q || 0, (mission.stationsDone || []).filter(Boolean).length);
-    const rows = [['⭐', 'étoiles', stars, mission.coins.length], ['🔤', 'lettres', found.length, mission.letters.length || 26], ['👾', 'monstres', friendCount, MON_TOTAL], ['🎮', 'mini-jeux', qDone, 3]];
-    $('#ending-stats').innerHTML = rows.map(([icon, label, a, b]) => `<div class="stat ${a >= b ? 'full' : ''}" aria-label="${label} : ${a} sur ${b}"><span class="stat-i" aria-hidden="true">${icon}</span><div class="stat-bar"><i style="--w:${b ? Math.round(a / b * 100) : 0}%"></i></div><b>${a}/${b}</b><em>${a >= b ? '✓' : 'reste ' + (b - a)}</em></div>`).join('');
+    const rows = [['⭐', T('endStars'), stars, mission.coins.length, 'stars'], ['🔤', T('endLetters'), found.length, mission.letters.length || alphabet().length, 'letters'], ['👾', T('endMonsters'), friendCount, MON_TOTAL, 'monsters'], ['🎮', T('endGames'), qDone, 3, 'games']];
+    $('#ending-stats').innerHTML = rows.map(([icon, label, a, b]) => `<div class="stat ${a >= b ? 'full' : ''}" aria-label="${escapeHtml(T('endOf', { label, a, b }))}"><span class="stat-i" aria-hidden="true">${icon}</span><div class="stat-bar"><i style="--w:${b ? Math.round(a / b * 100) : 0}%"></i></div><b>${a}/${b}</b><em>${a >= b ? '✓' : T('endLeftN', { n: b - a })}</em></div>`).join('');
     const left = rows.filter(r => r[2] < r[3]);
     const rem = $('#ending-remaining');
     rem.classList.toggle('all', !left.length);
-    rem.innerHTML = left.length ? 'Il reste : ' + left.map(([icon, , a, b]) => `<span class="rem">${icon} ${b - a}</span>`).join('') : '🎉 Tout est réussi dans cette ville !';
-    $('#ending-friends').innerHTML = `<div class="ten-frame" aria-label="${friendCount} monstres capturés sur ${MON_TOTAL}">${Array.from({ length: MON_TOTAL }, (_, i) => caught[i] ? `<span class="mon-chip on" style="${monsterChipStyle(caught[i].imp ? -1 : caught[i].type + 5, 38)}"></span>` : '<span class="mon-chip"></span>').join('')}</div>`;
+    rem.innerHTML = left.length ? escapeHtml(T('endLeft')) + left.map(([icon, , a, b]) => `<span class="rem">${icon} ${b - a}</span>`).join('') : escapeHtml(T('endAll'));
+    $('#ending-friends').innerHTML = `<div class="ten-frame" aria-label="${escapeHtml(T('friendsOf', { n: friendCount, t: MON_TOTAL }))}">${Array.from({ length: MON_TOTAL }, (_, i) => caught[i] ? `<span class="mon-chip on" style="${monsterChipStyle(caught[i].imp ? -1 : caught[i].type + 5, 38)}"></span>` : '<span class="mon-chip"></span>').join('')}</div>`;
     $('#ending-friends').classList.toggle('hidden', !friendCount);
     const won = mission.stickersWon || [], S = MM.stickers, box = $('#ending-stickers');
     box.classList.toggle('hidden', !won.length);
     box.innerHTML = won.length ? `<div class="sticker-row">${won.map((w, n) => { const info = S.info(w.id); return `<span class="${w.tier}" style="--r:${n % 2 ? 5 : -5}deg;--d:${n * 90}ms" aria-label="${escapeHtml(cap(info.n))}">${info.e}</span>`; }).join('')}</div>` : '';
-    $('#alphabet-grid').innerHTML = ALPHABET.map(letter => `<span class="alphabet-letter ${found.includes(letter) ? 'found' : 'missing'}" aria-label="${letter} ${found.includes(letter) ? 'récoltée' : 'pas encore récoltée'}">${letter}</span>`).join('');
-    $('#alphabet-summary').textContent = `${found.length}/26`;
+    $('#alphabet-grid').innerHTML = alphabet().map(letter => `<span class="alphabet-letter ${found.includes(letter) ? 'found' : 'missing'}" aria-label="${escapeHtml(T(found.includes(letter) ? 'letterGot' : 'letterMissing', { l: letter }))}">${letter}</span>`).join('');
+    $('#alphabet-grid').classList.toggle('long', alphabet().length > 30);
+    $('#alphabet-summary').textContent = `${found.length}/${alphabet().length}`;
     $('.rest-card').classList.toggle('hidden', !stopAfterMission);
     $('#replay-button').classList.toggle('hidden', stopAfterMission); $('#replay-button').classList.toggle('newround', levelComplete(readLevel(lv.hero, lv.index)));
     $('#next-level-button').classList.toggle('hidden', stopAfterMission || lv.index >= MM.cities.length - 1);
     setScreen('ending-screen'); sound('finish'); MM.haptic('good');
-    const parts = left.map(([, label, a, b]) => `${b - a} ${label}`);
-    if (!timerNoticePlaying) setTimeout(() => { if (scene === 'ending-screen') sayText(left.length ? `Bravo ! Il te reste ${parts.join(', ')}.` : 'Bravo ! Tu as tout réussi dans cette ville !'); }, 900);
+    const parts = left.map(([, , a, b, kind]) => MM.i18n.plural(kind, b - a));
+    if (!timerNoticePlaying) setTimeout(() => { if (scene === 'ending-screen') sayText(left.length ? T('endSayLeft', { parts: parts.join(MM.i18n.lang === 'ja' ? '、' : ', ') }) : T('endSayAll')); }, 900);
   }
   function quitMission() {
     cancelSpeech(); commitProgress(false);
@@ -1398,17 +1442,15 @@
         letter.collected = true; letter.at = Date.now(); flyToCounter(letter.x, letter.y, '.letter-counter', letter.letter, updateLetterCounter, true);
         triggerHeroAnimation('collect', 500); cheer();
         FX.sparkle(letter.x, letter.y, 14, LETTER_COLORS, 190); FX.ring(letter.x, letter.y, '#ffffff', 56, .4, 5); FX.confetti(letter.x, letter.y, 12);
-        const word = LETTER_WORDS[letter.letter];
-        if (word) FX.text(letter.x, letter.y - 30, word[1], '#ffffff', 44);
-        sound('coin'); MM.haptic('letter'); if (!timerNoticePlaying) sayText(word ? `${letter.letter}, comme ${word[0]} !` : letter.letter); writeSave();
+        const word = MM.i18n.letterPhrase(letter.letter);
+        if (word.emoji) FX.text(letter.x, letter.y - 30, word.emoji, '#ffffff', 44);
+        sound('coin'); MM.haptic('letter'); if (!timerNoticePlaying) sayText(word.say); writeSave();
         if (!mission.goldGiven && world.letters.every(l => l.collected)) { mission.goldGiven = true; awardSticker('gold'); }
         commitProgress(false);
       }
     }
     void cx;
   }
-  // « B comme ballon » : un mot simple (et son dessin) pour chaque lettre ramassée
-  const LETTER_WORDS = { A:['avion','✈️'], B:['ballon','🎈'], C:['chat','🐱'], D:['dauphin','🐬'], E:['éléphant','🐘'], F:['fusée','🚀'], G:['girafe','🦒'], H:['hibou','🦉'], I:['igloo','🏠'], J:['jus','🧃'], K:['koala','🐨'], L:['lion','🦁'], M:['maison','🏡'], N:['nuage','☁️'], O:['ours','🐻'], P:['pomme','🍎'], Q:['quatre','4️⃣'], R:['robot','🤖'], S:['soleil','☀️'], T:['tortue','🐢'], U:['ukulélé','🎸'], V:['vélo','🚲'], W:['wagon','🚃'], X:['xylophone','🎶'], Y:['yaourt','🥛'], Z:['zèbre','🦓'] };
   // le héros est content : un petit visage joyeux au-dessus de sa tête et un petit bond d'écrasement
   let lastCheerAt = -9;
   function cheer(face = '😄') {
@@ -1457,7 +1499,7 @@
     clearTimeout(bannerTimer); bannerTimer = setTimeout(() => node.classList.remove('show'), 3600);
     FX.confetti(player.x + player.w/2, player.y, 30); FX.shake(2, .2); cheer('🤩');
     sound('sticker'); MM.haptic(tier === 'gold' ? 'gold' : 'silver');
-    if (!timerNoticePlaying) sayText(`${tier === 'gold' ? 'Autocollant d’or' : 'Autocollant d’argent'} : ${info.n} !`);
+    if (!timerNoticePlaying) sayText(T(tier === 'gold' ? 'goldSay' : 'silverSay', { n: info.n }));
   }
   function openStickerDetail(id) {
     const info = MM.stickers.info(id), T = MM.stickers.TIERS[info.tier];
@@ -1491,8 +1533,8 @@
     grid.innerHTML = pg.slots.map((slot, si) => {
       const id = S.hid(h, c, si), count = album[id] || 0;
       return count > 0
-        ? `<div class="album-slot got ${slot.tier}" role="listitem" data-id="${id}" tabindex="0" aria-label="${escapeHtml(cap(slot.n))}"><i class="medal">${S.TIERS[slot.tier].medal}</i><span>${slot.e}</span>${count > 1 ? `<b class="count">×${count}</b>` : ''}</div>`
-        : `<div class="album-slot ${slot.tier}" role="listitem" aria-label="Autocollant ${S.TIERS[slot.tier].label.toLowerCase()} à gagner"><i class="medal">${S.TIERS[slot.tier].medal}</i><span class="ghost">${slot.e}</span></div>`;
+        ? `<div class="album-slot got ${slot.tier}" role="listitem" data-id="${id}" tabindex="0" aria-label="${escapeHtml(cap(S.info(id).n))}"><i class="medal">${S.TIERS[slot.tier].medal}</i><span>${slot.e}</span>${count > 1 ? `<b class="count">×${count}</b>` : ''}</div>`
+        : `<div class="album-slot ${slot.tier}" role="listitem" aria-label="${escapeHtml(T('aSlotToWin', { tier: T({ bronze: 'tierBronze', silver: 'tierSilver', gold: 'tierGold' }[slot.tier]).toLowerCase() }))}"><i class="medal">${S.TIERS[slot.tier].medal}</i><span class="ghost">${slot.e}</span></div>`;
     }).join('');
     $('#album-total').textContent = `${S.owned(album)}/${S.TOTAL}`;
     const badge = $('#album-badge'); if (badge) badge.textContent = `${S.owned(album)}/${S.TOTAL}`;
@@ -1511,14 +1553,14 @@
     let advanced = false;
     const go = () => { if (advanced) return; advanced = true; advanceAfterPuzzle(); };
     rewardAdvance = go;
-    const started = sayText(`${praise} Un autocollant : ${info.n} !`, () => setTimeout(go, 1600));
+    const started = sayText(T('stickerAward', { praise, n: info.n }), () => setTimeout(go, 1600));
     if (!started) setTimeout(go, 4200);
   }
   // étoiles : un bocal qui se remplit (pas de « 37/52 ») ; il déborde de lumière quand on les a toutes
   function updateStarCounter() {
     const all = mission?.coins || [], n = all.filter(s => s.collected).length, node = $('#coin-count'), box = $('.coin-counter');
     if (node) node.textContent = `${n}/${all.length}`;
-    if (box) { box.style.setProperty('--p', all.length ? (n / all.length).toFixed(3) : 0); box.classList.toggle('full', all.length > 0 && n >= all.length); box.setAttribute('aria-label', `${n} étoiles sur ${all.length}`); }
+    if (box) { box.style.setProperty('--p', all.length ? (n / all.length).toFixed(3) : 0); box.classList.toggle('full', all.length > 0 && n >= all.length); box.setAttribute('aria-label', T('starsOf', { n, t: all.length })); }
   }
   // étoiles d'un morceau du niveau (entre deux drapeaux) encore à ramasser
   function segmentMissing(i) {
@@ -1705,7 +1747,7 @@
   }
   function speakCount(n) {
     if (timerNoticePlaying) return;
-    sayText(n === 10 ? 'Dix ! Bravo, une dizaine !' : n === 20 ? 'Vingt ! Tous les monstres sont gentils !' : COUNT_WORDS[n]);
+    sayText(n === 10 ? T('count10') : n === 20 ? T('count20') : countWord(n));
   }
   function monsterBox(m) { if (!m.imp) { const [hw, ratio] = MON[m.type]; return { cx: m.x, cy: m.y - hw / 2, hw: hw * ratio * .42 + 6, hh: hw * .5 + 4 }; } const big = m.type === 3 ? 1.27 : 1; return { cx: m.x, cy: m.y - (m.jy || 0) - 44 * big, hw: 30 * big + 4, hh: 46 * big }; }
   function patrolRange(m) {
@@ -1798,7 +1840,7 @@
     player.vy = -300; player.grounded = false; player.carryVx = -dir * 190; triggerHeroAnimation('stumble');
     FX.sparkle(player.x + player.w / 2, player.y + 30, 12, ['#ff8a2a', '#ffd23f', '#ffffff'], 190); FX.shake(3, .18); MM.haptic('oops'); sound('bump');
     updateHitMeter();
-    if (hitTimes.length >= HIT_MAX) { rewindAt = gt + .7; showToast('↩️'); if (!timerNoticePlaying) sayText('Oups ! On repart du drapeau.'); }   // l'enfant ne lit pas : une icône et la voix
+    if (hitTimes.length >= HIT_MAX) { rewindAt = gt + .7; showToast('↩️'); if (!timerNoticePlaying) sayText(T('oops')); }   // l'enfant ne lit pas : une icône et la voix
   }
   function updateHitMeter() {
     hitTimes = hitTimes.filter(t => gt - t < HIT_WINDOW);
@@ -2099,7 +2141,7 @@
     triggerHeroAnimation('celebrate', 1250);
     $('#puzzle-feedback').textContent = '👏';
     sound('success'); MM.haptic('good');
-    showReward(praisePhrases[Math.floor(Math.random()*praisePhrases.length)]);
+    showReward((L => L[Math.floor(Math.random()*L.length)])(phrases('praise')));
   }
   // on peut quitter l'énigme ou le mini-jeu quand on veut ; la caisse reste à ouvrir
   function closePuzzle() {
@@ -2111,9 +2153,9 @@
     puzzleTask = null; puzzleStation = null;
     setScreen('game-screen'); startLoop();
   }
-  function endSession(){const due=stopAfterMission;if(due)save.restUntil=Date.now()+3600000;sessionActive=false;sessionElapsed=0;sessionTimerLimit=0;stopAfterMission=false;timerWarningSent=false;timerAnnouncementPending=false;timerNoticePlaying=false;save.sessionActive=false;save.sessionElapsed=0;save.sessionTimerLimit=0;save.stopAfterMission=false;save.timerWarningSent=false;save.timerAnnouncementPending=false;save.activeMission=null;save.activeHero=null;save.activeDate=null;save.progress=0;writeSave();$('#session-timer-row').classList.remove('hidden');if(due){showRest();sayText('Les héros vont se reposer maintenant. À tout à l’heure !');}else setScreen('home');}
+  function endSession(){const due=stopAfterMission;if(due)save.restUntil=Date.now()+3600000;sessionActive=false;sessionElapsed=0;sessionTimerLimit=0;stopAfterMission=false;timerWarningSent=false;timerAnnouncementPending=false;timerNoticePlaying=false;save.sessionActive=false;save.sessionElapsed=0;save.sessionTimerLimit=0;save.stopAfterMission=false;save.timerWarningSent=false;save.timerAnnouncementPending=false;save.activeMission=null;save.activeHero=null;save.activeDate=null;save.progress=0;writeSave();$('#session-timer-row').classList.remove('hidden');if(due){showRest();sayText(T('restSay'));}else setScreen('home');}
   function showToast(message){const node=$('#toast');if(!node||!message)return;node.textContent=message;node.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.classList.remove('show'),3800);sound('soft');}
-  function setAudioEnabled(value,silent=false){audioEnabled=value;save.audioEnabled=value;if(!silent)writeSave();$('#sound-button').textContent=value?'♫':'♪';$('#sound-button').setAttribute('aria-label',value?'Couper les sons':'Activer les sons');$('#home-sound-toggle').textContent=value?'♫':'♪';$('#home-sound-toggle').setAttribute('aria-label',value?'Couper les sons':'Activer les sons');$('#music-toggle').checked=value;if(value&&!silent)sound('success');updateMusic();}
+  function setAudioEnabled(value,silent=false){audioEnabled=value;save.audioEnabled=value;if(!silent)writeSave();$('#sound-button').textContent=value?'♫':'♪';$('#sound-button').setAttribute('aria-label',value?T('aMute'):T('aUnmute'));$('#home-sound-toggle').textContent=value?'♫':'♪';$('#home-sound-toggle').setAttribute('aria-label',value?T('aMute'):T('aUnmute'));$('#music-toggle').checked=value;if(value&&!silent)sound('success');updateMusic();}
   function releaseControls(){keys={left:false,right:false,jump:false,down:false};jumpBuffer=0;dpadPointer=null;Object.assign(dpadState,{left:false,right:false,up:false,down:false});document.querySelectorAll('.dpad-btn.pressed,.action-button.pressed,.jump-button.pressed').forEach(button=>button.classList.remove('pressed'));}
   function sound(kind) {
     const NONESSENTIAL = ['zip', 'jump', 'open', 'soft', 'magic', 'coin', 'star', 'web', 'turbo', 'punch', 'smash', 'bump'];
@@ -2193,7 +2235,7 @@
     const letters = mission?.letters?.filter(item => item.collected).length || 0;
     $('#stat-coins').textContent = `${(mission?.coins || []).filter(s => s.collected).length}/${(mission?.coins || []).length}`;
     $('#stat-friends').textContent = String(friendScore());
-    $('#stat-letters').textContent = `${letters}/26`;
+    $('#stat-letters').textContent = `${letters}/${mission?.letters?.length || alphabet().length}`;
     $('#stat-stickers').textContent = String((mission?.stickersWon || []).length);
     $('#stat-questions').textContent = `${save.progress || 0}/${mission?.tasks?.length || 3}`;
     setScreen('stats-screen');
@@ -2222,13 +2264,13 @@
     ['pointerup', 'pointerleave', 'pointercancel'].forEach(t => btn.addEventListener(t, stop));
     btn.addEventListener('contextmenu', e => e.preventDefault());
   }
-  bindHold($('#timer-reset-button'), 3000, () => { save.restUntil = 0; sessionActive = false; sessionElapsed = 0; sessionTimerLimit = 0; stopAfterMission = false; timerWarningSent = false; timerAnnouncementPending = false; save.sessionActive = false; save.stopAfterMission = false; save.timerWarningSent = false; save.timerAnnouncementPending = false; save.sessionElapsed = 0; writeSave(); clearInterval(restTimer); MM.haptic('gold'); showToast('Minuteur réinitialisé'); setScreen('home'); });
+  bindHold($('#timer-reset-button'), 3000, () => { save.restUntil = 0; sessionActive = false; sessionElapsed = 0; sessionTimerLimit = 0; stopAfterMission = false; timerWarningSent = false; timerAnnouncementPending = false; save.sessionActive = false; save.stopAfterMission = false; save.timerWarningSent = false; save.timerAnnouncementPending = false; save.sessionElapsed = 0; writeSave(); clearInterval(restTimer); MM.haptic('gold'); showToast(T('timerResetDone')); setScreen('home'); });
   // le son se coupe tout seul quand plus personne ne joue
   let lastInputAt = Date.now();
   ['pointerdown', 'keydown', 'touchstart'].forEach(t => window.addEventListener(t, () => { lastInputAt = Date.now(); if (idleMuted) { idleMuted = false; updateMusic(); } }, { passive: true, capture: true }));
   setInterval(() => { if (!idleMuted && Date.now() - lastInputAt > 45000 && (scene === 'game-screen' || scene === 'puzzle-screen')) { idleMuted = true; updateMusic(); } }, 5000);
   fillVoiceSelect(); renderAlbum();
-  $('#voice-select').addEventListener('change', e => { save.voiceName = e.target.value; writeSave(); sayText('Bonjour ! Je suis ta nouvelle voix.'); });
+  $('#voice-select').addEventListener('change', e => { save.voices = save.voices || {}; save.voices[MM.i18n.lang] = e.target.value; writeSave(); sayText(T('newVoice')); });
   $('#album-open').addEventListener('click',()=>{renderAlbum();setScreen('album-screen');});
   $('#reward-continue').addEventListener('click',()=>{cancelSpeech();rewardAdvance?.();});
   $('#puzzle-close').addEventListener('click', closePuzzle);
@@ -2281,6 +2323,27 @@
   window.addEventListener('keyup',e=>{const k=e.key;if(KEY_LEFT.includes(k))keys.left=false;if(KEY_RIGHT.includes(k))keys.right=false;});
   window.addEventListener('resize',resizeCanvas);window.addEventListener('orientationchange',()=>setTimeout(resizeCanvas,250));if('ResizeObserver' in window)new ResizeObserver(()=>{if(scene==='game-screen')resizeCanvas();}).observe(canvas);document.addEventListener('visibilitychange',()=>{if(document.hidden&&(scene==='game-screen'||scene==='puzzle-screen')){pausedFrom=scene;setScreen('pause-screen');}});
   setAudioEnabled(audioEnabled,true);
+  /* ----- langues : choix au premier lancement, puis « Language » dans les réglages ----- */
+  function hasVoiceFor() { return !!(window.speechSynthesis && speechSynthesis.getVoices().some(v => (v.lang || '').slice(0, 2).toLowerCase() === MM.i18n.lang)); }
+  function buildLangUI() {
+    const L = MM.i18n.LANGS, cur = MM.i18n.lang;
+    $('#lang-grid').innerHTML = L.map(l => `<button type="button" role="listitem" class="lang-btn ${l.code === cur && MM.i18n.chosen ? 'on' : ''}" data-lang="${l.code}" lang="${l.code}"><span class="lb-flag" aria-hidden="true">${l.flag}</span><b>${l.name}</b><small>${l.hello}</small></button>`).join('');
+    $('#lang-select').innerHTML = L.map(l => `<option value="${l.code}" ${l.code === cur ? 'selected' : ''}>${l.flag} ${l.name}</option>`).join('');
+  }
+  function applyLanguage() {
+    MM.i18n.localizeData(); MM.i18n.applyDom(); buildLangUI(); fillVoiceSelect(); setAudioEnabled(audioEnabled, true); renderAlbum();
+    if (scene === 'level-screen') renderLevels();
+  }
+  MM.i18n.onChange(applyLanguage);
+  $('#lang-grid').addEventListener('click', e => {
+    const b = e.target.closest('.lang-btn'); if (!b) return;
+    MM.haptic('good'); MM.i18n.setLang(b.dataset.lang); setScreen('home');
+    sayText(MM.i18n.info().hello);
+    setTimeout(() => { if (!hasVoiceFor()) showToast(T('noVoice', { lang: MM.i18n.info().name })); }, 600);
+  });
+  $('#lang-select').addEventListener('change', e => { MM.i18n.setLang(e.target.value); sayText(T('newVoice')); setTimeout(() => { if (!hasVoiceFor()) showToast(T('noVoice', { lang: MM.i18n.info().name })); }, 600); });
+  MM.i18n.localizeData(); MM.i18n.applyDom(); buildLangUI(); fillVoiceSelect(); setAudioEnabled(audioEnabled, true);
+  if (!MM.i18n.chosen) { const g = MM.i18n.guess(); $('#lang-grid').querySelector(`[data-lang="${g}"]`)?.classList.add('guess'); setScreen('lang-screen'); }
   lastActiveTick=performance.now();setInterval(tickMissionClock,250);
   if('serviceWorker' in navigator && location.protocol!=='file:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
   requestAnimationFrame((t)=>{lastTime=t;});

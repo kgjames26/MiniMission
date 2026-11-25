@@ -63,7 +63,7 @@
   ];
 
   /* ---------- Génération ---------- */
-  function build(hero, rnd) {
+  function build(hero, rnd, NL = 26) {   // NL : nombre de lettres de l'alphabet de la langue (26, 27, 30, 46, 24…)
     const r = (a, b) => a + rnd() * (b - a);
     const ri = (a, b) => Math.floor(r(a, b + 1));
     const shuffle = (list) => { const a = list.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
@@ -483,13 +483,13 @@
       || c.bumps.some((b) => s.x > b.x - 24 && s.x < b.x + b.w + 24 && s.y > F - b.h - 30);
     const rank = { hard: 0, medium: 1, easy: 2 };
     c.spots.filter((s) => !blocked(s) && s.x < W - 1000).sort((a, b) => rank[a.diff] - rank[b.diff]).forEach((s) => {
-      if (taken.length < 26 && taken.every((t) => Math.abs(t.x - s.x) > 150 || Math.abs(t.y - s.y) > 120)) taken.push(s);
+      if (taken.length < NL && taken.every((t) => Math.abs(t.x - s.x) > 150 || Math.abs(t.y - s.y) > 120)) taken.push(s);
     });
-    for (let fx = 300; taken.length < 26 && fx < W - 1000; fx += 170) {
+    for (let fx = 300; taken.length < NL && fx < W - 1000; fx += 170) {
       const s = { x: fx, y: F - 58, diff: 'easy' };
       if (!blocked(s) && taken.every((t) => Math.abs(t.x - s.x) > 150)) taken.push(s);
     }
-    for (let fx = 330; taken.length < 26 && fx < W - 1000; fx += 61) {
+    for (let fx = 330; taken.length < NL && fx < W - 1000; fx += 61) {
       const s = { x: fx, y: F - 58, diff: 'easy' };
       if (!blocked(s) && taken.every((t) => Math.abs(t.x - s.x) > 110)) taken.push(s);
     }
@@ -497,7 +497,7 @@
     if (Math.max(...taken.map((t) => t.x)) < W - 1900) {
       for (let fx = W - 1500; fx < W - 1050; fx += 40) { const s = { x: fx, y: F - 58, diff: 'easy' }; if (!blocked(s)) { taken.pop(); taken.push(s); break; } }
     }
-    c.letterSpots = taken.sort((a, b) => a.x - b.x).slice(0, 26);
+    c.letterSpots = taken.sort((a, b) => a.x - b.x).slice(0, NL);
     return c;
   }
 

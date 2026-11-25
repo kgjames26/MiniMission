@@ -95,3 +95,10 @@ Filou reste accroché à sa toile tant qu'on ne saute pas (le bouton SAUT cligno
 - Étoiles : un bocal qui se remplit (il brille quand on les a toutes) ; à chaque drapeau, de petites étoiles grises montrent les oubliées du morceau, ou le drapeau devient doré si tout est ramassé.
 - Écran de pause : l'alphabet (lettres trouvées allumées) et la ligne des drapeaux.
 - Autocollants : les moins parlants ou en double (mime, cabine téléphonique, papyrus, amulette, quatre ponts identiques…) remplacés par des thèmes que tous les enfants connaissent (trottinette, skate, camion de pompiers, renard, guitare, manchot…), à la même place dans l'album.
+
+## Langues et paysage (v0.38)
+- 6 langues : français, anglais, espagnol, allemand, japonais, coréen. Choix au premier lancement (drapeaux), puis « 🌐 Language » dans les réglages (toujours en anglais).
+- Voix de la langue choisie (meilleure voix installée, choix de l'adulte retenu par langue) ; message si aucune voix n'est installée.
+- Lettres à ramasser selon la langue : A–Z, + Ñ (espagnol), + Ä Ö Ü ß (allemand), 46 hiragana (japonais), 24 lettres du hangeul (coréen), avec leur vrai nom dit par la voix et « B comme ballon » dans chaque langue.
+- Devinettes, cris d'animaux, couleurs, villes et 120 autocollants traduits. Les énigmes « coups de main » (banque française) restent en français uniquement.
+- Paysage : zoom (héros ~40 % plus grand), sol toujours visible au-dessus des boutons, dézoom doux quand un anneau de Filou doit rester visible, héros jamais caché sous ◀ ▶, barre du haut plus fine.

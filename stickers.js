@@ -42,7 +42,8 @@
   const hid = (h, city, slot) => 10000 * (h + 1) + (CITY_BASE + city) * PER_PAGE + slot;
   const info = (id) => {
     const h = id >= 10000 ? Math.floor(id / 10000) - 1 : -1, base = id % 10000, page = Math.floor(base / PER_PAGE), slot = base % PER_PAGE;
-    const s = PAGES[page].slots[slot]; return { id, hero: h, city: page - CITY_BASE, page, slot, ...s, d: s.d || DESC[s.e] || '' };
+    const s = PAGES[page].slots[slot], tr = MM.i18n ? MM.i18n.stickerText(s.e, s.n, s.d || DESC[s.e] || '') : { n: s.n, d: s.d || DESC[s.e] || '' };
+    return { id, hero: h, city: page - CITY_BASE, page, slot, ...s, n: tr.n, d: tr.d };   // nom et phrase dans la langue choisie
   };
   const ids = (tier, h, city) => PAGES[CITY_BASE + city].slots.map((sl, si) => (!tier || sl.tier === tier) ? hid(h, city, si) : -1).filter((i) => i >= 0);
   // Tire un autocollant de la ville et du héros, en privilégiant ceux qu'on n'a pas encore.
