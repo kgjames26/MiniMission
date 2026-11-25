@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '55', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '56', asset = (p) => `${p}?v=${ASSET_V}`;
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
   const monsterImg = new Image(); monsterImg.src = asset('assets/monsters.webp');
   const movesImg = new Image(); movesImg.src = asset('assets/hero-moves.webp');
@@ -2060,10 +2060,10 @@
     triggerHeroAnimation('collect', 400);
     FX.heart(m.x, m.y - hw); FX.sparkle(m.x, m.y - hw / 2, 14, ['#ffb5c8', '#ffdf8d', '#ffffff', '#9fe3ff'], 190);
     FX.text(m.x, m.y - hw - 18, String(n), '#fff6c4', 50);
-    sound('sticker'); friendSound(m); MM.haptic('friend');
+    if (audioEnabled) friendSound(m); else sound('sticker'); MM.haptic('friend');
     if (n % 10 === 0) { FX.confetti(player.x + player.w / 2, player.y, 30); FX.shake(2, .25); MM.haptic('gold'); }
     const pop = $('#friend-counter'); if (pop) { pop.classList.remove('pop'); void pop.offsetWidth; pop.classList.add('pop'); }
-    updateFriendCounter(); speakCount(n); writeSave(); commitProgress(false);
+    updateFriendCounter(); setTimeout(() => { if (scene === 'game-screen') speakCount(n); }, 650); writeSave(); commitProgress(false);
     if (!mission.monGiven && n >= MON_TOTAL) { mission.monGiven = true; setTimeout(() => { if (scene === 'game-screen') { awardSticker('silver'); commitProgress(false); } }, 2400); }
   }
   function drawMonster(m, time) {
@@ -2374,13 +2374,13 @@
     try {
       if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
       if (audio.state === 'suspended') audio.resume();
-      const t0 = audio.currentTime + .14, A = audio;
+      const t0 = audio.currentTime + .02, A = audio, V = 2.2;   // V : plus fort que les petits bruits du jeu, c'est LE son du moment
       // note : forme d'onde, fréquence de départ → d'arrivée, début, durée, volume
       const tone = (type, f0, f1, at, dur, vol = .08, vib = 0) => {
         const o = A.createOscillator(), g = A.createGain(); o.type = type;
         o.frequency.setValueAtTime(f0, t0 + at); if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t0 + at + dur * .9);
         if (vib) { const l = A.createOscillator(), lg = A.createGain(); l.frequency.value = vib; lg.gain.value = f0 * .06; l.connect(lg); lg.connect(o.frequency); l.start(t0 + at); l.stop(t0 + at + dur + .05); }
-        g.gain.setValueAtTime(.0001, t0 + at); g.gain.exponentialRampToValueAtTime(vol, t0 + at + Math.min(.03, dur * .2)); g.gain.exponentialRampToValueAtTime(.0001, t0 + at + dur);
+        g.gain.setValueAtTime(.0001, t0 + at); g.gain.exponentialRampToValueAtTime(Math.min(.3, vol * V), t0 + at + Math.min(.03, dur * .2)); g.gain.exponentialRampToValueAtTime(.0001, t0 + at + dur);
         if (type === 'square' || type === 'sawtooth') { const f = A.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 2200; o.connect(f); f.connect(g); } else o.connect(g);
         g.connect(A.destination); o.start(t0 + at); o.stop(t0 + at + dur + .05);
       };
@@ -2390,7 +2390,7 @@
         for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
         const src = A.createBufferSource(), f = A.createBiquadFilter(), g = A.createGain(); src.buffer = buf; f.type = ftype; f.Q.value = 1.2;
         f.frequency.setValueAtTime(f0, t0 + at); f.frequency.exponentialRampToValueAtTime(f1, t0 + at + dur);
-        g.gain.setValueAtTime(.0001, t0 + at); g.gain.exponentialRampToValueAtTime(vol, t0 + at + dur * .25); g.gain.exponentialRampToValueAtTime(.0001, t0 + at + dur);
+        g.gain.setValueAtTime(.0001, t0 + at); g.gain.exponentialRampToValueAtTime(Math.min(.3, vol * V), t0 + at + dur * .25); g.gain.exponentialRampToValueAtTime(.0001, t0 + at + dur);
         src.connect(f); f.connect(g); g.connect(A.destination); src.start(t0 + at); src.stop(t0 + at + dur + .02);
       };
       if (m.imp) {                                        // flamme amie : « fouuu » puis une petite note (une par couleur)
