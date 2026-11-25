@@ -367,7 +367,7 @@
     $('#attack-button').classList.remove('cooldown', 'active'); abilityReadyShown = true;
     const shootInfo = { ziggy: ['🔥', 'Boule de feu'], filou: ['🕸️', 'Toile magique'], titan: ['👊', 'Poing projeté'] }[activeHero];
     $('#shoot-button .shoot-icon').textContent = shootInfo[0]; $('#shoot-button').setAttribute('aria-label', 'Tirer : ' + shootInfo[1]); $('#shoot-button').dataset.hero = activeHero;
-    setScreen('game-screen'); startLoop();
+    setScreen('game-screen'); startLoop(); maybeRotateHint();
     if (resume && timerAnnouncementPending) speakTimerNotice();
     if (!resume) sound('start');
   }
@@ -465,7 +465,7 @@
       if (swing) { releaseSwing(true, true); jumpBuffer = 0; }
       else if (player.grounded || coyote > 0) { doJump(turboOn); jumpBuffer = 0; coyote = 0; }
     }
-    if (oneButton) autoAssist(turboOn);
+    if (oneButton) { autoAssist(turboOn); magnetPickups(dt); }
     if (swing) updateSwing(dt);
     else if (moveAndCollide(dt, turboOn)) return;
     if (rope) updateRope(dt);
@@ -1289,6 +1289,25 @@
       const block = world.bumps.some(b => b.kind !== 'small' && b.kind !== 'tower' && ahead(b.x, b.w) > -10 && ahead(b.x, b.w) < 120 && player.y + player.h > F - b.h - 10);
       if (block) titanPunch();
     }
+  }
+  // mode tout-petit : les étoiles et les lettres un peu trop hautes descendent doucement vers le héros quand il passe dessous
+  function magnetPickups(dt) {
+    const cx = player.x + player.w / 2, cy = player.y + player.h / 2;
+    const pull = (o) => {
+      const dx = cx - o.x, dy = cy - o.y;
+      if (Math.abs(dx) > 75 || dy < 20 || dy > 330) return;           // seulement juste au-dessus du héros
+      const k = Math.min(1, dt * 7); o.x += dx * k * .6; o.y += dy * k;
+    };
+    for (const l of world.letters) if (!l.collected) pull(l);
+    for (const st of world.coins) if (!st.collected) pull(st);
+  }
+  // en portrait, un petit téléphone qui pivote invite (sans obliger) à tourner l'écran — une fois par lancement du jeu
+  let rotateHintShown = false;
+  function maybeRotateHint() {
+    if (rotateHintShown || window.innerHeight <= window.innerWidth * 1.05) return;
+    rotateHintShown = true; const node = $('#rotate-hint'); if (!node) return;
+    node.classList.remove('show'); void node.offsetWidth; node.classList.add('show');
+    clearTimeout(node._t); node._t = setTimeout(() => node.classList.remove('show'), 3600);
   }
   function setOneButton(on) {
     oneButton = !!on; save.oneButton = oneButton; writeSave();
