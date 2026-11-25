@@ -102,3 +102,8 @@ Filou reste accroché à sa toile tant qu'on ne saute pas (le bouton SAUT cligno
 - Lettres à ramasser selon la langue : A–Z, + Ñ (espagnol), + Ä Ö Ü ß (allemand), 46 hiragana (japonais), 24 lettres du hangeul (coréen), avec leur vrai nom dit par la voix et « B comme ballon » dans chaque langue.
 - Devinettes, cris d'animaux, couleurs, villes et 120 autocollants traduits. Les énigmes « coups de main » (banque française) restent en français uniquement.
 - Paysage : zoom (héros ~40 % plus grand), sol toujours visible au-dessus des boutons, dézoom doux quand un anneau de Filou doit rester visible, héros jamais caché sous ◀ ▶, barre du haut plus fine.
+
+## Prénom de l'enfant (v0.40)
+- Après le choix de la langue (une seule fois), un écran « Pour le parent » propose le prénom (facultatif, bouton « Passer »), un bouton 🔊 pour l'écouter et une case pour l'écrire comme il se prononce si la voix se trompe. Modifiable dans ⚙ Réglages (« 👧 Prénom »).
+- Utilisé avec parcimonie : bonjour après la saisie, « Choisis une ville, Léa ! », fin de niveau, autocollant d'or, au revoir du minuteur. Coréen : 아/야 selon le 받침.
+- Le prénom reste uniquement sur l'appareil (localStorage), jamais envoyé.

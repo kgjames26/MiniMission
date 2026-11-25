@@ -732,3 +732,22 @@ body.one-button .touch-controls{--jump:clamp(108px,22vh,150px)}
 .action-button strong{white-space:nowrap}
 html:lang(ja) .action-button strong,html:lang(es) .action-button strong{font-size:.8em;letter-spacing:-.02em}
 html:lang(ja) .jump-button strong,html:lang(de) .jump-button strong{font-size:.86em}
+/* ---------- Prénom de l'enfant (écran pour le parent) ---------- */
+.name-card{gap:10px;text-align:center;color:#2f5f82}
+.name-card h2{margin:0;font-size:clamp(20px,4.4vmin,26px);font-weight:900}
+.name-field{font-weight:800;font-size:16px}
+.name-field.small{font-size:13px;font-weight:700;opacity:.8;max-width:420px}
+.name-row{display:flex;gap:10px;align-items:center;width:min(420px,100%)}
+.name-card input{flex:1;width:min(420px,100%);min-width:0;padding:12px 14px;border-radius:16px;border:3px solid #d8e9f4;background:#fff;font:inherit;font-size:20px;font-weight:800;color:#24506f;text-align:center;outline:none}
+.name-card input:focus{border-color:#3fa4ea}
+#child-name-say{font-size:16px;font-weight:700;padding:9px 12px}
+.name-listen{flex:none;width:52px;height:52px;font-size:22px}
+.name-actions{display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:4px}
+.name-ok{font-size:clamp(18px,4vmin,24px);padding:12px 26px}
+.name-local{margin:2px 0 0;font-size:11.5px;font-weight:700;opacity:.6}
+.name-setting .name-edit{max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-height:460px) and (orientation:landscape){.name-card{gap:6px;padding:10px 16px}.name-card h2{font-size:18px}.name-card input{padding:8px 12px;font-size:17px}.name-listen{width:44px;height:44px}.name-ok{padding:8px 20px}}
+#name-skip{width:auto;min-width:120px;height:auto;padding:12px 22px;border-radius:999px;font-size:17px;font-weight:900;white-space:nowrap}
+.name-actions{flex-wrap:nowrap}
+.name-ok{width:auto;flex:0 1 auto}
+@media (max-width:420px){.name-actions{flex-wrap:wrap}}

@@ -8,6 +8,9 @@
   const STORE = 'mini-mission-v1';
   // langues : voir i18n.js (textes, alphabet de chaque langue, nom des lettres à dire, nombres)
   const T = (k, v) => window.MM.i18n.t(k, v);
+  // prénom de l'enfant (facultatif) : la version « à dire » si le parent a corrigé la prononciation
+  const childSay = () => String(save?.childNameSay || save?.childName || '').trim();
+  const TN = (k, v) => childSay() ? T(k + 'N', { ...(v || {}), name: childSay() }) : T(k, v);
   const alphabet = () => window.MM.i18n.alphabet();
   const letterSay = (l) => window.MM.i18n.letterSay(l);
   const MM = window.MM;
@@ -230,7 +233,7 @@
     $('#level-hero').innerHTML = `<span class="sprite" style="--col:${heroId === 'ziggy' ? 0 : 2};--row:${row}"></span>`;
     $('#level-title').textContent = h.name.split(' ')[0];
     renderLevels(); setScreen('level-screen');
-    if (!timerNoticePlaying) sayText(T('sayChooseCity'));
+    if (!timerNoticePlaying) sayText(TN('sayChooseCity'));
   }
   function renderLevels() {
     const grid = $('#level-grid');
@@ -371,7 +374,7 @@
     mission.letters.forEach(l => { if (!l.collected && player.x - l.x >= 280) l.missed = true; });
     mission.monsters.forEach(m => { if (m.friendly && !m.prev) { m.x = player.x; m.y = player.y + player.h; } });
     shots = []; fireballs = []; tornados = []; hitTimes = []; rewindAt = 0; litShown = -1; shootReady = 0; flipUntil = 0; hurtUntil = 0;
-    swing = null; fizzle = null; turboUntil = 0; turboReady = 0; punchReady = 0; coyote = 0; gt = 0; jumpBuffer = 0; slowmo = 0; perf.since = 0; perf.slowFor = 0; perf.ema = 16.7; perf.tried = null; rope = null;
+    swing = null; fizzle = null; turboUntil = 0; turboReady = 0; punchReady = 0; coyote = 0; gt = 0; jumpBuffer = 0; slowmo = 0; perf.since = 0; perf.slowFor = 0; perf.ema = 16.7; perf.tried = null; rope = null; zoomRef.feet = 0; zoomRef.hold = 1; zoomRef.wait = 0;
     FX.clear(); heroAnim = newHeroAnim(); lastPromptStation = -1;
     lastActiveTick = performance.now(); lastTime = performance.now();
     const power = { ziggy: ['☄️', T('turbo'), T('actTurbo')], filou: ['🕸️', T('web'), T('actWeb')], titan: ['👊', T('punch'), T('actPunch')] }[activeHero];
@@ -425,6 +428,7 @@
     }
   }
   const SLOWMO_TIME = .18; let slowmo = 0;
+  const zoomRef = { feet: 0, hold: 1, wait: 0 };   // zoom du paysage : sol de référence et zoom visé (avec une petite attente avant de rezoomer)
   // la barre du haut et le panneau des amis, en unités du monde (pour garder les anneaux de Filou en dessous)
   // mesurée en pixels d'écran ; u() convertit en unités du monde au zoom actuel
   const hud = { topPx: 60, barBottomPx: 110, barRightPx: 0, padRightPx: 0, ctrlPx: 34, r: 1, at: -9 };
@@ -528,26 +532,39 @@
     { const top0 = viewTop0(), bot0 = WORLD_H - view.cut, feet = player.y + player.h;
       let target = Math.max(0, (top0 + u(hud.topPx) + 70) - player.y);
       let zoomTo = 1;
+      if (player.grounded && !swing) zoomRef.feet = feet;            // hauteur du sol sous le héros : elle ne bouge pas pendant un saut
       if (hero === 'filou') {
         // les anneaux de toile restent visibles SOUS la barre du haut et le panneau des amis : celui qui est à portée
         // (ou celui où Filou est accroché) et le prochain devant lui, pour que l'enfant le voie arriver
         const limPx = (ax) => (ax - world.camera) < u(hud.barRightPx + 30) ? hud.barBottomPx : hud.topPx;
         const need = (ax, ay) => u(limPx(ax)) + 56 + top0 - ay;
-        let want = 0, high = null;
-        const take = (ax, ay) => { const n = need(ax, ay); if (n > want) { want = n; high = { ax, ay }; } };
-        if (swing) take(swing.ax, swing.ay); else if (world.hintAnchor) take(world.hintAnchor.x, world.hintAnchor.y);
-        const cx = player.x + player.w / 2; let next = null, best = view.w * .62;
+        const cands = [];
+        if (swing) cands.push([swing.ax, swing.ay]); else if (world.hintAnchor) cands.push([world.hintAnchor.x, world.hintAnchor.y]);
+        // « prochain anneau » cherché sur une distance FIXE (pas la largeur visible, qui change avec le zoom : sinon le zoom s'emballe)
+        const cx = player.x + player.w / 2; let next = null, best = canvas.width / view.base * .62;
         for (const a of world.anchors || []) { const dx = (a.x - cx) * player.facing; if (dx > -30 && dx < best && (!swing || a.x !== swing.ax)) { best = dx; next = a; } }
-        if (next) take(next.x, next.y);
+        if (next) cands.push([next.x, next.y]);
+        let want = 0;
+        for (const [ax, ay] of cands) {
+          want = Math.max(want, need(ax, ay));
+          // zoom nécessaire, calculé sans dépendre du zoom actuel : la hauteur à montrer (du sol du héros à l'anneau) dans la place libre
+          if (view.zMin < 1) {
+            const span = Math.max(zoomRef.feet || feet, feet) - ay + 56, freePx = canvas.height - (Math.max(hud.topPx, limPx(ax)) + hud.ctrlPx) * hud.r;
+            zoomTo = Math.min(zoomTo, freePx / span / view.base);
+          }
+        }
         const maxCam = bot0 - u(hud.ctrlPx) - feet;          // mais le héros reste toujours entier à l'écran
         target = Math.max(target, Math.min(want, maxCam));
-        // paysage : si l'anneau et le héros ne tiennent pas ensemble, on dézoome juste ce qu'il faut
-        if (high && want > maxCam && view.zMin < 1) {
-          const span = feet - high.ay + 56, freePx = canvas.height - (limPx(high.ax) + hud.ctrlPx) * hud.r;
-          zoomTo = Math.max(view.zMin, Math.min(1, freePx / span / view.base));
-        }
       }
-      if (view.zMin < 1 && Math.abs(zoomTo - view.z) > .002) { view.z += (zoomTo - view.z) * Math.min(1, dt * (zoomTo < view.z ? 3 : 1.5)); applyZoom(); }
+      // zoom calme : il recule tout de suite quand il le faut, mais n'avance à nouveau qu'après un petit moment stable
+      if (view.zMin < 1) {
+        zoomTo = Math.max(view.zMin, Math.min(1, zoomTo));
+        if (zoomTo < zoomRef.hold - .01) { zoomRef.hold = zoomTo; zoomRef.wait = 0; }
+        else if (zoomTo > zoomRef.hold + .03) { zoomRef.wait += dt; if (zoomRef.wait > .9) { zoomRef.hold = zoomTo; zoomRef.wait = 0; } }
+        else zoomRef.wait = 0;
+        const dz = zoomRef.hold - view.z;
+        if (Math.abs(dz) > .0015) { view.z += dz * Math.min(1, dt * (dz < 0 ? 2.6 : 1.4)); applyZoom(); }
+      }
       world.camY += (target - world.camY) * Math.min(1, dt * (target > world.camY ? 6 : 3)); if (Math.abs(world.camY - target) < .5) world.camY = target; }
     for (let i = world.topples.length - 1; i >= 0; i--) {
       const q = world.topples[i]; q.t += dt;
@@ -1178,7 +1195,7 @@
     $('#next-level-button').classList.toggle('hidden', stopAfterMission || lv.index >= MM.cities.length - 1);
     setScreen('ending-screen'); sound('finish'); MM.haptic('good');
     const parts = left.map(([, , a, b, kind]) => MM.i18n.plural(kind, b - a));
-    if (!timerNoticePlaying) setTimeout(() => { if (scene === 'ending-screen') sayText(left.length ? T('endSayLeft', { parts: parts.join(MM.i18n.lang === 'ja' ? '、' : ', ') }) : T('endSayAll')); }, 900);
+    if (!timerNoticePlaying) setTimeout(() => { if (scene === 'ending-screen') sayText(left.length ? TN('endSayLeft', { parts: parts.join(MM.i18n.lang === 'ja' ? '、' : ', ') }) : TN('endSayAll')); }, 900);
   }
   function quitMission() {
     cancelSpeech(); commitProgress(false);
@@ -1499,7 +1516,7 @@
     clearTimeout(bannerTimer); bannerTimer = setTimeout(() => node.classList.remove('show'), 3600);
     FX.confetti(player.x + player.w/2, player.y, 30); FX.shake(2, .2); cheer('🤩');
     sound('sticker'); MM.haptic(tier === 'gold' ? 'gold' : 'silver');
-    if (!timerNoticePlaying) sayText(T(tier === 'gold' ? 'goldSay' : 'silverSay', { n: info.n }));
+    if (!timerNoticePlaying) sayText(tier === 'gold' ? TN('goldSay', { n: info.n }) : T('silverSay', { n: info.n }));
   }
   function openStickerDetail(id) {
     const info = MM.stickers.info(id), T = MM.stickers.TIERS[info.tier];
@@ -2153,7 +2170,7 @@
     puzzleTask = null; puzzleStation = null;
     setScreen('game-screen'); startLoop();
   }
-  function endSession(){const due=stopAfterMission;if(due)save.restUntil=Date.now()+3600000;sessionActive=false;sessionElapsed=0;sessionTimerLimit=0;stopAfterMission=false;timerWarningSent=false;timerAnnouncementPending=false;timerNoticePlaying=false;save.sessionActive=false;save.sessionElapsed=0;save.sessionTimerLimit=0;save.stopAfterMission=false;save.timerWarningSent=false;save.timerAnnouncementPending=false;save.activeMission=null;save.activeHero=null;save.activeDate=null;save.progress=0;writeSave();$('#session-timer-row').classList.remove('hidden');if(due){showRest();sayText(T('restSay'));}else setScreen('home');}
+  function endSession(){const due=stopAfterMission;if(due)save.restUntil=Date.now()+3600000;sessionActive=false;sessionElapsed=0;sessionTimerLimit=0;stopAfterMission=false;timerWarningSent=false;timerAnnouncementPending=false;timerNoticePlaying=false;save.sessionActive=false;save.sessionElapsed=0;save.sessionTimerLimit=0;save.stopAfterMission=false;save.timerWarningSent=false;save.timerAnnouncementPending=false;save.activeMission=null;save.activeHero=null;save.activeDate=null;save.progress=0;writeSave();$('#session-timer-row').classList.remove('hidden');if(due){showRest();sayText(TN('restSay'));}else setScreen('home');}
   function showToast(message){const node=$('#toast');if(!node||!message)return;node.textContent=message;node.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.classList.remove('show'),3800);sound('soft');}
   function setAudioEnabled(value,silent=false){audioEnabled=value;save.audioEnabled=value;if(!silent)writeSave();$('#sound-button').textContent=value?'♫':'♪';$('#sound-button').setAttribute('aria-label',value?T('aMute'):T('aUnmute'));$('#home-sound-toggle').textContent=value?'♫':'♪';$('#home-sound-toggle').setAttribute('aria-label',value?T('aMute'):T('aUnmute'));$('#music-toggle').checked=value;if(value&&!silent)sound('success');updateMusic();}
   function releaseControls(){keys={left:false,right:false,jump:false,down:false};jumpBuffer=0;dpadPointer=null;Object.assign(dpadState,{left:false,right:false,up:false,down:false});document.querySelectorAll('.dpad-btn.pressed,.action-button.pressed,.jump-button.pressed').forEach(button=>button.classList.remove('pressed'));}
@@ -2331,19 +2348,40 @@
     $('#lang-select').innerHTML = L.map(l => `<option value="${l.code}" ${l.code === cur ? 'selected' : ''}>${l.flag} ${l.name}</option>`).join('');
   }
   function applyLanguage() {
-    MM.i18n.localizeData(); MM.i18n.applyDom(); buildLangUI(); fillVoiceSelect(); setAudioEnabled(audioEnabled, true); renderAlbum();
+    MM.i18n.localizeData(); MM.i18n.applyDom(); buildLangUI(); fillVoiceSelect(); setAudioEnabled(audioEnabled, true); renderAlbum(); updateNameSetting();
     if (scene === 'level-screen') renderLevels();
   }
   MM.i18n.onChange(applyLanguage);
+  /* ----- prénom de l'enfant : une fois après la langue, puis « 👧 Prénom » dans les réglages ----- */
+  let nameReturn = 'home';
+  const cleanName = (v, max) => String(v || '').replace(/[<>{}]/g, '').replace(/\s+/g, ' ').trim().slice(0, max);
+  function updateNameSetting() { const n = cleanName(save.childName, 20); $('#name-current').textContent = n || T('nameNone'); }
+  function openNameScreen(back) {
+    nameReturn = back; $('#child-name').value = save.childName || ''; $('#child-name-say').value = save.childNameSay || '';
+    setScreen('name-screen');
+  }
+  function closeNameScreen(keep) {
+    if (keep) { save.childName = cleanName($('#child-name').value, 20); save.childNameSay = save.childName ? cleanName($('#child-name-say').value, 30) : ''; }
+    save.nameAsked = true; writeSave(); updateNameSetting(); setScreen(nameReturn);
+    if (keep && childSay()) sayText(T('helloN', { name: childSay() }));
+  }
+  $('#name-listen').addEventListener('click', () => { const n = cleanName($('#child-name-say').value, 30) || cleanName($('#child-name').value, 20); if (n) sayText(T('helloN', { name: n })); });
+  $('#name-ok').addEventListener('click', () => { MM.haptic('good'); closeNameScreen(true); });
+  $('#name-skip').addEventListener('click', () => closeNameScreen(false));
+  ['#child-name', '#child-name-say'].forEach(sel => $(sel).addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); closeNameScreen(true); } }));
+  $('#name-edit').addEventListener('click', () => openNameScreen('settings-screen'));
   $('#lang-grid').addEventListener('click', e => {
     const b = e.target.closest('.lang-btn'); if (!b) return;
-    MM.haptic('good'); MM.i18n.setLang(b.dataset.lang); setScreen('home');
+    MM.haptic('good'); MM.i18n.setLang(b.dataset.lang);
+    if (!save.nameAsked) openNameScreen('home'); else setScreen('home');
     sayText(MM.i18n.info().hello);
     setTimeout(() => { if (!hasVoiceFor()) showToast(T('noVoice', { lang: MM.i18n.info().name })); }, 600);
   });
   $('#lang-select').addEventListener('change', e => { MM.i18n.setLang(e.target.value); sayText(T('newVoice')); setTimeout(() => { if (!hasVoiceFor()) showToast(T('noVoice', { lang: MM.i18n.info().name })); }, 600); });
   MM.i18n.localizeData(); MM.i18n.applyDom(); buildLangUI(); fillVoiceSelect(); setAudioEnabled(audioEnabled, true);
+  updateNameSetting();
   if (!MM.i18n.chosen) { const g = MM.i18n.guess(); $('#lang-grid').querySelector(`[data-lang="${g}"]`)?.classList.add('guess'); setScreen('lang-screen'); }
+  else if (!save.nameAsked) openNameScreen('home');
   lastActiveTick=performance.now();setInterval(tickMissionClock,250);
   if('serviceWorker' in navigator && location.protocol!=='file:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
   requestAnimationFrame((t)=>{lastTime=t;});
