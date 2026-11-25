@@ -383,13 +383,24 @@
     if (!rect.width || !rect.height) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2, perf.cap);
     canvas.width = Math.round(rect.width*dpr); canvas.height = Math.round(rect.height*dpr);
-    // Le monde fait 540 unités de haut. Sur un écran étroit (téléphone en portrait) on garde au moins 520 unités de large
-    // et le décor se prolonge simplement vers le haut : le jeu remplit toujours tout l'espace disponible.
-    view.scale = Math.min(canvas.height/WORLD_H, canvas.width/520);
-    view.w = canvas.width/view.scale; view.h = canvas.height/view.scale;
-    view.ox = 0; view.oy = (view.h-WORLD_H)*view.scale;
+    // Portrait : tout le monde (715 unités de haut) tient dans l'écran et le décor se prolonge vers le haut.
+    // Paysage : on zoome (500 unités visibles, une bande de terre coupée en bas) pour que le héros soit bien plus grand ;
+    // la caméra suit en hauteur et dézoome doucement si un anneau de Filou doit rester visible.
+    const land = canvas.width / canvas.height > 1.25;
+    view.cut = land ? 95 : 0;
+    view.base = Math.min(canvas.height / (land ? 500 : WORLD_H), canvas.width / 520);
+    view.zMin = Math.min(1, Math.min(canvas.height / WORLD_H, canvas.width / 520) / view.base);
+    view.z = Math.max(view.zMin, Math.min(1, view.z || 1));
+    applyZoom();
     hud.at = -9;
   }
+  function applyZoom() {
+    view.scale = view.base * view.z;
+    view.w = canvas.width / view.scale; view.h = canvas.height / view.scale;
+    view.ox = 0; view.oy = (view.h - WORLD_H + view.cut) * view.scale;
+  }
+  // haut de l'écran (en unités du monde) quand la caméra verticale est à 0
+  const viewTop0 = () => WORLD_H - view.cut - view.h;
   // Qualité automatique : si l'appareil n'arrive pas à suivre, le canvas est dessiné un peu moins finement
   // (2 → 1,5 → 1,25 pixel réel par pixel d'écran). Si ça n'aide pas (écran bridé à 30 images/s), on revient en arrière.
   const perf = { cap: 2, ema: 16.7, since: 0, slowFor: 0, tried: null, locked: false };
@@ -410,12 +421,18 @@
   }
   const SLOWMO_TIME = .18; let slowmo = 0;
   // la barre du haut et le panneau des amis, en unités du monde (pour garder les anneaux de Filou en dessous)
-  const hud = { top: 90, barBottom: 180, barRight: 0, at: -9 };
+  // mesurée en pixels d'écran ; u() convertit en unités du monde au zoom actuel
+  const hud = { topPx: 60, barBottomPx: 110, barRightPx: 0, padRightPx: 0, ctrlPx: 34, r: 1, at: -9 };
+  const u = (px) => px * hud.r / view.scale;
   function measureHud() {
     hud.at = performance.now() / 1000; const rect = canvas.getBoundingClientRect(); if (!rect.height) return;
-    const k = (canvas.width / rect.width) / view.scale, tb = $('.game-topbar')?.getBoundingClientRect(), mb = $('#monster-bar')?.getBoundingClientRect();
-    if (tb) hud.top = Math.max(0, (tb.bottom - rect.top) * k);
-    if (mb && mb.height) { hud.barBottom = Math.max(hud.top, (mb.bottom - rect.top) * k); hud.barRight = (mb.right - rect.left) * k; } else { hud.barBottom = hud.top; hud.barRight = 0; }
+    hud.r = canvas.width / rect.width;
+    const tb = $('.game-topbar')?.getBoundingClientRect(), mb = $('#monster-bar')?.getBoundingClientRect(), pad = $('#dpad')?.getBoundingClientRect();
+    if (tb) hud.topPx = Math.max(0, tb.bottom - rect.top);
+    if (mb && mb.height) { hud.barBottomPx = Math.max(hud.topPx, mb.bottom - rect.top); hud.barRightPx = mb.right - rect.left; } else { hud.barBottomPx = hud.topPx; hud.barRightPx = 0; }
+    // les boutons ◀ ▶ posés SUR le jeu (paysage) : le héros ne doit jamais passer dessous
+    hud.padRightPx = pad && pad.width && pad.top < rect.bottom - 10 ? pad.right - rect.left : 0;
+    hud.ctrlPx = hud.padRightPx ? Math.max(34, rect.bottom - pad.top - 8) : 34;     // le sol reste visible au-dessus des boutons
   }
   // Une seule boucle à la fois, même après une pause/reprise très rapide.
   function startLoop() { lastTime = performance.now(); if (!rafId) rafId = requestAnimationFrame(loop); }
@@ -498,22 +515,34 @@
     if (swing && Math.random() < .6) { const h = SW.hand(swing); FX.glitter(h.x + (swing.ax - h.x) * Math.random(), h.y + (swing.ay - h.y) * Math.random()); }
     if (fizzle) { fizzle.t += dt; if (fizzle.t > .35) fizzle = null; }
     world.hintAnchor = hero === 'filou' && !swing ? findAnchor() : null;
-    world.camera = Math.max(0, Math.min(world.width - view.w, player.x - view.w*.34));
+    if (performance.now() / 1000 - hud.at > 1) measureHud();
+    // au début du niveau, la caméra recule un peu pour que le héros ne soit pas caché derrière les boutons ◀ ▶
+    const camMinX = hud.padRightPx ? Math.min(0, player.x - u(hud.padRightPx + 24)) : 0;
+    world.camera = Math.max(camMinX, Math.min(world.width - view.w, player.x - view.w*.34));
     // caméra verticale : elle monte avec le héros (grands immeubles, trampoline) et redescend doucement
-    { const extra = Math.max(0, view.h - WORLD_H); let target = Math.max(0, (-extra + 150) - player.y);
+    { const top0 = viewTop0(), bot0 = WORLD_H - view.cut, feet = player.y + player.h;
+      let target = Math.max(0, (top0 + u(hud.topPx) + 70) - player.y);
+      let zoomTo = 1;
       if (hero === 'filou') {
         // les anneaux de toile restent visibles SOUS la barre du haut et le panneau des amis : celui qui est à portée
         // (ou celui où Filou est accroché) et le prochain devant lui, pour que l'enfant le voie arriver
-        if (performance.now() / 1000 - hud.at > 1) measureHud();
-        const need = (ax, ay) => { const sx = ax - world.camera, lim = sx < hud.barRight + 30 ? hud.barBottom : hud.top; return lim + 56 - extra - ay; };
-        let want = 0;
-        if (swing) want = need(swing.ax, swing.ay); else if (world.hintAnchor) want = need(world.hintAnchor.x, world.hintAnchor.y);
+        const limPx = (ax) => (ax - world.camera) < u(hud.barRightPx + 30) ? hud.barBottomPx : hud.topPx;
+        const need = (ax, ay) => u(limPx(ax)) + 56 + top0 - ay;
+        let want = 0, high = null;
+        const take = (ax, ay) => { const n = need(ax, ay); if (n > want) { want = n; high = { ax, ay }; } };
+        if (swing) take(swing.ax, swing.ay); else if (world.hintAnchor) take(world.hintAnchor.x, world.hintAnchor.y);
         const cx = player.x + player.w / 2; let next = null, best = view.w * .62;
         for (const a of world.anchors || []) { const dx = (a.x - cx) * player.facing; if (dx > -30 && dx < best && (!swing || a.x !== swing.ax)) { best = dx; next = a; } }
-        if (next) want = Math.max(want, need(next.x, next.y));
-        const maxCam = view.h - 60 - extra - (player.y + player.h);   // mais le héros reste toujours entier à l'écran
+        if (next) take(next.x, next.y);
+        const maxCam = bot0 - u(hud.ctrlPx) - feet;          // mais le héros reste toujours entier à l'écran
         target = Math.max(target, Math.min(want, maxCam));
+        // paysage : si l'anneau et le héros ne tiennent pas ensemble, on dézoome juste ce qu'il faut
+        if (high && want > maxCam && view.zMin < 1) {
+          const span = feet - high.ay + 56, freePx = canvas.height - (limPx(high.ax) + hud.ctrlPx) * hud.r;
+          zoomTo = Math.max(view.zMin, Math.min(1, freePx / span / view.base));
+        }
       }
+      if (view.zMin < 1 && Math.abs(zoomTo - view.z) > .002) { view.z += (zoomTo - view.z) * Math.min(1, dt * (zoomTo < view.z ? 3 : 1.5)); applyZoom(); }
       world.camY += (target - world.camY) * Math.min(1, dt * (target > world.camY ? 6 : 3)); if (Math.abs(world.camY - target) < .5) world.camY = target; }
     for (let i = world.topples.length - 1; i >= 0; i--) {
       const q = world.topples[i]; q.t += dt;
@@ -533,7 +562,7 @@
     drawWorld(time); drawPlayer(time); drawShots(time); FX.draw(ctx, world.camera);
     ctx.restore(); drawAmbient(time);
   }
-  function drawSky(time){const W=view.w,p=mission?.palette||[],extra=Math.max(0,view.h-WORLD_H);const g=ctx.createLinearGradient(0,0,0,WORLD_H);g.addColorStop(0,p[0]||'#70d0f4');g.addColorStop(.67,p[2]||'#c8f1fa');g.addColorStop(1,'#e8f9e9');ctx.fillStyle=g;ctx.fillRect(0,-extra-2,W,extra+WORLD_H+4);for(let i=0;i<Math.ceil(W/260)+2;i++){const x=((i*260-world.camera*.16+time*3)%(W+260))-130,y=55+(i%3)*48;cloud(x,y,1+(i%2)*.18);}if(extra>40)for(let i=0;i<Math.ceil(W/300)+2;i++){const x=((i*300-world.camera*.1+time*2)%(W+300))-150,y=-extra*(.2+(i%3)*.25);cloud(x,y,1.1+(i%2)*.25);}}
+  function drawSky(time){const W=view.w,p=mission?.palette||[],extra=Math.max(0,-viewTop0());const g=ctx.createLinearGradient(0,0,0,WORLD_H);g.addColorStop(0,p[0]||'#70d0f4');g.addColorStop(.67,p[2]||'#c8f1fa');g.addColorStop(1,'#e8f9e9');ctx.fillStyle=g;ctx.fillRect(0,-extra-2,W,extra+WORLD_H+4);for(let i=0;i<Math.ceil(W/260)+2;i++){const x=((i*260-world.camera*.16+time*3)%(W+260))-130,y=55+(i%3)*48;cloud(x,y,1+(i%2)*.18);}if(extra>40)for(let i=0;i<Math.ceil(W/300)+2;i++){const x=((i*300-world.camera*.1+time*2)%(W+300))-150,y=-extra*(.2+(i%3)*.25);cloud(x,y,1.1+(i%2)*.25);}}
   function cloud(x,y,s=1){ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.fillStyle='rgba(255,255,255,.78)';ctx.beginPath();ctx.ellipse(0,12,49,18,0,0,Math.PI*2);ctx.ellipse(-23,2,24,20,0,0,Math.PI*2);ctx.ellipse(0,-5,28,27,0,0,Math.PI*2);ctx.ellipse(26,4,24,19,0,0,Math.PI*2);ctx.fill();ctx.restore();}
   function drawHills(){const W=view.w,TH=theme();if(TH.far)MM.farDraw[TH.far](ctx,W,372,world.camera,TH.far==='fuji'?'#a9a4d0':TH.far==='dunes'?TH.dirt:TH.hill[1]);ctx.fillStyle=TH.hill[0];ctx.beginPath();ctx.moveTo(0,355);for(let x=0;x<=W;x+=5){ctx.lineTo(x,350+28*Math.sin((x+world.camera*.18)/160)+16*Math.sin(x/63));}ctx.lineTo(W,540);ctx.lineTo(0,540);ctx.fill();ctx.fillStyle=TH.hill[1];ctx.beginPath();ctx.moveTo(0,395);for(let x=0;x<=W;x+=5)ctx.lineTo(x,390+22*Math.sin((x+world.camera*.31)/125));ctx.lineTo(W,540);ctx.lineTo(0,540);ctx.fill();}
   function drawTown(time) {
@@ -792,7 +821,7 @@
       ctx.restore();
     });
     if (world.hintAnchor && !swing) {            // flèche au bord haut de l'écran si l'anneau est encore hors champ
-      const a = world.hintAnchor, ax = a.x - cam, top = -Math.max(0, view.h - WORLD_H) - (world.camY || 0) + hud.top + 24;
+      const a = world.hintAnchor, ax = a.x - cam, top = viewTop0() - (world.camY || 0) + u(hud.topPx) + 24;
       if (a.y < top - 20 && ax > 0 && ax < W) { ctx.save(); ctx.translate(ax, top + 10 + Math.sin(time * 6) * 4); ctx.fillStyle = '#7d5bd6'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0, -18); ctx.lineTo(18, 8); ctx.lineTo(-18, 8); ctx.closePath(); ctx.stroke(); ctx.fill(); ctx.restore(); }
     }
     world.coins.forEach(star => { if (star.collected) return; const x = star.x - cam; if (x < -30 || x > W + 30) return; drawStarItem(x, star.y, time, star.bob); });

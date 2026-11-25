@@ -701,3 +701,11 @@ body.one-button .touch-controls{--jump:clamp(108px,22vh,150px)}
 .jar-shine{position:absolute;left:3px;top:5px;width:4px;height:14px;border-radius:3px;background:rgba(255,255,255,.75)}
 .jar-star{position:static;display:block;font-size:17px;filter:none}
 @media(max-height:520px){.jar{width:20px;height:25px}.jar-star{font-size:14px}}
+/* Paysage sur téléphone (peu de hauteur) : barre du haut plus fine pour laisser plus de place au jeu */
+@media (max-height:460px) and (orientation:landscape){
+  .game-topbar{padding-top:calc(var(--sat) + 4px);padding-bottom:4px;gap:8px}
+  .game-icon-button{width:38px;height:38px;border-radius:13px;font-size:17px}
+  .monster-bar{top:calc(var(--sat) + 48px)}
+  .hit-meter{top:calc(var(--sat) + 48px)}
+  .mission-label strong{font-size:15px}
+}
