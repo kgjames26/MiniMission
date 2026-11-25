@@ -246,6 +246,16 @@
     if (!levelUnlocked(levelHero, i)) { if (card) { card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); } MM.haptic('oops'); showToast('Termine la ville d’avant !'); sayText('Termine d’abord la ville d’avant !'); return; }
     startLevel(levelHero, i);
   }
+  // position d'un drapeau : sur le sol, hors des trous, obstacles et immeubles
+  function flagX(x) {
+    for (let k = 0; k < 6; k++) {
+      x = safeGroundX(x); let moved = false;
+      for (const p of world.platforms || []) if (p.bld && x + 58 > p.x - 30 && x < p.x + p.w + 30) { x = p.x - 120; moved = true; }
+      if (!moved) break;
+    }
+    return x;
+  }
+  let flagWave = {};
   function safeGroundX(x) {
     x = Math.max(70, Number(x) || 70);
     for (let k = 0; k < 6; k++) {
@@ -342,7 +352,11 @@
     player = { x: 70, y: world.floor - 86, vx: 0, vy: 0, w: 58, h: 86, grounded: true, jumping: false, facing: 1, bob: 0, carryVx: 0 };
     player.x = safeGroundX(resume ? (mission.checkpointX || 200) : 200);
     world.checkpoint = player.x;
-    world.passPts = [200, ...level.stations.map(x => x - 330)]; world.passX = Math.max(...world.passPts.filter(cp => cp <= player.x + 1));
+    // drapeaux de passage : avant chaque énigme ET à mi-chemin entre deux, pour ne jamais faire reculer l'enfant de trop
+    { const base = [200, ...level.stations.map(x => x - 330), world.width - 900], pts = [200];
+      for (let i = 1; i < base.length; i++) { const mid = (base[i - 1] + base[i]) / 2; pts.push(flagX(mid)); if (i < base.length - 1) pts.push(flagX(base[i])); }
+      world.passPts = [...new Set(pts.map(Math.round))].sort((a, b) => a - b).filter((x, i, arr) => !i || x - arr[i - 1] > 500); }
+    world.passX = Math.max(...world.passPts.filter(cp => cp <= player.x + 1)); flagWave = {};
     mission.monsters.forEach(m => { if (m.friendly && !m.prev) { m.x = player.x; m.y = player.y + player.h; } });
     shots = []; fireballs = []; tornados = []; hitTimes = []; rewindAt = 0; litShown = -1; shootReady = 0; flipUntil = 0; hurtUntil = 0;
     swing = null; fizzle = null; turboUntil = 0; turboReady = 0; punchReady = 0; coyote = 0; gt = 0; jumpBuffer = 0; slowmo = 0; perf.since = 0; perf.slowFor = 0; perf.ema = 16.7; perf.tried = null; rope = null;
@@ -353,7 +367,7 @@
     $('#attack-button').classList.remove('cooldown', 'active'); abilityReadyShown = true;
     const shootInfo = { ziggy: ['🔥', 'Boule de feu'], filou: ['🕸️', 'Toile magique'], titan: ['👊', 'Poing projeté'] }[activeHero];
     $('#shoot-button .shoot-icon').textContent = shootInfo[0]; $('#shoot-button').setAttribute('aria-label', 'Tirer : ' + shootInfo[1]); $('#shoot-button').dataset.hero = activeHero;
-    setScreen('game-screen'); startLoop();
+    setScreen('game-screen'); startLoop(); maybeRotateHint();
     if (resume && timerAnnouncementPending) speakTimerNotice();
     if (!resume) sound('start');
   }
@@ -367,6 +381,7 @@
     view.scale = Math.min(canvas.height/WORLD_H, canvas.width/520);
     view.w = canvas.width/view.scale; view.h = canvas.height/view.scale;
     view.ox = 0; view.oy = (view.h-WORLD_H)*view.scale;
+    hud.at = -9;
   }
   // Qualité automatique : si l'appareil n'arrive pas à suivre, le canvas est dessiné un peu moins finement
   // (2 → 1,5 → 1,25 pixel réel par pixel d'écran). Si ça n'aide pas (écran bridé à 30 images/s), on revient en arrière.
@@ -387,6 +402,14 @@
     }
   }
   const SLOWMO_TIME = .18; let slowmo = 0;
+  // la barre du haut et le panneau des amis, en unités du monde (pour garder les anneaux de Filou en dessous)
+  const hud = { top: 90, barBottom: 180, barRight: 0, at: -9 };
+  function measureHud() {
+    hud.at = performance.now() / 1000; const rect = canvas.getBoundingClientRect(); if (!rect.height) return;
+    const k = (canvas.width / rect.width) / view.scale, tb = $('.game-topbar')?.getBoundingClientRect(), mb = $('#monster-bar')?.getBoundingClientRect();
+    if (tb) hud.top = Math.max(0, (tb.bottom - rect.top) * k);
+    if (mb && mb.height) { hud.barBottom = Math.max(hud.top, (mb.bottom - rect.top) * k); hud.barRight = (mb.right - rect.left) * k; } else { hud.barBottom = hud.top; hud.barRight = 0; }
+  }
   // Une seule boucle à la fois, même après une pause/reprise très rapide.
   function startLoop() { lastTime = performance.now(); if (!rafId) rafId = requestAnimationFrame(loop); }
   function loop(now) {
@@ -442,7 +465,7 @@
       if (swing) { releaseSwing(true, true); jumpBuffer = 0; }
       else if (player.grounded || coyote > 0) { doJump(turboOn); jumpBuffer = 0; coyote = 0; }
     }
-    if (oneButton) autoAssist(turboOn);
+    if (oneButton) { autoAssist(turboOn); magnetPickups(dt); }
     if (swing) updateSwing(dt);
     else if (moveAndCollide(dt, turboOn)) return;
     if (rope) updateRope(dt);
@@ -452,7 +475,11 @@
     // plaques de vitesse (Ziggy)
     if (rewindAt && gt >= rewindAt) { rewindAt = 0; hitTimes = []; updateHitMeter(); respawn(world.passX); }
     updateFollowers(dt); updateMonsters(dt); updateShots(dt); updateHitMeter();
-    for (const cp of world.passPts) if (player.grounded && player.x > cp) world.passX = Math.max(world.passX, cp);
+    for (const cp of world.passPts) if (player.grounded && player.x > cp && cp > world.passX) {
+      world.passX = cp; flagWave[cp] = gt;                       // nouveau drapeau atteint : il passe au vert et fait la fête
+      FX.confetti(cp + 20, world.floor - 100, 16); FX.sparkle(cp + 20, world.floor - 110, 10, ['#ffffff', '#7be08f', '#ffe066'], 150);
+      sound('coin'); MM.haptic('good');
+    }
     collectPickups();
     // effets de course
     const onGround = player.grounded && !swing;
@@ -464,7 +491,19 @@
     world.camera = Math.max(0, Math.min(world.width - view.w, player.x - view.w*.34));
     // caméra verticale : elle monte avec le héros (grands immeubles, trampoline) et redescend doucement
     { const extra = Math.max(0, view.h - WORLD_H); let target = Math.max(0, (-extra + 150) - player.y);
-      if (world.hintAnchor && !swing) target = Math.max(target, (-extra + 120) - world.hintAnchor.y);     // l'anneau de toile doit rester visible
+      if (hero === 'filou') {
+        // les anneaux de toile restent visibles SOUS la barre du haut et le panneau des amis : celui qui est à portée
+        // (ou celui où Filou est accroché) et le prochain devant lui, pour que l'enfant le voie arriver
+        if (performance.now() / 1000 - hud.at > 1) measureHud();
+        const need = (ax, ay) => { const sx = ax - world.camera, lim = sx < hud.barRight + 30 ? hud.barBottom : hud.top; return lim + 56 - extra - ay; };
+        let want = 0;
+        if (swing) want = need(swing.ax, swing.ay); else if (world.hintAnchor) want = need(world.hintAnchor.x, world.hintAnchor.y);
+        const cx = player.x + player.w / 2; let next = null, best = view.w * .62;
+        for (const a of world.anchors || []) { const dx = (a.x - cx) * player.facing; if (dx > -30 && dx < best && (!swing || a.x !== swing.ax)) { best = dx; next = a; } }
+        if (next) want = Math.max(want, need(next.x, next.y));
+        const maxCam = view.h - 60 - extra - (player.y + player.h);   // mais le héros reste toujours entier à l'écran
+        target = Math.max(target, Math.min(want, maxCam));
+      }
       world.camY += (target - world.camY) * Math.min(1, dt * (target > world.camY ? 6 : 3)); if (Math.abs(world.camY - target) < .5) world.camY = target; }
     for (let i = world.topples.length - 1; i >= 0; i--) {
       const q = world.topples[i]; q.t += dt;
@@ -644,10 +683,21 @@
     });
     for (let i = 0; i < Math.ceil(W/120)+2; i++) { const x = (i*120 + 35 - cam*.9) % (W+120); if (!inGap(x + cam, 10)) flower(x, F+7, i%4); }
     world.platforms.forEach(pl => { if (pl.bld) drawBuilding(pl); });
-    world.passPts.forEach((cp, i) => {       // drapeaux : points de passage
-      if (!i) return; const x = cp - cam; if (x < -40 || x > W + 40) return; const on = world.passX >= cp;
-      ctx.fillStyle = '#8b6748'; ctx.fillRect(x - 2, F - 78, 4, 78); ctx.fillStyle = on ? '#4cc36a' : '#cfd6d8';
-      ctx.beginPath(); ctx.moveTo(x + 2, F - 78); ctx.lineTo(x + 40, F - 66 + Math.sin(time * 4) * 2); ctx.lineTo(x + 2, F - 52); ctx.closePath(); ctx.fill();
+    world.passPts.forEach((cp, i) => {       // drapeaux : points de passage (rouge = à atteindre, vert = c'est là qu'on repartira)
+      if (!i) return; const x = cp - cam; if (x < -70 || x > W + 70) return; const on = world.passX >= cp;
+      const since = flagWave[cp] != null ? gt - flagWave[cp] : 9, hop = since < .6 ? Math.sin(since / .6 * Math.PI) * 14 : 0;
+      const H = 120, top = F - H - hop, wave = Math.sin(time * 4 + cp) * 3;
+      ctx.save(); ctx.lineCap = 'round';
+      ctx.fillStyle = 'rgba(40,60,80,.18)'; ctx.beginPath(); ctx.ellipse(x, F + 1, 16, 5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#7a5a3c'; roundRect(x - 4, top, 8, H + hop, 4, true);                 // mât
+      ctx.fillStyle = '#ffd84a'; ctx.beginPath(); ctx.arc(x, top - 2, 8, 0, Math.PI * 2); ctx.fill();   // boule dorée
+      const col = on ? '#3fbf62' : '#ff5a4f', dark = on ? '#2b9a4b' : '#d83f36';
+      ctx.fillStyle = col; ctx.strokeStyle = dark; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(x + 4, top + 6);
+      ctx.quadraticCurveTo(x + 32, top + wave, x + 62, top + 18 + wave);
+      ctx.quadraticCurveTo(x + 34, top + 30 - wave, x + 4, top + 44); ctx.closePath(); ctx.fill(); ctx.stroke();
+      if (on) { ctx.fillStyle = '#fff'; ctx.font = '900 22px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('★', x + 28, top + 23 + wave * .5); }
+      ctx.restore();
     });
     world.decorations.forEach(item => {
       const x = item.x - cam; if (x < -90 || x > W+90 || inGap(item.x, 40)) return;
@@ -715,16 +765,18 @@
       const x = a.x - cam; if (x < -60 || x > W + 60) return;
       const active = world.hintAnchor === a || (swing && swing.anchor === a), pulse = 1 + Math.sin(time * 5) * (active ? .14 : .06);
       ctx.save(); ctx.translate(x, a.y);
-      const glow = ctx.createRadialGradient(0, 0, 4, 0, 0, active ? 46 : 32); glow.addColorStop(0, active ? 'rgba(200,170,255,.85)' : 'rgba(200,170,255,.45)'); glow.addColorStop(1, 'rgba(200,170,255,0)');
-      ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(0, 0, active ? 46 : 32, 0, Math.PI*2); ctx.fill();
-      ctx.scale(pulse, pulse);
+      const gr = active ? 64 : 46;               // anneaux plus gros et plus lumineux : on les repère de loin
+      const glow = ctx.createRadialGradient(0, 0, 6, 0, 0, gr); glow.addColorStop(0, active ? 'rgba(210,185,255,.95)' : 'rgba(210,185,255,.6)'); glow.addColorStop(1, 'rgba(210,185,255,0)');
+      ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(0, 0, gr, 0, Math.PI*2); ctx.fill();
+      ctx.scale(pulse * 1.45, pulse * 1.45);
+      ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2); ctx.fill();
       ctx.strokeStyle = '#7d5bd6'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2); ctx.stroke();
       ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.beginPath(); for (let k = 0; k < 6; k++) { const ang = k * Math.PI / 3; ctx.moveTo(0, 0); ctx.lineTo(Math.cos(ang) * 13, Math.sin(ang) * 13); } ctx.stroke();
       ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2); ctx.stroke();
       ctx.restore();
     });
     if (world.hintAnchor && !swing) {            // flèche au bord haut de l'écran si l'anneau est encore hors champ
-      const a = world.hintAnchor, ax = a.x - cam, top = -Math.max(0, view.h - WORLD_H) - (world.camY || 0) + 60;
+      const a = world.hintAnchor, ax = a.x - cam, top = -Math.max(0, view.h - WORLD_H) - (world.camY || 0) + hud.top + 24;
       if (a.y < top - 20 && ax > 0 && ax < W) { ctx.save(); ctx.translate(ax, top + 10 + Math.sin(time * 6) * 4); ctx.fillStyle = '#7d5bd6'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0, -18); ctx.lineTo(18, 8); ctx.lineTo(-18, 8); ctx.closePath(); ctx.stroke(); ctx.fill(); ctx.restore(); }
     }
     world.coins.forEach(star => { if (star.collected) return; const x = star.x - cam; if (x < -30 || x > W + 30) return; drawStarItem(x, star.y, time, star.bob); });
@@ -1238,6 +1290,25 @@
       if (block) titanPunch();
     }
   }
+  // mode tout-petit : les étoiles et les lettres un peu trop hautes descendent doucement vers le héros quand il passe dessous
+  function magnetPickups(dt) {
+    const cx = player.x + player.w / 2, cy = player.y + player.h / 2;
+    const pull = (o) => {
+      const dx = cx - o.x, dy = cy - o.y;
+      if (Math.abs(dx) > 75 || dy < 20 || dy > 330) return;           // seulement juste au-dessus du héros
+      const k = Math.min(1, dt * 7); o.x += dx * k * .6; o.y += dy * k;
+    };
+    for (const l of world.letters) if (!l.collected) pull(l);
+    for (const st of world.coins) if (!st.collected) pull(st);
+  }
+  // en portrait, un petit téléphone qui pivote invite (sans obliger) à tourner l'écran — une fois par lancement du jeu
+  let rotateHintShown = false;
+  function maybeRotateHint() {
+    if (rotateHintShown || window.innerHeight <= window.innerWidth * 1.05) return;
+    rotateHintShown = true; const node = $('#rotate-hint'); if (!node) return;
+    node.classList.remove('show'); void node.offsetWidth; node.classList.add('show');
+    clearTimeout(node._t); node._t = setTimeout(() => node.classList.remove('show'), 3600);
+  }
   function setOneButton(on) {
     oneButton = !!on; save.oneButton = oneButton; writeSave();
     document.body.classList.toggle('one-button', oneButton);
@@ -1573,6 +1644,9 @@
       if (m) { const key = m.imp ? 'L' : String(m.type); if (was !== key) { chip.dataset.t = key; chip.className = 'on pop'; chip.setAttribute('style', monsterChipStyle(m.imp ? -1 : m.type + 5, 22)); } }
       else { chip.className = ''; chip.removeAttribute('style'); delete chip.dataset.t; }
     });
+    // le panneau des amis se fait discret quand rien ne change : il cache moins le haut du jeu (et les anneaux de Filou)
+    const n = caught.length;
+    if (bar.dataset.n !== String(n)) { bar.dataset.n = n; bar.classList.remove('idle'); clearTimeout(bar._idle); bar._idle = setTimeout(() => bar.classList.add('idle'), 3500); }
   }
   function speakCount(n) {
     if (timerNoticePlaying) return;
@@ -1669,7 +1743,7 @@
     player.vy = -300; player.grounded = false; player.carryVx = -dir * 190; triggerHeroAnimation('stumble');
     FX.sparkle(player.x + player.w / 2, player.y + 30, 12, ['#ff8a2a', '#ffd23f', '#ffffff'], 190); FX.shake(3, .18); MM.haptic('oops'); sound('bump');
     updateHitMeter();
-    if (hitTimes.length >= HIT_MAX) { rewindAt = gt + .7; showToast('Oups ! On revient au dernier point de passage.'); }
+    if (hitTimes.length >= HIT_MAX) { rewindAt = gt + .7; showToast('↩️'); if (!timerNoticePlaying) sayText('Oups ! On repart du drapeau.'); }   // l'enfant ne lit pas : une icône et la voix
   }
   function updateHitMeter() {
     hitTimes = hitTimes.filter(t => gt - t < HIT_WINDOW);

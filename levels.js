@@ -96,7 +96,8 @@
       return null;
     }
     const swingStars = (path, from = 1, every = 2) => { path.forEach((p, i) => { if (i >= from && i % every === 0 && p.y < F - 30) c.stars.push({ x: p.x, y: p.y }); }); };
-    const AYS = [F - 440, F - 430, F - 420, F - 410, F - 400, F - 390, F - 380, F - 370, F - 360, F - 350, F - 340];
+    // les anneaux les plus bas sont essayés en premier : ils restent visibles à l'écran, sous la barre du haut
+    const AYS = [F - 300, F - 320, F - 340, F - 350, F - 360, F - 370, F - 380, F - 390, F - 400, F - 410, F - 420, F - 430, F - 440];
 
     /* ----- Segments ----- */
     const SEG = {
@@ -272,7 +273,7 @@
               surfaces = [{ x0: -400, x1: chasmStart, y: F }, roofS, { x0: tx + rw + 6, x1: W + 400, y: F }];
               hy = HAND_Y; starts = [230, 170, 110, 50, 12].map((d) => chasmStart - d);
             }
-            const found = findAnchor({ starts, hy, ayList: tall && prev ? [hy - 250, hy - 290, hy - 330, hy - 370, hy - 220, hy - 410] : AYS, axList: [.1, .2, .3, .4, .5, .6].map((f) => chasmStart + w * f), surfaces, target: roofS, gap: prev ? null : { x: chasmStart, w } });
+            const found = findAnchor({ starts, hy, ayList: tall && prev ? [hy - 220, hy - 250, hy - 290, hy - 330, hy - 370, hy - 410] : AYS, axList: [.1, .2, .3, .4, .5, .6].map((f) => chasmStart + w * f), surfaces, target: roofS, gap: prev ? null : { x: chasmStart, w } });
             if (!found) continue;
             if (!prev) c.gaps.push({ x: chasmStart, w });
             const p = building(tx, h, rw);
