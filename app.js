@@ -43,7 +43,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '50', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '51', asset = (p) => `${p}?v=${ASSET_V}`;
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
   const monsterImg = new Image(); monsterImg.src = asset('assets/monsters.webp');
   const movesImg = new Image(); movesImg.src = asset('assets/hero-moves.webp');
@@ -2204,10 +2204,10 @@
       if (t < .4) { const dy = t / .4, gx = x + face * H * .1, gy = feet - H * .15 + dy * dy * 90; ctx.save(); ctx.globalAlpha = 1 - dy * .6; ctx.fillStyle = '#7cc4ff'; ctx.strokeStyle = '#3d7fc4'; ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.moveTo(gx, gy - 9); ctx.quadraticCurveTo(gx + 6, gy - 1, gx, gy + 3); ctx.quadraticCurveTo(gx - 6, gy - 1, gx, gy - 9); ctx.fill(); ctx.stroke(); ctx.restore(); }
     }
-    if (!m.friendly && T === 9) {                                             // le petit dragon souffle une bouffée de fumée
+    if (!m.friendly && T === 9) {                                             // le petit dragon souffle une bouffée de fumée (elle sort de sa bouche puis s'éloigne)
       const t = (time * .33 + id * .29) % 1;
       if (t < .3) { const q = t / .3; ctx.save(); ctx.globalAlpha = .55 * (1 - q); ctx.fillStyle = '#c9ced6';
-        for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(x + face * (H * .55 + q * 34 + i * 9), feet - H * .62 - q * 14 - i * 4, 5 + q * 9 - i * 1.5, 0, Math.PI * 2); ctx.fill(); } ctx.restore(); }
+        for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(x + face * (H * .3 + q * 38 + i * 9), feet - H * .54 - q * 16 - i * 4, 4 + q * 9 - i * 1.2, 0, Math.PI * 2); ctx.fill(); } ctx.restore(); }
     }
     if (m.friendly) {
       const t = (time * .22 + id * .41) % 1;                                  // de temps en temps, un cœur s'envole
