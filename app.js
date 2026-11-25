@@ -22,7 +22,7 @@
   const theme = () => MM.cities[(mission && mission.city) || 0];
   const SHOT_SPEED = { ziggy: 560, filou: 500, titan: 470 };
   const COUNT_WORDS = ['zéro', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf', 'dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize', 'dix-sept', 'dix-huit', 'dix-neuf', 'vingt'];
-  const leafImg = new Image(); leafImg.src = 'assets/friend-leaf.webp';
+  const leafImg = new Image(); leafImg.src = 'assets/friend-flame.webp';
   const monsterImg = new Image(); monsterImg.src = 'assets/monsters.webp';
   const movesImg = new Image(); movesImg.src = 'assets/hero-moves.webp';
   // Planche des héros : une ligne par héros (Ziggy, Filou, Titan), six poses chacune. Voir « Animation des héros ».
@@ -1542,7 +1542,7 @@
     ctx.save(); ctx.globalAlpha = tw; ctx.fillStyle = '#fff'; FX.starPath(ctx, x + 27, y - 27, 7, 2.4); ctx.fill(); ctx.restore();
   }
   function monsterChipStyle(index, boxH) {
-    if (index < 0) return `width:${Math.round(boxH * .78)}px;height:${boxH}px;background:url(assets/friend-leaf.webp) center/contain no-repeat`;
+    if (index < 0) return `width:${Math.round(boxH * .78)}px;height:${boxH}px;background:url(assets/friend-flame.webp) center/contain no-repeat`;
     const [, , sh] = MON[index], row = Math.floor(index / 5), col = index % 5;
     const sw = Math.round(MON_CELL.w * 0), s = boxH / sh; void sw;
     const meta = MON[index], w = Math.round(sh * meta[1]);
