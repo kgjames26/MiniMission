@@ -41,17 +41,20 @@
   const theme = () => MM.cities[(mission && mission.city) || 0];
   const SHOT_SPEED = { ziggy: 560, filou: 500, titan: 470 };
   const countWord = (n) => window.MM.i18n.count(n);
-  const leafImg = new Image(); leafImg.src = 'assets/friend-flame.webp';
-  const monsterImg = new Image(); monsterImg.src = 'assets/monsters.webp';
-  const movesImg = new Image(); movesImg.src = 'assets/hero-moves.webp';
+  // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
+  // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
+  const ASSET_V = '49', asset = (p) => `${p}?v=${ASSET_V}`;
+  const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
+  const monsterImg = new Image(); monsterImg.src = asset('assets/monsters.webp');
+  const movesImg = new Image(); movesImg.src = asset('assets/hero-moves.webp');
   // Planche des héros : une ligne par héros (Ziggy, Filou, Titan), six poses chacune. Voir « Animation des héros ».
   const S2 = { img: new Image(), map: null };
-  S2.img.src = 'assets/sprites2.webp';
-  fetch('assets/sprites2.json').then(r => r.json()).then(j => { S2.map = j; }).catch(() => {});
+  S2.img.src = asset('assets/sprites2.webp');
+  fetch(asset('assets/sprites2.json')).then(r => r.json()).then(j => { S2.map = j; }).catch(() => {});
   const s2ok = () => !!(S2.map && S2.img.complete && S2.img.naturalWidth);
   const HERO_K = .5, HERO_PX = 280;     // échelle d'affichage des planches animées (hauteur de référence 280 px)
   const heroAtlas = new Image();
-  heroAtlas.src = 'assets/heroes-atlas.webp';
+  heroAtlas.src = asset('assets/heroes-atlas.webp');
   const heroes = {
     ziggy: { name: 'Ziggy la Comète', power: 'Bond lumineux', suit: '#ef5a53', accent: '#ffd34f', skin: '#f3bf91', hair: '#6e483e', cape: '#f5a542', icon: '☄️', message: 'Ziggy a laissé un chemin de lumière pour les voisins.' },
     filou: { name: 'Filou le Tisseur', power: 'Fil doux et pont sûr', suit: '#438ccc', accent: '#a980e6', skin: '#eeb993', hair: '#463c59', cape: '#7561cf', icon: '🧶', message: 'Filou a tissé un passage tout doux pour les amis.' },
@@ -1836,11 +1839,11 @@
   }
   function chipFor(m, boxH) { return m.imp ? monsterChipStyle(-1, boxH, m.type) : monsterChipStyle(calmOf(m)[1], boxH); }
   function monsterChipStyle(index, boxH, impType = 0) {
-    if (index < 0) return `width:${Math.round(boxH * .78)}px;height:${boxH}px;background:url(assets/friend-flame.webp) center/contain no-repeat${IMP_HUE[impType] ? `;filter:hue-rotate(${IMP_HUE[impType]}deg)` : ''}`;
+    if (index < 0) return `width:${Math.round(boxH * .78)}px;height:${boxH}px;background:url(${asset('assets/friend-flame.webp')}) center/contain no-repeat${IMP_HUE[impType] ? `;filter:hue-rotate(${IMP_HUE[impType]}deg)` : ''}`;
     const [, , sh] = MON[index], row = Math.floor(index / 5), col = index % 5;
     const sw = Math.round(MON_CELL.w * 0), s = boxH / sh; void sw;
     const meta = MON[index], w = Math.round(sh * meta[1]);
-    return `width:${Math.round(w * s)}px;height:${Math.round(sh * s)}px;background:url(assets/monsters.webp) no-repeat;background-size:${MON_CELL.w * 5 * s}px ${MON_CELL.h * MON_ROWS * s}px;background-position:${-(col * MON_CELL.w + (MON_CELL.w - w) / 2) * s}px ${-(row * MON_CELL.h + (MON_CELL.h - MON_CELL.pad - sh)) * s}px`;
+    return `width:${Math.round(w * s)}px;height:${Math.round(sh * s)}px;background:url(${asset('assets/monsters.webp')}) no-repeat;background-size:${MON_CELL.w * 5 * s}px ${MON_CELL.h * MON_ROWS * s}px;background-position:${-(col * MON_CELL.w + (MON_CELL.w - w) / 2) * s}px ${-(row * MON_CELL.h + (MON_CELL.h - MON_CELL.pad - sh)) * s}px`;
   }
   function initMonsters(level, rnd) {
     const calmDeck = CALM.map((_, i) => i); for (let i = calmDeck.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [calmDeck[i], calmDeck[j]] = [calmDeck[j], calmDeck[i]]; }
