@@ -112,3 +112,4 @@ Filou reste accroché à sa toile tant qu'on ne saute pas (le bouton SAUT cligno
 - Images dessinées entre deux états (`TRANS` dans app.js) : arrêt ↔ marche pour les 3 héros, marche ↔ course turbo pour Ziggy ; elles sont ajoutées en bas de `assets/sprites2.webp` (noms `*_iw0`, `*_wi0`, `ziggy_wr*`, `ziggy_rw*`).
 - Sinon, fondu de 0,08 s entre l'ancienne et la nouvelle image (sauts, atterrissages, actions).
 - La course de Ziggy suit sa vitesse et repart toujours du même pied ; Ziggy et Titan ont un saut complet dessiné (`*_j0` à `*_j6`), comme Filou.
+- Marche de Ziggy redessinée (v0.43) : 7 images `ziggy_m0`…`ziggy_m6` où les jambes alternent vraiment (`ziggy_w1` reste l'image à l'arrêt).
