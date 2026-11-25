@@ -1695,7 +1695,7 @@
     player.vy = -300; player.grounded = false; player.carryVx = -dir * 190; triggerHeroAnimation('stumble');
     FX.sparkle(player.x + player.w / 2, player.y + 30, 12, ['#ff8a2a', '#ffd23f', '#ffffff'], 190); FX.shake(3, .18); MM.haptic('oops'); sound('bump');
     updateHitMeter();
-    if (hitTimes.length >= HIT_MAX) { rewindAt = gt + .7; showToast('Oups ! On revient au dernier point de passage.'); }
+    if (hitTimes.length >= HIT_MAX) { rewindAt = gt + .7; showToast('↩️ 🚩'); if (!timerNoticePlaying) sayText('Oups ! On repart du drapeau.'); }   // l'enfant ne lit pas : une icône et la voix
   }
   function updateHitMeter() {
     hitTimes = hitTimes.filter(t => gt - t < HIT_WINDOW);
