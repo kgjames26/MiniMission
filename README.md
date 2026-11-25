@@ -113,3 +113,5 @@ Filou reste accroché à sa toile tant qu'on ne saute pas (le bouton SAUT cligno
 - Sinon, fondu de 0,08 s entre l'ancienne et la nouvelle image (sauts, atterrissages, actions).
 - La course de Ziggy suit sa vitesse et repart toujours du même pied ; Ziggy et Titan ont un saut complet dessiné (`*_j0` à `*_j6`), comme Filou.
 - Marche de Ziggy redessinée (v0.43) : 7 images `ziggy_m0`…`ziggy_m6` où les jambes alternent vraiment (`ziggy_w1` reste l'image à l'arrêt).
+- Voix (v0.46) : `sayText(texte, fin, true)` = phrase secondaire (lettre ramassée, encouragement, compte des étoiles, autocollant trouvé, « oups ») : abandonnée si une voix parle déjà. Les autres (actions de l'enfant ou de l'adulte, devinette, minuteur, fin de mission) passent toujours.
+- Marche de Ziggy (v0.46) : seulement les 5 images debout (`ZIGGY_WALK`) ; `ziggy_m0` et `ziggy_m4`, trop accroupies, sont écartées.

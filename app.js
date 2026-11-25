@@ -233,7 +233,7 @@
     $('#level-hero').innerHTML = `<span class="sprite" style="--col:${heroId === 'ziggy' ? 0 : 2};--row:${row}"></span>`;
     $('#level-title').textContent = h.name.split(' ')[0];
     renderLevels(); setScreen('level-screen');
-    if (!timerNoticePlaying) sayText(TN('sayChooseCity'));
+    if (!timerNoticePlaying) sayText(TN('sayChooseCity'), null, true);
   }
   function renderLevels() {
     const grid = $('#level-grid');
@@ -913,6 +913,8 @@
     'filou:idle>walk': ['filou_iw0'], 'filou:walk>idle': ['filou_wi0'],
     'titan:idle>walk': ['titan_iw0'], 'titan:walk>idle': ['titan_wi0'],
   };
+  // marche de Ziggy : les 5 images debout (ziggy_m0 et ziggy_m4, dessinées trop accroupies, le faisaient plonger)
+  const ZIGGY_WALK = ['ziggy_m1', 'ziggy_m2', 'ziggy_m3', 'ziggy_m5', 'ziggy_m6'];
   const TR_STEP = .075, FADE = .08, RUN_FPS = 13;   // durée d'une image de transition ; durée du fondu ; images de course par seconde à pleine vitesse
   // Action ponctuelle ; ms = durée. L'écrasement/étirement (squash) donne du poids aux sauts et aux arrivées.
   function triggerHeroAnimation(name, ms = 400) {
@@ -979,9 +981,10 @@
     const a = heroAnim, t = a.timers, hero = activeHero, air = !player.grounded;
     const main = (col) => ({ s: 'main', col }), mv = (col) => ({ s: 'moves', col, row: MOVES.rows[hero] });
     const n = (f) => s2ok() && S2.map[f] ? { s: 's2', f } : null;
-    const walkN = (name, N, mul, ph = a.phase, blend = true) => {
-      const t = ph * mul, i = Math.floor(t) % N, q = n(`${name}${i}`); if (!q) return null; q.cyc = name;
-      const f2 = `${name}${(i + 1) % N}`; if (blend && S2.map[f2]) { q.f2 = f2; const fr = t - Math.floor(t); q.mix = fr * fr * (3 - 2 * fr); } return q;
+    const walkN = (name, N, mul, ph = a.phase, blend = true, list = null) => {
+      const fr = (j) => list ? list[j % N] : `${name}${j % N}`;
+      const t = ph * mul, i = Math.floor(t) % N, q = n(fr(i)); if (!q) return null; q.cyc = name;
+      const f2 = fr(i + 1); if (blend && S2.map[f2]) { q.f2 = f2; const fr = t - Math.floor(t); q.mix = fr * fr * (3 - 2 * fr); } return q;
     };
     const moving = Math.abs(player.vx) > 12;
     // saut complet dessiné (Ziggy, Titan) : monte, en haut, retombe, touche le sol, se redresse ; fête = bras écartés
@@ -1019,7 +1022,7 @@
       let q;
       if (gt < turboUntil && (q = air ? n('ziggy_r1') : walkN('ziggy_r', 4, 1, a.runPhase))) return q;
       if ((q = jumpPose('ziggy'))) return q;
-      if (!air && !t.celebrate && !t.land && !t.stumble) { if (moving && (q = walkN('ziggy_m', 7, 1.05, a.phase, false))) return q; if (!moving && (q = n('ziggy_w1'))) return q; }
+      if (!air && !t.celebrate && !t.land && !t.stumble) { if (moving && (q = walkN('ziggy_m', 5, .75, a.phase, false, ZIGGY_WALK))) return q; if (!moving && (q = n('ziggy_w1'))) return q; }
     }
     if (swing) return main(POSE.jump);
     if (t.punch) return main(POSE.land);
@@ -1099,7 +1102,7 @@
     c.restore();
   }
   function roundRect(x,y,w,h,r,fill=true){ctx.beginPath();if(typeof ctx.roundRect==='function')ctx.roundRect(x,y,w,h,Math.min(r,w/2,h/2));else{ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);}if(fill)ctx.fill();else ctx.stroke();}
-  function cancelSpeech(requeueTimer=true){speechToken++;MM.music.duck(false);if(timerNoticePlaying){timerNoticePlaying=false;if(requeueTimer){timerAnnouncementPending=true;save.timerAnnouncementPending=true;writeSave();}}if('speechSynthesis'in window)window.speechSynthesis.cancel();}
+  function cancelSpeech(requeueTimer=true){speechToken++;speechBusy=0;MM.music.duck(false);if(timerNoticePlaying){timerNoticePlaying=false;if(requeueTimer){timerAnnouncementPending=true;save.timerAnnouncementPending=true;writeSave();}}if('speechSynthesis'in window)window.speechSynthesis.cancel();}
   /* ----- voix : on choisit la plus agréable disponible (voix naturelles/neuronales d'abord), ou celle choisie dans les réglages ----- */
   function voiceScore(v) {
     const n = v.name || '', l = v.lang || '', code = MM.i18n.lang, want = MM.i18n.info().tts;
@@ -1128,7 +1131,10 @@
     sel.innerHTML = `<option value="">${escapeHtml(T('autoBest'))}</option>` + list.map(v => `<option value="${escapeHtml(v.name)}" ${v.name === cur ? 'selected' : ''}>${escapeHtml(v.name)} (${escapeHtml(v.lang)})</option>`).join('');
   }
   if ('speechSynthesis' in window) { try { speechSynthesis.addEventListener('voiceschanged', fillVoiceSelect); } catch {} }
-  function sayText(text,onComplete){if(!('speechSynthesis'in window)||!('SpeechSynthesisUtterance'in window))return false;cancelSpeech(false);const token=++speechToken;const utterance=new SpeechSynthesisUtterance(text);utterance.rate=.92;utterance.pitch=1.06;utterance.volume=1;const voice=pickVoice();utterance.voice=voice;utterance.lang=voice?.lang||MM.i18n.info().tts;MM.music.duck(true);utterance.onend=()=>{if(token===speechToken){MM.music.duck(false);onComplete?.(true);}};utterance.onerror=()=>{if(token===speechToken){MM.music.duck(false);onComplete?.(false);}};window.speechSynthesis.speak(utterance);return true;}
+  // minor = phrase secondaire du jeu (lettre, encouragement…) : si une voix parle déjà, on ne la coupe pas, la nouvelle phrase est abandonnée.
+  // Sans minor (action de l'enfant ou de l'adulte, devinette, minuteur, fin de mission) : la phrase passe toujours.
+  let speechBusy=0;   // heure (ms) jusqu'à laquelle on considère qu'une voix parle (sécurité si « fin » n'arrive jamais)
+  function sayText(text,onComplete,minor=false){if(!('speechSynthesis'in window)||!('SpeechSynthesisUtterance'in window))return false;if(minor&&performance.now()<speechBusy)return false;cancelSpeech(false);speechBusy=performance.now()+1500+text.length*110;const token=++speechToken;const utterance=new SpeechSynthesisUtterance(text);utterance.rate=.92;utterance.pitch=1.06;utterance.volume=1;const voice=pickVoice();utterance.voice=voice;utterance.lang=voice?.lang||MM.i18n.info().tts;MM.music.duck(true);utterance.onend=()=>{if(token===speechToken){speechBusy=0;MM.music.duck(false);onComplete?.(true);}};utterance.onerror=()=>{if(token===speechToken){speechBusy=0;MM.music.duck(false);onComplete?.(false);}};window.speechSynthesis.speak(utterance);return true;}
   function speakTimerNotice(onComplete){if(!timerAnnouncementPending){onComplete?.();return;}timerAnnouncementPending=false;const started=sayText(T('timerNotice'),()=>{timerNoticePlaying=false;save.timerAnnouncementPending=false;save.sessionElapsed=sessionElapsed;writeSave();onComplete?.();if(scene==='puzzle-screen'&&puzzleTask&&!puzzleResolved&&!onComplete)readPuzzleAloud();});timerNoticePlaying=started;if(!started){save.timerAnnouncementPending=false;writeSave();onComplete?.();}}
   function readPuzzleAloud() {
     if (!puzzleTask || puzzleResolved || timerNoticePlaying) return;
@@ -1214,7 +1220,7 @@
       l.missed = true;
       const box = $('.letter-counter'), last = $('#letter-last');
       if (box && last) { last.textContent = l.letter; box.classList.remove('missed'); void box.offsetWidth; box.classList.add('missed'); clearTimeout(box._m); box._m = setTimeout(updateLetterCounter, 2600); }
-      if (gt - lastMissSay > 4 && !timerNoticePlaying) { lastMissSay = gt; sayText(T('forgot', { l: letterSay(l.letter) })); }
+      if (gt - lastMissSay > 4 && !timerNoticePlaying) { lastMissSay = gt; sayText(T('forgot', { l: letterSay(l.letter) }), null, true); }
       MM.haptic('tap'); break;
     }
   }
@@ -1514,7 +1520,7 @@
         FX.sparkle(letter.x, letter.y, 14, LETTER_COLORS, 190); FX.ring(letter.x, letter.y, '#ffffff', 56, .4, 5); FX.confetti(letter.x, letter.y, 12);
         const word = MM.i18n.letterPhrase(letter.letter);
         if (word.emoji) FX.text(letter.x, letter.y - 30, word.emoji, '#ffffff', 44);
-        sound('coin'); MM.haptic('letter'); if (!timerNoticePlaying) sayText(word.say); writeSave();
+        sound('coin'); MM.haptic('letter'); if (!timerNoticePlaying) sayText(word.say, null, true); writeSave();
         if (!mission.goldGiven && world.letters.every(l => l.collected)) { mission.goldGiven = true; awardSticker('gold'); }
         commitProgress(false);
       }
@@ -1569,7 +1575,7 @@
     clearTimeout(bannerTimer); bannerTimer = setTimeout(() => node.classList.remove('show'), 3600);
     FX.confetti(player.x + player.w/2, player.y, 30); FX.shake(2, .2); cheer('🤩');
     sound('sticker'); MM.haptic(tier === 'gold' ? 'gold' : 'silver');
-    if (!timerNoticePlaying) sayText(tier === 'gold' ? TN('goldSay', { n: info.n }) : T('silverSay', { n: info.n }));
+    if (!timerNoticePlaying) sayText(tier === 'gold' ? TN('goldSay', { n: info.n }) : T('silverSay', { n: info.n }), null, true);
   }
   function openStickerDetail(id) {
     const info = MM.stickers.info(id), T = MM.stickers.TIERS[info.tier];
@@ -1817,7 +1823,7 @@
   }
   function speakCount(n) {
     if (timerNoticePlaying) return;
-    sayText(n === 10 ? T('count10') : n === 20 ? T('count20') : countWord(n));
+    sayText(n === 10 ? T('count10') : n === 20 ? T('count20') : countWord(n), null, true);
   }
   function monsterBox(m) { if (!m.imp) { const [hw, ratio] = MON[m.type]; return { cx: m.x, cy: m.y - hw / 2, hw: hw * ratio * .42 + 6, hh: hw * .5 + 4 }; } const big = m.type === 3 ? 1.27 : 1; return { cx: m.x, cy: m.y - (m.jy || 0) - 44 * big, hw: 30 * big + 4, hh: 46 * big }; }
   function patrolRange(m) {
@@ -1910,7 +1916,7 @@
     player.vy = -300; player.grounded = false; player.carryVx = -dir * 190; triggerHeroAnimation('stumble');
     FX.sparkle(player.x + player.w / 2, player.y + 30, 12, ['#ff8a2a', '#ffd23f', '#ffffff'], 190); FX.shake(3, .18); MM.haptic('oops'); sound('bump');
     updateHitMeter();
-    if (hitTimes.length >= HIT_MAX) { rewindAt = gt + .7; showToast('↩️'); if (!timerNoticePlaying) sayText(T('oops')); }   // l'enfant ne lit pas : une icône et la voix
+    if (hitTimes.length >= HIT_MAX) { rewindAt = gt + .7; showToast('↩️'); if (!timerNoticePlaying) sayText(T('oops'), null, true); }   // l'enfant ne lit pas : une icône et la voix
   }
   function updateHitMeter() {
     hitTimes = hitTimes.filter(t => gt - t < HIT_WINDOW);
