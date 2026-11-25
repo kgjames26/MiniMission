@@ -655,14 +655,6 @@ body.one-button .touch-controls{--jump:clamp(108px,22vh,150px)}
 .monster-bar{transition:opacity .4s,transform .4s;transform-origin:top left}
 .monster-bar.idle{opacity:.45;transform:scale(.72)}
 /* « Tourne ton téléphone » : un téléphone dessiné en CSS qui pivote, sans texte, qui disparaît tout seul */
-.rotate-hint{position:absolute;z-index:6;left:50%;top:38%;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:32px;background:rgba(255,255,255,.9);box-shadow:0 8px 30px #1d4d7a40;display:grid;place-items:center;pointer-events:none;opacity:0;transform:scale(.6);transition:opacity .35s,transform .35s}
-.rotate-hint.show{opacity:1;transform:scale(1)}
-.rh-phone{width:46px;height:80px;border-radius:10px;border:5px solid #2f6f9e;background:linear-gradient(#bfe6ff,#e8f6ff);position:relative;animation:rh-turn 1.6s ease-in-out infinite}
-.rh-phone i{position:absolute;left:50%;bottom:4px;width:10px;height:3px;margin-left:-5px;border-radius:2px;background:#2f6f9e}
-.rh-arrow{position:absolute;right:16px;top:10px;font-size:30px;font-weight:900;color:#ff8a3d;animation:rh-spin 1.6s ease-in-out infinite}
-@keyframes rh-turn{0%,20%{transform:rotate(0)}55%,85%{transform:rotate(-90deg)}100%{transform:rotate(0)}}
-@keyframes rh-spin{0%,20%{transform:rotate(0)}55%,100%{transform:rotate(-180deg)}}
-@media (prefers-reduced-motion:reduce){.rh-phone{animation:none;transform:rotate(-90deg)}.rh-arrow{animation:none}}
 /* ---------- v0.36 : bocal d'étoiles, anneau des lettres, ce qu'il reste à trouver ---------- */
 .sr-only{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 /* le bocal : un pot arrondi qui se remplit de jaune selon --p */
