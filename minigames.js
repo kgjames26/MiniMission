@@ -28,53 +28,26 @@
   }
   const SIMON_POOL = {};
   const simonSeq = (len) => { const pool = SIMON_POOL[len] || (SIMON_POOL[len] = Array.from({ length: 100 }, (_, i) => { const r = seeded(len * 7919 + i * 31 + 1); return Array.from({ length: len }, () => Math.floor(r() * 4)); })); return fresh('simon' + len, pool, (s) => s.join('')); };
-  const NUM_WORDS = ['zéro', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf', 'dix'];
-
-  /* ---------- Questions ---------- */
-  const ANIMALS = [['🐱', 'le chat', 'miaou'], ['🐶', 'le chien', 'ouaf ouaf'], ['🐮', 'la vache', 'meuh'], ['🐑', 'le mouton', 'bê'], ['🐷', 'le cochon', 'groin groin'], ['🦆', 'le canard', 'coin coin'], ['🐸', 'la grenouille', 'coa coa'], ['🐔', 'la poule', 'cot cot'], ['🦁', 'le lion', 'grrr'], ['🐝', 'l’abeille', 'bzzz'], ['🐴', 'le cheval', 'hiii'], ['🐓', 'le coq', 'cocorico']];
-  const COLORS = {
-    jaune: ['🟡', [['🍌', 'la banane'], ['🌻', 'le tournesol'], ['⭐', 'l’étoile'], ['🐤', 'le poussin'], ['🧀', 'le fromage']]],
-    rouge: ['🔴', [['🍎', 'la pomme'], ['🍓', 'la fraise'], ['🍅', 'la tomate'], ['🚒', 'le camion de pompiers'], ['🌹', 'la rose']]],
-    vert: ['🟢', [['🐸', 'la grenouille'], ['🥦', 'le brocoli'], ['🌳', 'l’arbre'], ['🥒', 'le concombre'], ['🐢', 'la tortue']]],
-    bleu: ['🔵', [['🫐', 'les myrtilles'], ['🐳', 'la baleine'], ['🌊', 'la vague'], ['💙', 'le cœur bleu']]],
-    orange: ['🟠', [['🍊', 'l’orange'], ['🥕', 'la carotte'], ['🎃', 'la citrouille'], ['🦊', 'le renard']]],
-    violet: ['🟣', [['🍇', 'le raisin'], ['🍆', 'l’aubergine'], ['🔮', 'la boule magique'], ['🦄', 'la licorne']]]
-  };
-  const COUNTABLES = [['🎈', 'ballons'], ['⭐', 'étoiles'], ['🍎', 'pommes'], ['🐟', 'poissons'], ['🚗', 'voitures'], ['🌸', 'fleurs'], ['🐞', 'coccinelles'], ['🍪', 'gâteaux']];
-  const GROUPS = [
-    [['🍎', 'la pomme'], ['🍌', 'la banane'], ['🍇', 'le raisin'], ['🍓', 'la fraise'], ['🍊', 'l’orange']],
-    [['🐶', 'le chien'], ['🐱', 'le chat'], ['🐰', 'le lapin'], ['🐻', 'l’ours'], ['🐼', 'le panda']],
-    [['🚗', 'la voiture'], ['🚌', 'le bus'], ['🚲', 'le vélo'], ['🚂', 'le train'], ['✈️', 'l’avion']],
-    [['👕', 'le t-shirt'], ['👖', 'le pantalon'], ['🧦', 'la chaussette'], ['🧢', 'la casquette'], ['👟', 'la chaussure']],
-    [['🪑', 'la chaise'], ['🛏️', 'le lit'], ['🛋️', 'le canapé'], ['🚪', 'la porte'], ['🪟', 'la fenêtre']]
-  ];
-  const ABILITIES = [
-    ['Qui peut voler ?', [['🐦', 'l’oiseau'], ['🦋', 'le papillon'], ['🐝', 'l’abeille'], ['🦉', 'le hibou']], [['🐢', 'la tortue'], ['🐘', 'l’éléphant'], ['🐄', 'la vache'], ['🐌', 'l’escargot']]],
-    ['Qui sait nager ?', [['🐟', 'le poisson'], ['🐬', 'le dauphin'], ['🐙', 'la pieuvre'], ['🐳', 'la baleine']], [['🐱', 'le chat'], ['🦒', 'la girafe'], ['🐓', 'le coq'], ['🐘', 'l’éléphant']]],
-    ['Qui vit à la ferme ?', [['🐮', 'la vache'], ['🐷', 'le cochon'], ['🐔', 'la poule'], ['🐑', 'le mouton']], [['🦁', 'le lion'], ['🐘', 'l’éléphant'], ['🐧', 'le pingouin'], ['🦒', 'la girafe']]],
-    ['Qui a des roues ?', [['🚗', 'la voiture'], ['🚲', 'le vélo'], ['🚌', 'le bus'], ['🛴', 'la trottinette']], [['🐢', 'la tortue'], ['🏠', 'la maison'], ['🌳', 'l’arbre'], ['🍎', 'la pomme']]],
-    ['Qu’est-ce qui est doux et sucré ?', [['🍭', 'la sucette'], ['🍰', 'le gâteau'], ['🍓', 'la fraise'], ['🍯', 'le miel']], [['🧅', 'l’oignon'], ['🪨', 'le caillou'], ['🧽', 'l’éponge'], ['🌵', 'le cactus']]]
-  ];
-  const SHAPES = [['🔴', 'le rond'], ['🟥', 'le carré'], ['🔺', 'le triangle'], ['⭐', 'l’étoile'], ['❤️', 'le cœur']];
-  const SIZES = [['🐜', 'la fourmi'], ['🐭', 'la souris'], ['🐱', 'le chat'], ['🐕', 'le chien'], ['🐴', 'le cheval'], ['🐘', 'l’éléphant'], ['🐋', 'la baleine']];
-  const EATS = [['🐰', 'le lapin', '🥕', 'la carotte'], ['🐵', 'le singe', '🍌', 'la banane'], ['🐱', 'le chat', '🐟', 'le poisson'], ['🐶', 'le chien', '🦴', 'l’os'], ['🐭', 'la souris', '🧀', 'le fromage'], ['🐻', 'l’ours', '🍯', 'le miel'], ['🐿️', 'l’écureuil', '🌰', 'la noisette'], ['🐮', 'la vache', '🌿', 'l’herbe']];
-  const WEARS = [['Que met-on aux pieds ?', '👟', 'les chaussures'], ['Que met-on sur la tête ?', '🧢', 'la casquette'], ['Que met-on aux mains ?', '🧤', 'les gants'], ['Que met-on sur le nez ?', '👓', 'les lunettes'], ['Que met-on autour du cou ?', '🧣', 'l’écharpe'], ['Que met-on quand il pleut ?', '☔', 'le parapluie']];
-  const WEAR_OTHERS = [['🍎', 'la pomme'], ['⚽', 'le ballon'], ['📘', 'le livre'], ['🚗', 'la voiture'], ['🪁', 'le cerf-volant'], ['🍪', 'le gâteau']];
+  // les données des questions (noms, couleurs, cris d'animaux…) viennent de la langue choisie : voir i18n.js et lang-*.js
+  const Q = () => MM.i18n.quiz();
+  const T = (k, v) => MM.i18n.t(k, v);
 
   const quiz = (prompt, visual, options, answerIndex, say) => ({ kind: 'quiz', prompt, say: say || prompt, visual, options, answer: answerIndex });
   // place la bonne réponse à une position aléatoire
   const withAnswer = (prompt, visual, correct, wrongs, say) => { const opts = shuffle([correct, ...wrongs]); return quiz(prompt, visual, opts, opts.indexOf(correct), say); };
+  // un texte de question, avec la petite correction des particules coréennes faite par i18n
+  const say = (tpl, v) => MM.i18n.fill ? MM.i18n.fill(tpl, v) : tpl.replace(/\{(\w+)\}/g, (m, k) => (v && v[k] != null ? v[k] : m));
   const FAMILIES = [
-    () => { const a = pick(ANIMALS); return withAnswer(`Qui fait « ${a[2]} » ?`, '🔊', [a[0], a[1]], sample(ANIMALS.filter((x) => x !== a), 2).map((x) => [x[0], x[1]])); },
-    () => { const name = pick(Object.keys(COLORS)), [dot, items] = COLORS[name]; const it = pick(items); const others = shuffle(Object.entries(COLORS).filter(([k]) => k !== name).flatMap(([, v]) => v[1])); return withAnswer(`Qu’est-ce qui est ${name} ?`, dot, it, others.slice(0, 2)); },
-    () => { const [e, w] = pick(COUNTABLES), n = 1 + Math.floor(rand() * 6); const wrong = sample([1, 2, 3, 4, 5, 6, 7].filter((k) => k !== n), 2); return withAnswer(`Combien y a-t-il de ${w} ?`, e.repeat(n), [String(n), NUM_WORDS[n]], wrong.map((k) => [String(k), NUM_WORDS[k]]), `Combien y a-t-il de ${w} ? Compte avec moi.`); },
-    () => { const [set, other] = sample(GROUPS, 2); const odd = pick(other), two = sample(set, 2); return withAnswer('Quel est l’intrus ?', '🕵️', odd, two, 'Quel est l’intrus ? Cherche celui qui ne va pas avec les autres.'); },
-    () => { const [prompt, yes, no] = pick(ABILITIES); return withAnswer(prompt, '🤔', pick(yes), sample(no, 2)); },
-    () => { const s = pick(SHAPES); return withAnswer(`Montre-moi ${s[1]} !`, '👆', s, sample(SHAPES.filter((x) => x !== s), 2), `Où est ${s[1]} ?`); },
-    () => { const big = rand() < .5; const items = sample([0, 1, 2, 3, 4, 5, 6], 3).sort((x, y) => x - y).map((i) => SIZES[i]); const correct = big ? items[2] : items[0]; const opts = shuffle(items); return quiz(big ? 'Qui est le plus grand ?' : 'Qui est le plus petit ?', big ? '📏' : '🔍', opts, opts.indexOf(correct)); },
-    () => { const e = pick(EATS); const foods = EATS.filter((x) => x !== e).map((x) => [x[2], x[3]]); return withAnswer(`Que mange ${e[1]} ?`, e[0], [e[2], e[3]], sample(foods, 2)); },
-    () => { const w = pick(WEARS); return withAnswer(w[0], '🧑', [w[1], w[2]], sample(WEAR_OTHERS, 2)); },
-    () => { const n = 1 + Math.floor(rand() * 8); const wrong = sample([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter((k) => k !== n + 1), 2); return withAnswer(`Quel nombre vient après ${NUM_WORDS[n]} ?`, String(n), [String(n + 1), NUM_WORDS[n + 1]], wrong.map((k) => [String(k), NUM_WORDS[k]])); }
+    () => { const D = Q(), a = pick(D.animals); return withAnswer(say(D.t.whoSays, { s: a[2] }), '🔊', [a[0], a[1]], sample(D.animals.filter((x) => x !== a), 2).map((x) => [x[0], x[1]])); },
+    () => { const D = Q(), c = pick(D.colors), it = pick(c[2]); const others = shuffle(D.colors.filter((x) => x !== c).flatMap((x) => x[2])); return withAnswer(say(D.t.whatColor, { c: c[0] }), c[1], it, others.slice(0, 2)); },
+    () => { const D = Q(), [e, w] = pick(D.countables), n = 1 + Math.floor(rand() * 6); const wrong = sample([1, 2, 3, 4, 5, 6, 7].filter((k) => k !== n), 2); return withAnswer(say(D.t.howMany, { w }), e.repeat(n), [String(n), D.numWords[n]], wrong.map((k) => [String(k), D.numWords[k]]), say(D.t.howManySay, { w })); },
+    () => { const D = Q(), [set, other] = sample(D.groups, 2); const odd = pick(other), two = sample(set, 2); return withAnswer(D.t.odd, '🕵️', odd, two, D.t.oddSay); },
+    () => { const D = Q(), [prompt, yes, no] = pick(D.abilities); return withAnswer(prompt, '🤔', pick(yes), sample(no, 2)); },
+    () => { const D = Q(), s = pick(D.shapes); return withAnswer(say(D.t.showMe, { x: s[1] }), '👆', s, sample(D.shapes.filter((x) => x !== s), 2), say(D.t.whereIs, { x: s[1] })); },
+    () => { const D = Q(), big = rand() < .5; const items = sample([0, 1, 2, 3, 4, 5, 6], 3).sort((x, y) => x - y).map((i) => D.sizes[i]); const correct = big ? items[2] : items[0]; const opts = shuffle(items); return quiz(big ? D.t.biggest : D.t.smallest, big ? '📏' : '🔍', opts, opts.indexOf(correct)); },
+    () => { const D = Q(), e = pick(D.eats); const foods = D.eats.filter((x) => x !== e).map((x) => [x[2], x[3]]); return withAnswer(say(D.t.eats, { x: e[1] }), e[0], [e[2], e[3]], sample(foods, 2)); },
+    () => { const D = Q(), w = pick(D.wears); return withAnswer(w[0], '🧑', [w[1], w[2]], sample(D.wearOthers, 2)); },
+    () => { const D = Q(), n = 1 + Math.floor(rand() * 8); const wrong = sample([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter((k) => k !== n + 1), 2); return withAnswer(say(D.t.after, { n: D.numWords[n] }), String(n), [String(n + 1), D.numWords[n + 1]], wrong.map((k) => [String(k), D.numWords[k]])); }
   ];
   G.makeQuiz = () => {
     const seen = seenOf('quiz'); let q = null;
@@ -86,10 +59,10 @@
   G.makeTasks = (legacyQuiz, level = 0) => {
     const lv = Math.max(0, Math.min(9, level));
     const makeOne = (kind) => {
-      if (kind === 'maze') { const [seeker, goal] = fresh('maze', MAZE_PAIRS, (p) => p.join('')); return { kind: 'maze', size: 4 + Math.floor(lv / 3) + (rand() < .35 ? 1 : 0), seed: Math.floor(rand() * 4e9) + 1, seeker, goal, say: `Aide ${seeker} à trouver ${goal} !` }; }
-      if (kind === 'jigsaw') return { kind: 'jigsaw', emoji: fresh('jigsaw', PICS), cols: lv < 3 ? 2 : 3, rows: lv < 3 ? 2 : lv < 6 ? 2 : 3, say: 'Remets l’image dans le bon ordre !' };
-      if (kind === 'pairs') return { kind: 'pairs', cards: freshMany('pairs', PICS, Math.min(6, 3 + Math.floor(lv / 3) + (rand() < .3 ? 1 : 0))), say: 'Retrouve les paires !' };
-      if (kind === 'simon') return { kind: 'simon', length: 3 + Math.floor(lv / 3), seq: simonSeq(3 + Math.floor(lv / 3)), say: 'Écoute la musique et regarde les couleurs, puis refais comme moi !' };
+      if (kind === 'maze') { const [seeker, goal] = fresh('maze', MAZE_PAIRS, (p) => p.join('')); return { kind: 'maze', size: 4 + Math.floor(lv / 3) + (rand() < .35 ? 1 : 0), seed: Math.floor(rand() * 4e9) + 1, seeker, goal, say: T('mazeSay', { a: seeker, b: goal }) }; }
+      if (kind === 'jigsaw') return { kind: 'jigsaw', emoji: fresh('jigsaw', PICS), cols: lv < 3 ? 2 : 3, rows: lv < 3 ? 2 : lv < 6 ? 2 : 3, say: T('jigsawSay') };
+      if (kind === 'pairs') return { kind: 'pairs', cards: freshMany('pairs', PICS, Math.min(6, 3 + Math.floor(lv / 3) + (rand() < .3 ? 1 : 0))), say: T('pairsSay') };
+      if (kind === 'simon') return { kind: 'simon', length: 3 + Math.floor(lv / 3), seq: simonSeq(3 + Math.floor(lv / 3)), say: T('simonSay') };
       return rand() < .18 && legacyQuiz ? { ...legacyQuiz(), kind: 'quiz' } : G.makeQuiz();
     };
     // trois jeux différents tirés au hasard parmi : puzzle, labyrinthe, paires, rythme, énigme
@@ -202,7 +175,7 @@
         const t = document.createElement('button'); t.type = 'button'; t.className = 'jig-tile' + (slot === selected ? ' sel' : '');
         t.style.backgroundImage = `url(${url})`; t.style.backgroundSize = `${cols * 100}% ${rows * 100}%`;
         t.style.backgroundPosition = `${cols > 1 ? (piece % cols) / (cols - 1) * 100 : 0}% ${rows > 1 ? Math.floor(piece / cols) / (rows - 1) * 100 : 0}%`;
-        t.setAttribute('aria-label', 'Morceau de puzzle');
+        t.setAttribute('aria-label', T('aPuzzlePiece'));
         t.addEventListener('click', () => tap(slot));
         board.appendChild(t);
       });
@@ -225,7 +198,7 @@
     host.appendChild(grid);
     let first = -1, lock = false, matched = 0, stopped = false;
     const tiles = deck.map((c, i) => {
-      const b = document.createElement('button'); b.type = 'button'; b.className = 'pair-card'; b.setAttribute('aria-label', 'Carte retournée');
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'pair-card'; b.setAttribute('aria-label', T('aCardDown'));
       b.innerHTML = `<span class="pc-back">⭐</span><span class="pc-face">${c.e}</span>`;
       b.addEventListener('click', () => flip(i)); grid.appendChild(b); return b;
     });
@@ -249,7 +222,7 @@
     const seq = task.seq || Array.from({ length: task.length || 3 }, () => Math.floor(rand() * 4));
     const wrap = document.createElement('div'); wrap.className = 'simon';
     const status = document.createElement('div'); status.className = 'simon-status'; status.textContent = '👀';
-    const pads = COLS.map(([color], i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'simon-pad'; b.style.setProperty('--c', color); b.setAttribute('aria-label', 'Couleur ' + (i + 1)); b.addEventListener('click', () => press(i)); return b; });
+    const pads = COLS.map(([color], i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'simon-pad'; b.style.setProperty('--c', color); b.setAttribute('aria-label', T('aColorN', { n: i + 1 })); b.addEventListener('click', () => press(i)); return b; });
     const grid = document.createElement('div'); grid.className = 'simon-grid'; pads.forEach((p) => grid.appendChild(p));
     wrap.appendChild(status); wrap.appendChild(grid); host.appendChild(wrap);
     let input = false, pos = 0, stopped = false, timers = [];

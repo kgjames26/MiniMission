@@ -44,13 +44,13 @@
         <i class="sparkle" style="--x:12%;--y:22%;--d:0s">✦</i><i class="sparkle" style="--x:84%;--y:30%;--d:1.1s">★</i><i class="sparkle" style="--x:30%;--y:14%;--d:.6s">✧</i><i class="sparkle" style="--x:68%;--y:12%;--d:1.7s">✦</i><i class="sparkle" style="--x:92%;--y:58%;--d:.3s">✧</i><i class="sparkle" style="--x:6%;--y:52%;--d:2s">★</i>
       </div>
 
-      <section id="home" class="screen home-screen active" aria-label="Accueil de Mini Mission">
+      <section id="home" class="screen home-screen active" aria-label="Accueil de Mini Mission" data-i18n-aria="aHome">
         <div class="home-top">
-          <button class="round-btn settings-open" type="button" aria-label="Réglages pour l'adulte : garder appuyé 2 secondes" title="Réglages (garder appuyé)">⚙</button>
+          <button class="round-btn settings-open" type="button" aria-label="Réglages pour l'adulte : garder appuyé 2 secondes" title="Réglages (garder appuyé)" data-i18n-aria="aSettingsHold" data-i18n-title="tSettingsHold">⚙</button>
           <span class="grow"></span>
-          <button id="help-art-button" class="pill-btn" type="button" aria-label="Mode d’emploi"><span aria-hidden="true">📖</span><span>Mode d’emploi</span></button>
-          <button id="timer-open" class="round-btn timer-open" type="button" aria-label="Minuteur de jeu : garder appuyé 2 secondes" title="Minuteur (garder appuyé)"><span aria-hidden="true">⏱️</span><b id="timer-chip" class="timer-chip hidden"></b></button>
-          <button id="home-sound-toggle" class="round-btn" type="button" aria-label="Activer ou couper les sons">♫</button>
+          <button id="help-art-button" class="pill-btn" type="button" aria-label="Mode d’emploi" data-i18n-aria="howto"><span aria-hidden="true">📖</span><span data-i18n="howto">Mode d’emploi</span></button>
+          <button id="timer-open" class="round-btn timer-open" type="button" aria-label="Minuteur de jeu : garder appuyé 2 secondes" title="Minuteur (garder appuyé)" data-i18n-aria="aTimerHold" data-i18n-title="tTimerHold"><span aria-hidden="true">⏱️</span><b id="timer-chip" class="timer-chip hidden"></b></button>
+          <button id="home-sound-toggle" class="round-btn" type="button" aria-label="Activer ou couper les sons" data-i18n-aria="aSoundToggle">♫</button>
         </div>
         <h1 class="logo" aria-label="Mini Mission">
           <span class="logo-line logo-mini" aria-hidden="true"><span style="--c:#3fa4ea;--r:-4deg">M</span><span style="--c:#ef4b43;--r:3deg">I</span><span style="--c:#ffb92e;--r:-2deg">N</span><span style="--c:#5fbf68;--r:4deg">I</span></span>
@@ -61,79 +61,79 @@
           <span class="home-hero hh-filou"><span class="sprite" style="--col:2;--row:1"></span></span>
           <span class="home-hero hh-titan"><span class="sprite" style="--col:2;--row:2"></span></span>
         </div>
-        <div class="home-album-row"><button id="album-open" class="pill-btn" type="button" aria-label="Mon album d’autocollants"><span aria-hidden="true" class="album-ico">📒</span><span>Mes albums</span><b id="album-badge" class="album-badge">0</b></button></div>
-        <p class="home-tagline">Remplis tes albums&nbsp;!</p>
-        <button id="start-button" class="play-button" type="button">JOUER&nbsp;! <span aria-hidden="true">▶</span></button>
+        <div class="home-album-row"><button id="album-open" class="pill-btn" type="button" aria-label="Mon album d’autocollants" data-i18n-aria="aAlbum"><span aria-hidden="true" class="album-ico">📒</span><span data-i18n="myAlbums">Mes albums</span><b id="album-badge" class="album-badge">0</b></button></div>
+        <p class="home-tagline" data-i18n="tagline">Remplis tes albums&nbsp;!</p>
+        <button id="start-button" class="play-button" type="button"><span data-i18n="play">JOUER&nbsp;!</span> <span aria-hidden="true">▶</span></button>
         <span id="home-version" class="home-version" aria-hidden="true"></span>
       </section>
 
-      <section id="hero-select" class="screen hero-screen" aria-label="Choisir un héros">
+      <section id="hero-select" class="screen hero-screen" aria-label="Choisir un héros" data-i18n-aria="aChooseHero">
         <header class="screen-top">
-          <button class="round-btn" type="button" data-go="home" aria-label="Retour à l’accueil">←</button>
-          <h2 class="screen-title"><span class="t-orange">Choisis ton</span> <span class="t-red">héros&nbsp;!</span></h2>
+          <button class="round-btn" type="button" data-go="home" aria-label="Retour à l’accueil" data-i18n-aria="aBackHome">←</button>
+          <h2 class="screen-title"><span class="t-orange" data-i18n="chooseHero1">Choisis ton</span> <span class="t-red" data-i18n="chooseHero2">héros&nbsp;!</span></h2>
           <span class="top-spacer"></span>
         </header>
         <div class="hero-grid">
-          <button class="hero-card ziggy" type="button" data-hero="ziggy" aria-label="Choisir Ziggy la Comète, le héros rapide qui traverse les obstacles">
+          <button class="hero-card ziggy" type="button" data-hero="ziggy" aria-label="Choisir Ziggy la Comète, le héros rapide qui traverse les obstacles" data-i18n-aria="aZiggy">
             <span class="hero-stage"><span class="sprite" style="--col:0;--row:0"></span></span>
-            <span class="hero-info"><span class="hero-name">Ziggy</span><span class="hero-power">Vitesse <b>★★★★☆</b></span><span class="choose-pill">CHOISIR</span></span>
+            <span class="hero-info"><span class="hero-name">Ziggy</span><span class="hero-power"><span data-i18n="speed">Vitesse</span> <b>★★★★☆</b></span><span class="choose-pill">CHOISIR</span></span>
           </button>
-          <button class="hero-card filou" type="button" data-hero="filou" aria-label="Choisir Filou le Tisseur, le héros agile qui tisse des ponts">
+          <button class="hero-card filou" type="button" data-hero="filou" aria-label="Choisir Filou le Tisseur, le héros agile qui tisse des ponts" data-i18n-aria="aFilou">
             <span class="hero-stage"><span class="sprite" style="--col:2;--row:1"></span></span>
-            <span class="hero-info"><span class="hero-name">Filou</span><span class="hero-power">Agilité <b>★★★★☆</b></span><span class="choose-pill">CHOISIR</span></span>
+            <span class="hero-info"><span class="hero-name">Filou</span><span class="hero-power"><span data-i18n="agility">Agilité</span> <b>★★★★☆</b></span><span class="choose-pill">CHOISIR</span></span>
           </button>
-          <button class="hero-card titan" type="button" data-hero="titan" aria-label="Choisir Titan Puce, le héros fort qui déplace les rochers">
+          <button class="hero-card titan" type="button" data-hero="titan" aria-label="Choisir Titan Puce, le héros fort qui déplace les rochers" data-i18n-aria="aTitan">
             <span class="hero-stage"><span class="sprite" style="--col:2;--row:2"></span></span>
-            <span class="hero-info"><span class="hero-name">Titan</span><span class="hero-power">Force <b>★★★★☆</b></span><span class="choose-pill">CHOISIR</span></span>
+            <span class="hero-info"><span class="hero-name">Titan</span><span class="hero-power"><span data-i18n="strength">Force</span> <b>★★★★☆</b></span><span class="choose-pill">CHOISIR</span></span>
           </button>
         </div>
-        <div id="session-timer-row" class="session-timer-row"><label for="session-timer-select">Minuteur de partie <span>(facultatif)</span></label><select id="session-timer-select"><option value="0">Désactivé</option><option value="300">5 minutes</option><option value="600">10 minutes</option><option value="900">15 minutes</option><option value="1200">20 minutes</option><option value="1800">30 minutes</option><option value="2700">45 minutes</option><option value="3600">1 heure</option></select></div>
+        <div id="session-timer-row" class="session-timer-row"><label for="session-timer-select"><span data-i18n="sessionTimer">Minuteur de partie</span> <span data-i18n="optional">(facultatif)</span></label><select id="session-timer-select"><option value="0" data-i18n="off">Désactivé</option><option value="300" data-i18n="minutes" data-i18n-n="5">5 minutes</option><option value="600" data-i18n="minutes" data-i18n-n="10">10 minutes</option><option value="900" data-i18n="minutes" data-i18n-n="15">15 minutes</option><option value="1200" data-i18n="minutes" data-i18n-n="20">20 minutes</option><option value="1800" data-i18n="minutes" data-i18n-n="30">30 minutes</option><option value="2700" data-i18n="minutes" data-i18n-n="45">45 minutes</option><option value="3600" data-i18n="hour1">1 heure</option></select></div>
       </section>
 
 
-      <section id="level-screen" class="screen level-screen" aria-label="Choisir une ville">
+      <section id="level-screen" class="screen level-screen" aria-label="Choisir une ville" data-i18n-aria="aChooseCity">
         <header class="screen-top">
-          <button id="level-back" class="round-btn" type="button" aria-label="Changer de héros">←</button>
+          <button id="level-back" class="round-btn" type="button" aria-label="Changer de héros" data-i18n-aria="aChangeHero">←</button>
           <h2 class="screen-title"><span id="level-hero" class="level-hero" aria-hidden="true"></span><span id="level-title" class="t-red">Ville</span></h2>
           <span class="top-spacer"></span>
         </header>
         <div id="level-grid" class="level-grid" role="list"></div>
       </section>
 
-      <section id="howto-screen" class="screen howto-screen" aria-label="Comment jouer">
+      <section id="howto-screen" class="screen howto-screen" aria-label="Comment jouer" data-i18n-aria="aHowto">
         <header class="screen-top">
-          <button class="round-btn" type="button" data-go="home" aria-label="Retour à l’accueil">←</button>
-          <h2 class="screen-title"><span class="t-blue">Comment</span> <span class="t-orange">jouer&nbsp;?</span></h2>
+          <button class="round-btn" type="button" data-go="home" aria-label="Retour à l’accueil" data-i18n-aria="aBackHome">←</button>
+          <h2 class="screen-title"><span class="t-blue" data-i18n="how1">Comment</span> <span class="t-orange" data-i18n="how2">jouer&nbsp;?</span></h2>
           <span class="top-spacer"></span>
         </header>
         <div class="howto-board">
           <div class="howto-block">
-            <p class="howto-label"><span aria-hidden="true">👣</span> GAUCHE ⬌ DROITE&nbsp;!</p>
+            <p class="howto-label"><span aria-hidden="true">👣</span> <span data-i18n="leftRight">GAUCHE ⬌ DROITE&nbsp;!</span></p>
             <div class="dpad lr dpad-demo" style="--lrw:var(--demo-lr)" aria-hidden="true"><span class="lr-btn lr-left"><span>◀</span></span><span class="lr-btn lr-right"><span>▶</span></span></div>
-            <p class="howto-hint">Garde le doigt appuyé pour avancer&nbsp;!</p>
+            <p class="howto-hint" data-i18n="holdToMove">Garde le doigt appuyé pour avancer&nbsp;!</p>
             
           </div>
           <div class="howto-block">
-            <p class="howto-label"><span aria-hidden="true">✨</span> SAUT ET ACTION&nbsp;!</p>
+            <p class="howto-label"><span aria-hidden="true">✨</span> <span data-i18n="jumpAction">SAUT ET ACTION&nbsp;!</span></p>
             <div class="howto-buttons" aria-hidden="true">
-              <span class="action-button demo" style="--act:var(--demo-btn)"><span class="action-ring"></span><span class="action-power">☄️</span><strong>ACTION&nbsp;!</strong></span>
-              <span class="jump-stack"><span class="shoot-button demo" style="--shoot:calc(var(--demo-btn)*.7)"><span class="shoot-icon">🔥</span></span><span class="jump-button demo" style="--jump:var(--demo-btn)"><span class="jump-arrow">▲</span><strong>SAUT</strong></span></span>
+              <span class="action-button demo" style="--act:var(--demo-btn)"><span class="action-ring"></span><span class="action-power">☄️</span><strong data-i18n="action">ACTION&nbsp;!</strong></span>
+              <span class="jump-stack"><span class="shoot-button demo" style="--shoot:calc(var(--demo-btn)*.7)"><span class="shoot-icon">🔥</span></span><span class="jump-button demo" style="--jump:var(--demo-btn)"><span class="jump-arrow">▲</span><strong data-i18n="jump">SAUT</strong></span></span>
             </div>
             <div class="power-row">
-              <span class="power-chip"><span class="sprite" style="--col:1;--row:0"></span><b>Ziggy</b><small>TURBO</small><em>🔥</em></span>
-              <span class="power-chip"><span class="sprite" style="--col:2;--row:1"></span><b>Filou</b><small>TOILE</small><em>🕸️</em></span>
-              <span class="power-chip"><span class="sprite" style="--col:3;--row:2"></span><b>Titan</b><small>POING</small><em>👊</em></span>
+              <span class="power-chip"><span class="sprite" style="--col:1;--row:0"></span><b>Ziggy</b><small data-i18n="turbo">TURBO</small><em>🔥</em></span>
+              <span class="power-chip"><span class="sprite" style="--col:2;--row:1"></span><b>Filou</b><small data-i18n="web">TOILE</small><em>🕸️</em></span>
+              <span class="power-chip"><span class="sprite" style="--col:3;--row:2"></span><b>Titan</b><small data-i18n="punch">POING</small><em>👊</em></span>
             </div>
             
           </div>
         </div>
-        <p class="howto-keys">⌨ ← → · Espace · X · C · Échap</p>
+        <p class="howto-keys" data-i18n="keysHelp">⌨ ← → · Espace · X · C · Échap</p>
       </section>
 
-      <section id="album-screen" class="screen album-screen" aria-label="Mon album d’autocollants">
+      <section id="album-screen" class="screen album-screen" aria-label="Mon album d’autocollants" data-i18n-aria="aAlbum">
         <header class="screen-top">
-          <button class="round-btn" type="button" data-go="home" aria-label="Retour à l’accueil">←</button>
-          <h2 class="screen-title"><span class="t-orange">Mon</span> <span class="t-red">album</span></h2>
+          <button class="round-btn" type="button" data-go="home" aria-label="Retour à l’accueil" data-i18n-aria="aBackHome">←</button>
+          <h2 class="screen-title"><span class="t-orange" data-i18n="album1">Mon</span> <span class="t-red" data-i18n="album2">album</span></h2>
           <span class="top-spacer"></span>
         </header>
         <div class="album-card">
@@ -141,124 +141,137 @@
           <div id="album-subtabs" class="album-tabs sub" role="tablist"></div>
           <p id="album-page-title" class="album-page-title"></p>
           <div id="album-grid" class="album-grid" role="list"></div>
-          <div id="sticker-detail" class="sticker-detail hidden" role="dialog" aria-modal="true" aria-label="Détail de l’autocollant">
-            <div class="sd-card"><button id="sticker-close" class="sd-close" type="button" aria-label="Fermer">×</button>
+          <div id="sticker-detail" class="sticker-detail hidden" role="dialog" aria-modal="true" aria-label="Détail de l’autocollant" data-i18n-aria="aStickerDetail">
+            <div class="sd-card"><button id="sticker-close" class="sd-close" type="button" aria-label="Fermer" data-i18n-aria="aClose">×</button>
               <div id="sd-emoji" class="sd-emoji"></div><div id="sd-medal" class="sd-medal"></div><h3 id="sd-name"></h3><p id="sd-desc"></p>
-              <button id="sd-listen" class="sd-listen" type="button" aria-label="Écouter">🔊</button></div>
+              <button id="sd-listen" class="sd-listen" type="button" aria-label="Écouter" data-i18n-aria="aListen">🔊</button></div>
           </div>
           <div class="album-legend" aria-hidden="true"><span>🥉 🎮</span><span>🥈 ⭐</span><span>🥇 🔤</span><b id="album-total">0/60</b></div>
         </div>
       </section>
 
-      <section id="game-screen" class="screen game-screen" aria-label="Mission en cours">
-        <div class="game-stage"><canvas id="game-canvas" width="960" height="540" aria-label="Jeu de plateforme 2D"></canvas></div>
+      <section id="game-screen" class="screen game-screen" aria-label="Mission en cours" data-i18n-aria="aGame">
+        <div class="game-stage"><canvas id="game-canvas" width="960" height="540" aria-label="Jeu de plateforme 2D" data-i18n-aria="aCanvas"></canvas></div>
         <div class="game-topbar">
-          <button id="pause-button" class="game-icon-button" type="button" aria-label="Pause">Ⅱ</button>
+          <button id="pause-button" class="game-icon-button" type="button" aria-label="Pause" data-i18n-aria="pause">Ⅱ</button>
           <div class="mission-label"><strong id="mission-title">Mission</strong></div>
-          <div class="coin-counter" aria-label="Étoiles ramassées"><b class="jar-star" aria-hidden="true">⭐</b><span class="jar" aria-hidden="true"><i class="jar-fill"></i><i class="jar-shine"></i></span><strong id="coin-count" class="sr-only">0/0</strong></div>
-          <div id="friend-counter" class="friend-counter" aria-label="Monstres capturés sur 20"><span aria-hidden="true">👾</span><strong id="friend-count">0/20</strong></div>
-          <div class="letter-counter" aria-label="Lettres de l’alphabet récoltées"><span class="lc-ring" aria-hidden="true"><b id="letter-last">🔤</b></span><strong id="letter-count" class="sr-only">0/26</strong></div>
-          <div class="progress-wrap" aria-label="Progression"><div id="progress-dots" class="progress-dots"></div></div>
-          <button id="sound-button" class="game-icon-button" type="button" aria-label="Couper les sons">♫</button>
+          <div class="coin-counter" aria-label="Étoiles ramassées" data-i18n-aria="aStars"><b class="jar-star" aria-hidden="true">⭐</b><span class="jar" aria-hidden="true"><i class="jar-fill"></i><i class="jar-shine"></i></span><strong id="coin-count" class="sr-only">0/0</strong></div>
+          <div id="friend-counter" class="friend-counter" aria-label="Monstres capturés sur 20" data-i18n-aria="aFriends"><span aria-hidden="true">👾</span><strong id="friend-count">0/20</strong></div>
+          <div class="letter-counter" aria-label="Lettres de l’alphabet récoltées" data-i18n-aria="aLetters"><span class="lc-ring" aria-hidden="true"><b id="letter-last">🔤</b></span><strong id="letter-count" class="sr-only">0/26</strong></div>
+          <div class="progress-wrap" aria-label="Progression" data-i18n-aria="aProgress"><div id="progress-dots" class="progress-dots"></div></div>
+          <button id="sound-button" class="game-icon-button" type="button" aria-label="Couper les sons" data-i18n-aria="aMute">♫</button>
         </div>
         <div id="monster-bar" class="monster-bar" aria-hidden="true"></div>
         <div id="hit-meter" class="hit-meter" aria-hidden="true"><i>🔥</i><i>🔥</i><i>🔥</i></div>
-        <div id="award-banner" class="award-banner hidden" role="status"><span class="award-medal"></span><span class="award-sticker"></span><span class="award-text"><b class="award-name"></b><i class="award-new">NOUVEAU</i></span></div>
+        <div id="award-banner" class="award-banner hidden" role="status"><span class="award-medal"></span><span class="award-sticker"></span><span class="award-text"><b class="award-name"></b><i class="award-new" data-i18n="newBadge">NOUVEAU</i></span></div>
         <div id="tier-splash" class="tier-splash" aria-hidden="true"><div class="ts-card"><span class="ts-swords"></span><b class="ts-text"></b></div></div>
         <div id="home-hint" class="home-hint hidden" aria-hidden="true">🏡 ➜</div>
         <div id="rotate-hint" class="rotate-hint" aria-hidden="true"><div class="rh-phone"><i></i></div><div class="rh-arrow">↻</div></div>
         <div class="touch-controls">
-          <div id="dpad" class="dpad lr" role="group" aria-label="Aller à gauche ou à droite">
-            <button type="button" class="lr-btn lr-left" data-dir="left" aria-label="Aller à gauche" tabindex="-1"><span>◀</span></button>
-            <button type="button" class="lr-btn lr-right" data-dir="right" aria-label="Aller à droite" tabindex="-1"><span>▶</span></button>
+          <div id="dpad" class="dpad lr" role="group" aria-label="Aller à gauche ou à droite" data-i18n-aria="aLR">
+            <button type="button" class="lr-btn lr-left" data-dir="left" aria-label="Aller à gauche" data-i18n-aria="aLeft" tabindex="-1"><span>◀</span></button>
+            <button type="button" class="lr-btn lr-right" data-dir="right" aria-label="Aller à droite" data-i18n-aria="aRight" tabindex="-1"><span>▶</span></button>
           </div>
           <div class="action-cluster">
-            <button type="button" id="attack-button" class="action-button" aria-label="Action : utiliser le pouvoir du héros et transformer un farceur en ami" tabindex="-1"><span class="action-ring" aria-hidden="true"></span><span class="action-power" aria-hidden="true">☄️</span><strong aria-hidden="true">ACTION&nbsp;!</strong><small aria-hidden="true">TURBO</small></button>
+            <button type="button" id="attack-button" class="action-button" aria-label="Action : utiliser le pouvoir du héros et transformer un farceur en ami" data-i18n-aria="aAction" tabindex="-1"><span class="action-ring" aria-hidden="true"></span><span class="action-power" aria-hidden="true">☄️</span><strong aria-hidden="true" data-i18n="action">ACTION&nbsp;!</strong><small aria-hidden="true">TURBO</small></button>
             <div class="jump-stack">
-              <button type="button" id="shoot-button" class="shoot-button" data-hero="ziggy" aria-label="Tirer sur les petits monstres" tabindex="-1"><span class="shoot-icon" aria-hidden="true">🔥</span></button>
-              <button type="button" id="jump-button" class="jump-button" aria-label="Sauter" tabindex="-1"><span class="jump-arrow" aria-hidden="true">▲</span><strong aria-hidden="true">SAUT</strong></button>
+              <button type="button" id="shoot-button" class="shoot-button" data-hero="ziggy" aria-label="Tirer sur les petits monstres" data-i18n-aria="aShoot" tabindex="-1"><span class="shoot-icon" aria-hidden="true">🔥</span></button>
+              <button type="button" id="jump-button" class="jump-button" aria-label="Sauter" data-i18n-aria="aJump" tabindex="-1"><span class="jump-arrow" aria-hidden="true">▲</span><strong aria-hidden="true" data-i18n="jump">SAUT</strong></button>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="pause-screen" class="screen modal-screen" aria-label="Pause">
-        <div class="modal-card pause-card"><div class="modal-icon">Ⅱ</div><div id="pause-collect" class="pause-collect" aria-label="Ce qu'il te reste à trouver"></div><div class="pause-actions"><button id="resume-button" class="primary-button" type="button">▶ <span>Reprendre</span></button><button id="restart-button" class="secondary-button" type="button">↻ <span>Recommencer</span></button><button id="stats-button" class="secondary-button" type="button">★ <span>Statistiques</span></button></div><button id="quit-button" class="text-button" type="button">Quitter la mission</button></div>
+      <section id="pause-screen" class="screen modal-screen" aria-label="Pause" data-i18n-aria="pause">
+        <div class="modal-card pause-card"><div class="modal-icon">Ⅱ</div><div id="pause-collect" class="pause-collect" aria-label="Ce qu'il te reste à trouver" data-i18n-aria="aLeftToFind"></div><div class="pause-actions"><button id="resume-button" class="primary-button" type="button">▶ <span data-i18n="resume">Reprendre</span></button><button id="restart-button" class="secondary-button" type="button">↻ <span data-i18n="restart">Recommencer</span></button><button id="stats-button" class="secondary-button" type="button">★ <span data-i18n="stats">Statistiques</span></button></div><button id="quit-button" class="text-button" type="button" data-i18n="quit">Quitter la mission</button></div>
       </section>
-      <section id="stats-screen" class="screen modal-screen" aria-label="Statistiques de la mission"><div class="modal-card stats-card"><button id="stats-back-button" class="close-settings" type="button" aria-label="Retour à la pause">←</button><div class="modal-icon">★</div><div class="stats-grid"><div><b id="stat-coins">0</b><span>⭐ étoiles</span></div><div><b id="stat-friends">0</b><span>♥ amis</span></div><div><b id="stat-letters">0</b><span>🔤 lettres</span></div><div><b id="stat-stickers">0</b><span>🏅 autocollants</span></div><div class="wide"><b id="stat-questions">0/3</b><span>❓ énigmes</span></div></div><button id="stats-resume-button" class="primary-button" type="button">Reprendre <span>➜</span></button></div></section>
+      <section id="stats-screen" class="screen modal-screen" aria-label="Statistiques de la mission" data-i18n-aria="aStatsScreen"><div class="modal-card stats-card"><button id="stats-back-button" class="close-settings" type="button" aria-label="Retour à la pause" data-i18n-aria="aBackPause">←</button><div class="modal-icon">★</div><div class="stats-grid"><div><b id="stat-coins">0</b><span data-i18n="statStars">⭐ étoiles</span></div><div><b id="stat-friends">0</b><span data-i18n="statFriends">♥ amis</span></div><div><b id="stat-letters">0</b><span data-i18n="statLetters">🔤 lettres</span></div><div><b id="stat-stickers">0</b><span data-i18n="statStickers">🏅 autocollants</span></div><div class="wide"><b id="stat-questions">0/3</b><span data-i18n="statPuzzles">❓ énigmes</span></div></div><button id="stats-resume-button" class="primary-button" type="button"><span data-i18n="resume">Reprendre</span> <span>➜</span></button></div></section>
 
-      <section id="puzzle-screen" class="screen modal-screen" aria-label="Choisir comment aider">
+      <section id="puzzle-screen" class="screen modal-screen" aria-label="Choisir comment aider" data-i18n-aria="aPuzzle">
         <div class="modal-card puzzle-card">
-          <button id="puzzle-close" class="close-puzzle" type="button" aria-label="Quitter">✕</button>
+          <button id="puzzle-close" class="close-puzzle" type="button" aria-label="Quitter" data-i18n-aria="aQuit">✕</button>
           <div id="puzzle-main">
-            <div class="puzzle-head"><button id="puzzle-read-button" class="speaker-button" type="button" aria-label="Écouter la question"><svg viewBox="0 0 64 64" aria-hidden="true"><path class="spk" d="M7 25h12l17-13v40L19 39H7z"/><path class="wave w1" d="M43 24c4.5 4.5 4.5 11.500 0 16"/><path class="wave w2" d="M50 16c8.500 8.500 8.500 23.500 0 32"/><path class="wave w3" d="M57 9c12.500 12.500 12.500 33.500 0 46"/></svg></button><h2 id="puzzle-question">Question</h2></div>
+            <div class="puzzle-head"><button id="puzzle-read-button" class="speaker-button" type="button" aria-label="Écouter la question" data-i18n-aria="aListenQ"><svg viewBox="0 0 64 64" aria-hidden="true"><path class="spk" d="M7 25h12l17-13v40L19 39H7z"/><path class="wave w1" d="M43 24c4.5 4.5 4.5 11.500 0 16"/><path class="wave w2" d="M50 16c8.500 8.500 8.500 23.500 0 32"/><path class="wave w3" d="M57 9c12.500 12.500 12.500 33.500 0 46"/></svg></button><h2 id="puzzle-question" data-i18n="question">Question</h2></div>
             <div id="puzzle-visual" class="puzzle-visual hidden" aria-hidden="true"></div>
             <div id="choice-list" class="choice-list"></div>
             <p id="puzzle-feedback" class="puzzle-feedback" aria-live="polite"></p>
             <span id="puzzle-icon" class="hidden"></span>
           </div>
           <div id="game-area" class="game-area hidden">
-            <div class="puzzle-head"><button id="game-read-button" class="speaker-button" type="button" aria-label="Écouter la consigne"><svg viewBox="0 0 64 64" aria-hidden="true"><path class="spk" d="M7 25h12l17-13v40L19 39H7z"/><path class="wave w1" d="M43 24c4.5 4.5 4.5 11.500 0 16"/><path class="wave w2" d="M50 16c8.500 8.500 8.500 23.500 0 32"/><path class="wave w3" d="M57 9c12.500 12.500 12.500 33.500 0 46"/></svg></button><h2 id="game-title" class="game-title">🧩</h2></div>
+            <div class="puzzle-head"><button id="game-read-button" class="speaker-button" type="button" aria-label="Écouter la consigne" data-i18n-aria="aListenInstr"><svg viewBox="0 0 64 64" aria-hidden="true"><path class="spk" d="M7 25h12l17-13v40L19 39H7z"/><path class="wave w1" d="M43 24c4.5 4.5 4.5 11.500 0 16"/><path class="wave w2" d="M50 16c8.500 8.500 8.500 23.500 0 32"/><path class="wave w3" d="M57 9c12.500 12.500 12.500 33.500 0 46"/></svg></button><h2 id="game-title" class="game-title">🧩</h2></div>
             <div id="game-board" class="game-board"></div>
           </div>
           <div id="puzzle-reward" class="puzzle-reward hidden" aria-live="polite">
             <div class="reward-stage" aria-hidden="true"><span class="reward-gift">🎁</span><span id="reward-sticker" class="reward-sticker bronze">🦁</span><i>✦</i><i>★</i><i>✧</i><i>✦</i><i>★</i><i>✧</i></div>
             <p id="reward-name" class="reward-name">Le lion</p>
-            <span id="reward-new" class="reward-new">NOUVEAU</span>
-            <button id="reward-continue" class="primary-button" type="button">Super&nbsp;! <span>➜</span></button>
+            <span id="reward-new" class="reward-new" data-i18n="newBadge">NOUVEAU</span>
+            <button id="reward-continue" class="primary-button" type="button"><span data-i18n="super">Super&nbsp;!</span> <span>➜</span></button>
           </div>
         </div>
       </section>
 
-      <section id="ending-screen" class="screen ending-screen" aria-label="Niveau terminé">
+      <section id="ending-screen" class="screen ending-screen" aria-label="Niveau terminé" data-i18n-aria="aEnd">
         <div class="ending-confetti" aria-hidden="true"><i>✦</i><i>✧</i><i>★</i><i>✦</i><i>♥</i><i>✧</i></div>
         <div class="ending-inner">
           <div id="ending-hero" class="ending-hero" aria-hidden="true"></div>
           <div class="ending-copy">
-            <h2>Bravo&nbsp;!</h2>
+            <h2 data-i18n="bravo">Bravo&nbsp;!</h2>
             <p id="ending-city" class="ending-city"></p>
             <div id="ending-stats" class="stats-sheet" aria-live="polite"></div>
             <p id="ending-remaining" class="ending-remaining"></p>
             <div id="ending-stickers" class="ending-stickers hidden" aria-live="polite"></div>
             <div id="ending-friends" class="ending-friends hidden" aria-live="polite"></div>
-            <section class="ending-alphabet" aria-label="Alphabet récolté"><div id="alphabet-grid" class="alphabet-grid" role="list"></div><p id="alphabet-summary">0/26</p></section>
+            <section class="ending-alphabet" aria-label="Alphabet récolté" data-i18n-aria="aAlphabet"><div id="alphabet-grid" class="alphabet-grid" role="list"></div><p id="alphabet-summary">0/26</p></section>
             <div class="rest-card"><span class="rest-stars">🌙 ✦ ✦</span></div>
             <div class="ending-buttons">
-              <button id="new-mission-button" class="icon-btn" type="button" aria-label="Menu principal">🏠</button>
-              <button id="replay-button" class="icon-btn" type="button" aria-label="Rejouer cette ville">↻</button>
-              <button id="end-album-button" class="icon-btn" type="button" aria-label="Voir l’album de la ville">📒</button>
-              <button id="next-level-button" class="icon-btn go hidden" type="button" aria-label="Ville suivante">➜</button>
+              <button id="new-mission-button" class="icon-btn" type="button" aria-label="Menu principal" data-i18n-aria="aMenu">🏠</button>
+              <button id="replay-button" class="icon-btn" type="button" aria-label="Rejouer cette ville" data-i18n-aria="aReplay">↻</button>
+              <button id="end-album-button" class="icon-btn" type="button" aria-label="Voir l’album de la ville" data-i18n-aria="aCityAlbum">📒</button>
+              <button id="next-level-button" class="icon-btn go hidden" type="button" aria-label="Ville suivante" data-i18n-aria="aNext">➜</button>
             </div>
           </div>
         </div>
       </section>
 
 
-      <section id="timer-screen" class="screen modal-screen" aria-label="Minuteur de jeu">
-        <div class="modal-card timer-card"><button class="close-settings" type="button" data-go="home" aria-label="Fermer">×</button>
-          <h2>⏱️ Combien de temps ?</h2>
+      <section id="timer-screen" class="screen modal-screen" aria-label="Minuteur de jeu" data-i18n-aria="aTimer">
+        <div class="modal-card timer-card"><button class="close-settings" type="button" data-go="home" aria-label="Fermer" data-i18n-aria="aClose">×</button>
+          <h2 data-i18n="howLong">⏱️ Combien de temps ?</h2>
           <div id="timer-options" class="timer-options" role="group"></div>
-          <p class="timer-note">Ensuite, les héros vont dormir.</p>
+          <p class="timer-note" data-i18n="timerNote">Ensuite, les héros vont dormir.</p>
         </div>
       </section>
 
-      <section id="rest-screen" class="screen rest-screen" aria-label="Les héros dorment">
-        <button class="round-btn rest-back" type="button" data-go="home" aria-label="Retour à l’accueil">←</button>
+      <section id="rest-screen" class="screen rest-screen" aria-label="Les héros dorment" data-i18n-aria="aRest">
+        <button class="round-btn rest-back" type="button" data-go="home" aria-label="Retour à l’accueil" data-i18n-aria="aBackHome">←</button>
         <div class="rest-sky" aria-hidden="true"><span class="rest-moon">🌙</span><i>✦</i><i>✧</i><i>✦</i><i>✧</i><i>★</i></div>
         <div class="rest-heroes" aria-hidden="true">
           <div class="rest-hero"><span class="sprite" style="--col:3;--row:0"></span><span class="zzz"><i>Z</i><i>z</i><i>z</i></span></div>
           <div class="rest-hero"><span class="sprite" style="--col:3;--row:1"></span><span class="zzz"><i>Z</i><i>z</i><i>z</i></span></div>
           <div class="rest-hero"><span class="sprite" style="--col:3;--row:2"></span><span class="zzz"><i>Z</i><i>z</i><i>z</i></span></div>
         </div>
-        <p class="rest-title">Chut… les héros dorment&nbsp;!</p>
+        <p class="rest-title" data-i18n="restTitle">Chut… les héros dorment&nbsp;!</p>
         <p id="rest-count" class="rest-count">60:00</p>
       </section>
 
-      <section id="settings-screen" class="screen modal-screen" aria-label="Réglages adulte">
-        <div class="modal-card settings-card"><button class="close-settings" type="button" data-go="home" aria-label="Fermer">×</button><h2>⚙ Réglages</h2><label class="setting-row"><span>🔊 Sons</span><input id="music-toggle" type="checkbox" checked /></label><label class="setting-row"><span>🎵 Musique</span><input id="music-bg-toggle" type="checkbox" checked /></label><label class="setting-row"><span>💥 Bruitages</span><input id="effects-toggle" type="checkbox" checked /></label><label class="setting-row"><span>📳 Vibrations</span><input id="haptics-toggle" type="checkbox" checked /></label><label class="setting-row one-button-row"><span>👶 Un seul bouton <small>(3-4 ans : le pouvoir part tout seul)</small></span><input id="one-button-toggle" type="checkbox" /></label><label class="setting-row voice-row"><span>🗣️ Voix</span><select id="voice-select" aria-label="Choisir la voix"><option value="">Automatique</option></select></label><button id="timer-reset-button" class="reset-hold" type="button" aria-label="Réinitialiser le minuteur : garder appuyé 3 secondes"><span class="rh-fill"></span><span class="rh-text">⏱️ Réinitialiser le minuteur <small>(garder appuyé)</small></span></button><button id="reset-button" class="reset-hold" type="button" aria-label="Réinitialiser le jeu : garder appuyé 3 secondes"><span class="rh-fill"></span><span class="rh-text">🗑️ Tout réinitialiser <small>(garder appuyé)</small></span></button></div>
+      <section id="settings-screen" class="screen modal-screen" aria-label="Réglages adulte" data-i18n-aria="aSettings">
+        <div class="modal-card settings-card"><button class="close-settings" type="button" data-go="home" aria-label="Fermer" data-i18n-aria="aClose">×</button><h2 data-i18n="settings">⚙ Réglages</h2><label class="setting-row"><span data-i18n="sounds">🔊 Sons</span><input id="music-toggle" type="checkbox" checked /></label><label class="setting-row"><span data-i18n="music">🎵 Musique</span><input id="music-bg-toggle" type="checkbox" checked /></label><label class="setting-row"><span data-i18n="sfx">💥 Bruitages</span><input id="effects-toggle" type="checkbox" checked /></label><label class="setting-row"><span data-i18n="vibr">📳 Vibrations</span><input id="haptics-toggle" type="checkbox" checked /></label><label class="setting-row one-button-row"><span><span data-i18n="oneBtn">👶 Un seul bouton</span> <small data-i18n="oneBtnHint">(3-4 ans : le pouvoir part tout seul)</small></span><input id="one-button-toggle" type="checkbox" /></label><label class="setting-row lang-row"><span>🌐 Language</span><select id="lang-select" aria-label="Language"></select></label><label class="setting-row voice-row"><span data-i18n="voice">🗣️ Voix</span><select id="voice-select" aria-label="Choisir la voix" data-i18n-aria="aVoice"><option value="" data-i18n="auto">Automatique</option></select></label><button id="timer-reset-button" class="reset-hold" type="button" aria-label="Réinitialiser le minuteur : garder appuyé 3 secondes" data-i18n-aria="aResetTimer"><span class="rh-fill"></span><span class="rh-text"><span data-i18n="resetTimer">⏱️ Réinitialiser le minuteur</span> <small data-i18n="holdHint">(garder appuyé)</small></span></button><button id="reset-button" class="reset-hold" type="button" aria-label="Réinitialiser le jeu : garder appuyé 3 secondes" data-i18n-aria="aResetAll"><span class="rh-fill"></span><span class="rh-text"><span data-i18n="resetAll">🗑️ Tout réinitialiser</span> <small data-i18n="holdHint">(garder appuyé)</small></span></button></div>
+      </section>
+      <!-- Choix de la langue : au premier lancement, puis dans les réglages (« Language », toujours en anglais) -->
+      <section id="lang-screen" class="screen lang-screen" aria-label="Language">
+        <div class="lang-card">
+          <div class="lang-globe" aria-hidden="true">🌍</div>
+          <div id="lang-grid" class="lang-grid" role="list"></div>
+        </div>
       </section>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </main>
+    <script src="i18n.js" defer></script>
+    <script src="lang-en.js" defer></script>
+    <script src="lang-es.js" defer></script>
+    <script src="lang-de.js" defer></script>
+    <script src="lang-ja.js" defer></script>
+    <script src="lang-ko.js" defer></script>
     <script src="stickers-cities.js" defer></script>
     <script src="stickers.js" defer></script>
     <script src="minigames.js" defer></script>
