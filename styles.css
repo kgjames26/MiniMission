@@ -663,3 +663,41 @@ body.one-button .touch-controls{--jump:clamp(108px,22vh,150px)}
 @keyframes rh-turn{0%,20%{transform:rotate(0)}55%,85%{transform:rotate(-90deg)}100%{transform:rotate(0)}}
 @keyframes rh-spin{0%,20%{transform:rotate(0)}55%,100%{transform:rotate(-180deg)}}
 @media (prefers-reduced-motion:reduce){.rh-phone{animation:none;transform:rotate(-90deg)}.rh-arrow{animation:none}}
+/* ---------- v0.36 : bocal d'étoiles, anneau des lettres, ce qu'il reste à trouver ---------- */
+.sr-only{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* le bocal : un pot arrondi qui se remplit de jaune selon --p */
+.coin-counter{padding:4px 10px}
+.jar{position:relative;display:block;width:30px;height:32px;border:3px solid #c9a24a;border-top-width:4px;border-radius:7px 7px 12px 12px;background:#fffaf0;overflow:hidden}
+.jar::before{content:"";position:absolute;left:-3px;right:-3px;top:-6px;height:5px;border-radius:3px;background:#c9a24a}
+.jar-fill{position:absolute;left:0;right:0;bottom:0;height:calc(var(--p,0)*100%);background:linear-gradient(#ffe066,#ffb300);transition:height .5s cubic-bezier(.2,1.4,.4,1)}
+.jar-star{position:absolute;inset:0;display:grid;place-items:center;font-size:15px;line-height:1;filter:drop-shadow(0 1px 0 #fff)}
+.coin-counter.full{background:#ffe27a;box-shadow:0 0 0 3px #fff4b8,0 0 16px #ffd84a}
+.coin-counter.full .jar{border-color:#e0a100}
+/* l'anneau des lettres : se remplit en bleu autour de la dernière lettre ramassée */
+.letter-counter{padding:4px 8px}
+.lc-ring{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:conic-gradient(#3b8ff0 calc(var(--p,0)*1turn),#d6e6f3 0)}
+.lc-ring b{display:grid;place-items:center;width:27px;height:27px;border-radius:50%;background:#fff;color:#2f6fb0;font-size:17px;font-weight:1000;line-height:1}
+.letter-counter.full .lc-ring{background:conic-gradient(#ffc93c 1turn,#ffc93c 0);box-shadow:0 0 12px #ffd84a}
+.letter-counter.missed{animation:oops-shake .45s 2}
+.letter-counter.missed .lc-ring b{background:#e9edf1;color:#9aa7b4;box-shadow:inset 0 0 0 2px #c3ccd5}
+@media(max-height:520px){.jar{width:24px;height:26px}.jar-star{font-size:12px}.lc-ring{width:30px;height:30px}.lc-ring b{width:22px;height:22px;font-size:14px}}
+/* écran de pause : l'alphabet et les drapeaux */
+.pause-collect{display:grid;gap:10px;justify-items:center;margin:4px 0 14px}
+.pc-abc{display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:4px;max-width:440px}
+.pc-abc i{display:grid;place-items:center;width:28px;height:30px;border-radius:7px;font-style:normal;font-weight:1000;font-size:16px;background:#e9edf1;color:#b3bdc7}
+.pc-abc i.on{background:#3b8ff0;color:#fff;box-shadow:0 2px 0 #2a6fc0}
+.pc-flags{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.pf{position:relative;display:grid;place-items:center;width:34px;height:30px;border-radius:4px 10px 10px 4px;font-style:normal}
+.pf::before{content:"";position:absolute;left:-5px;top:-4px;bottom:-10px;width:4px;border-radius:2px;background:#7a5a3c}
+.pf b{color:#fff;font-size:16px}
+.pf.todo{background:#e3e7eb}.pf.green{background:#3fbf62}.pf.gold{background:#ffc93c;box-shadow:0 0 10px #ffd84a}
+.pf em{position:absolute;top:-17px;left:50%;transform:translateX(-50%);font-style:normal;font-size:12px;color:#9aa7b4;white-space:nowrap;letter-spacing:-1px}
+@media(max-width:520px){.pc-abc{grid-template-columns:repeat(9,minmax(0,1fr))}.pc-abc i{width:26px;height:28px;font-size:15px}}
+/* bocal (réglage) : verre clair, remplissage doré bien visible, étoile à côté */
+.coin-counter{gap:5px}
+.jar{width:24px;height:30px;border:3px solid #b98a2e;border-top-width:3px;border-radius:6px 6px 11px 11px;background:#eef7fc}
+.jar::before{left:2px;right:2px;top:-1px;height:4px;background:#b98a2e;border-radius:0 0 3px 3px}
+.jar-fill{background:linear-gradient(#ffe36e,#ffad0a)}
+.jar-shine{position:absolute;left:3px;top:5px;width:4px;height:14px;border-radius:3px;background:rgba(255,255,255,.75)}
+.jar-star{position:static;display:block;font-size:17px;filter:none}
+@media(max-height:520px){.jar{width:20px;height:25px}.jar-star{font-size:14px}}

@@ -268,7 +268,7 @@
   }
   function hash(value) { let h = 2166136261; for (let i=0;i<value.length;i++) { h ^= value.charCodeAt(i); h = Math.imul(h,16777619); } return h >>> 0; }
   function seeded(seed) { let s = seed || 1; return () => { s += 0x6D2B79F5; let t = s; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-  function setScreen(id) { if(id!=='puzzle-screen')cancelSpeech(); if(id!=='game-screen'){$('#toast')?.classList.remove('show');$('#award-banner')?.classList.remove('show');} screens.forEach(s => s.classList.toggle('active', s.id === id)); scene = id; if (id !== 'game-screen') releaseControls(); if (!['game-screen','puzzle-screen'].includes(id)) lastActiveTick=performance.now(); if (id === 'game-screen') resizeCanvas(); updateMusic(); }
+  function setScreen(id) { if(id!=='puzzle-screen')cancelSpeech(); if(id!=='game-screen'){$('#toast')?.classList.remove('show');$('#award-banner')?.classList.remove('show');} if (id === 'pause-screen') renderPauseCollect(); screens.forEach(s => s.classList.toggle('active', s.id === id)); scene = id; if (id !== 'game-screen') releaseControls(); if (!['game-screen','puzzle-screen'].includes(id)) lastActiveTick=performance.now(); if (id === 'game-screen') resizeCanvas(); updateMusic(); }
   // la musique accompagne la partie ; elle se met en pause avec le jeu
   function updateMusic() {
     const should = audioEnabled && musicEnabled && !document.hidden && !idleMuted && (scene === 'game-screen' || scene === 'puzzle-screen');
@@ -356,7 +356,9 @@
     { const base = [200, ...level.stations.map(x => x - 330), world.width - 900], pts = [200];
       for (let i = 1; i < base.length; i++) { const mid = (base[i - 1] + base[i]) / 2; pts.push(flagX(mid)); if (i < base.length - 1) pts.push(flagX(base[i])); }
       world.passPts = [...new Set(pts.map(Math.round))].sort((a, b) => a - b).filter((x, i, arr) => !i || x - arr[i - 1] > 500); }
-    world.passX = Math.max(...world.passPts.filter(cp => cp <= player.x + 1)); flagWave = {};
+    world.passX = Math.max(...world.passPts.filter(cp => cp <= player.x + 1)); flagWave = {}; goldFlags = {};
+    world.passPts.forEach((cp, i) => { if (i && world.passX >= cp && !segmentMissing(i)) goldFlags[cp] = true; });      // reprise : pas de fête pour les anciens drapeaux
+    mission.letters.forEach(l => { if (!l.collected && player.x - l.x >= 280) l.missed = true; });
     mission.monsters.forEach(m => { if (m.friendly && !m.prev) { m.x = player.x; m.y = player.y + player.h; } });
     shots = []; fireballs = []; tornados = []; hitTimes = []; rewindAt = 0; litShown = -1; shootReady = 0; flipUntil = 0; hurtUntil = 0;
     swing = null; fizzle = null; turboUntil = 0; turboReady = 0; punchReady = 0; coyote = 0; gt = 0; jumpBuffer = 0; slowmo = 0; perf.since = 0; perf.slowFor = 0; perf.ema = 16.7; perf.tried = null; rope = null;
@@ -466,6 +468,7 @@
       else if (player.grounded || coyote > 0) { doJump(turboOn); jumpBuffer = 0; coyote = 0; }
     }
     if (oneButton) { autoAssist(turboOn); magnetPickups(dt); }
+    checkMissedLetters();
     if (swing) updateSwing(dt);
     else if (moveAndCollide(dt, turboOn)) return;
     if (rope) updateRope(dt);
@@ -479,6 +482,8 @@
       world.passX = cp; flagWave[cp] = gt;                       // nouveau drapeau atteint : il passe au vert et fait la fête
       FX.confetti(cp + 20, world.floor - 100, 16); FX.sparkle(cp + 20, world.floor - 110, 10, ['#ffffff', '#7be08f', '#ffe066'], 150);
       sound('coin'); MM.haptic('good');
+      const i = world.passPts.indexOf(cp);
+      if (i > 0 && !segmentMissing(i)) { goldFlags[cp] = true; FX.confetti(cp + 20, world.floor - 130, 26); sound('sticker'); cheer('🤩'); }   // toutes les étoiles du morceau : drapeau doré
     }
     collectPickups();
     // effets de course
@@ -691,12 +696,18 @@
       ctx.fillStyle = 'rgba(40,60,80,.18)'; ctx.beginPath(); ctx.ellipse(x, F + 1, 16, 5, 0, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#7a5a3c'; roundRect(x - 4, top, 8, H + hop, 4, true);                 // mât
       ctx.fillStyle = '#ffd84a'; ctx.beginPath(); ctx.arc(x, top - 2, 8, 0, Math.PI * 2); ctx.fill();   // boule dorée
-      const col = on ? '#3fbf62' : '#ff5a4f', dark = on ? '#2b9a4b' : '#d83f36';
+      const miss = on ? segmentMissing(i) : 0, gold = on && !miss;
+      if (gold && !goldFlags[cp]) { goldFlags[cp] = true; flagWave[cp] = gt; FX.confetti(cp + 20, F - 130, 20); sound('sticker'); }   // les oubliées ont été rattrapées
+      const col = gold ? '#ffc93c' : on ? '#3fbf62' : '#ff5a4f', dark = gold ? '#e0a100' : on ? '#2b9a4b' : '#d83f36';
       ctx.fillStyle = col; ctx.strokeStyle = dark; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.moveTo(x + 4, top + 6);
       ctx.quadraticCurveTo(x + 32, top + wave, x + 62, top + 18 + wave);
       ctx.quadraticCurveTo(x + 34, top + 30 - wave, x + 4, top + 44); ctx.closePath(); ctx.fill(); ctx.stroke();
       if (on) { ctx.fillStyle = '#fff'; ctx.font = '900 22px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('★', x + 28, top + 23 + wave * .5); }
+      if (miss) {                                  // une petite étoile grise par étoile oubliée dans ce morceau (5 au plus)
+        const k = Math.min(5, miss); ctx.font = '900 20px system-ui,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        for (let j = 0; j < k; j++) { const sx = x + 2 + (j - (k - 1) / 2) * 20, sy = top - 26 + Math.sin(time * 3 + j) * 3; ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillText('★', sx, sy + 1.5); ctx.fillStyle = '#9aa7b4'; ctx.fillText('★', sx, sy); }
+      }
       ctx.restore();
     });
     world.decorations.forEach(item => {
@@ -1073,7 +1084,27 @@
     choices.forEach(choice => choice.disabled = true);
     puzzleSolved();
   }
-  function updateLetterCounter(){const node=$('#letter-count');if(node)node.textContent=`${(mission?.letters||[]).filter(letter=>letter.collected).length}/26`;}
+  // lettres : la dernière ramassée en grand, dans un anneau qui se remplit (pas de « 21/26 » à lire)
+  function updateLetterCounter(){
+    const all = mission?.letters || [], got = all.filter(l => l.collected), node = $('#letter-count'), last = $('#letter-last'), box = $('.letter-counter');
+    if (node) node.textContent = `${got.length}/26`;
+    if (box) { box.style.setProperty('--p', (got.length / 26).toFixed(3)); box.classList.toggle('full', got.length >= 26); box.classList.remove('missed'); box.setAttribute('aria-label', `${got.length} lettres sur 26`); }
+    const latest = got.reduce((a, l) => (l.at || 0) >= (a?.at || 0) ? l : a, null);
+    if (last) last.textContent = latest ? latest.letter : '🔤';
+  }
+  // une lettre dépassée sans être ramassée : le compteur la montre en gris et la voix prévient (une fois par lettre)
+  let lastMissSay = -9;
+  function checkMissedLetters() {
+    if (!mission?.letters || swing) return;
+    for (const l of mission.letters) {
+      if (l.collected || l.missed || player.x - l.x < 280) continue;
+      l.missed = true;
+      const box = $('.letter-counter'), last = $('#letter-last');
+      if (box && last) { last.textContent = l.letter; box.classList.remove('missed'); void box.offsetWidth; box.classList.add('missed'); clearTimeout(box._m); box._m = setTimeout(updateLetterCounter, 2600); }
+      if (gt - lastMissSay > 4 && !timerNoticePlaying) { lastMissSay = gt; sayText(`Oh ! Tu as oublié le ${l.letter} !`); }
+      MM.haptic('tap'); break;
+    }
+  }
   function finishMission() {
     if (scene === 'ending-screen') return;
     commitProgress(true);
@@ -1364,7 +1395,7 @@
     for (const letter of world.letters) {
       if (letter.collected) continue;
       if (player.x + player.w > letter.x - 26 && player.x < letter.x + 26 && player.y < letter.y + 28 && player.y + player.h > letter.y - 28) {
-        letter.collected = true; flyToCounter(letter.x, letter.y, '.letter-counter', letter.letter, updateLetterCounter, true);
+        letter.collected = true; letter.at = Date.now(); flyToCounter(letter.x, letter.y, '.letter-counter', letter.letter, updateLetterCounter, true);
         triggerHeroAnimation('collect', 500); cheer();
         FX.sparkle(letter.x, letter.y, 14, LETTER_COLORS, 190); FX.ring(letter.x, letter.y, '#ffffff', 56, .4, 5); FX.confetti(letter.x, letter.y, 12);
         const word = LETTER_WORDS[letter.letter];
@@ -1483,7 +1514,31 @@
     const started = sayText(`${praise} Un autocollant : ${info.n} !`, () => setTimeout(go, 1600));
     if (!started) setTimeout(go, 4200);
   }
-  function updateStarCounter() { const node = $('#coin-count'); if (node) node.textContent = `${(mission?.coins || []).filter(s => s.collected).length}/${(mission?.coins || []).length}`; }
+  // étoiles : un bocal qui se remplit (pas de « 37/52 ») ; il déborde de lumière quand on les a toutes
+  function updateStarCounter() {
+    const all = mission?.coins || [], n = all.filter(s => s.collected).length, node = $('#coin-count'), box = $('.coin-counter');
+    if (node) node.textContent = `${n}/${all.length}`;
+    if (box) { box.style.setProperty('--p', all.length ? (n / all.length).toFixed(3) : 0); box.classList.toggle('full', all.length > 0 && n >= all.length); box.setAttribute('aria-label', `${n} étoiles sur ${all.length}`); }
+  }
+  // étoiles d'un morceau du niveau (entre deux drapeaux) encore à ramasser
+  function segmentMissing(i) {
+    const a = world.passPts[i - 1] ?? 0, b = world.passPts[i]; let miss = 0;
+    for (const st of world.coins || []) if (!st.collected && st.x >= a && st.x < b) miss++;
+    return miss;
+  }
+  let goldFlags = {};
+  // écran de pause : l'alphabet (lettres trouvées allumées) et les drapeaux (doré = toutes les étoiles du morceau)
+  function renderPauseCollect() {
+    const box = $('#pause-collect'); if (!box || !mission) return;
+    const letters = mission.letters || [];
+    const abc = letters.map(l => `<i class="${l.collected ? 'on' : ''}">${l.letter}</i>`).join('');
+    const flags = world.passPts.slice(1).map((cp, k) => {
+      const i = k + 1, reached = world.passX >= cp, miss = reached ? segmentMissing(i) : 0;
+      const cls = !reached ? 'todo' : miss ? 'green' : 'gold';
+      return `<span class="pf ${cls}"><b>${!reached ? '' : miss ? '' : '★'}</b>${reached && miss ? `<em>${'☆'.repeat(Math.min(5, miss))}</em>` : ''}</span>`;
+    }).join('');
+    box.innerHTML = `<div class="pc-abc">${abc}</div><div class="pc-flags">${flags}</div>`;
+  }
   function sprinkle(x, y) { FX.sparkle(x, y, 14); }
   function drawBuilding(pl) {
     const W = view.w, F = world.floor, x = pl.x - world.camera; if (x < -260 || x > W + 60) return;
