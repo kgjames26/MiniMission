@@ -7,6 +7,11 @@
   const ctx = canvas.getContext('2d', { alpha: false });
   const STORE = 'mini-mission-v1';
   const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  // Nom des lettres À DIRE par la voix : la synthèse vocale lit mal une lettre seule (« Y » devient « i »).
+  // On écrit donc chaque nom tel qu'il se prononce. Pour une traduction, refaire cette table dans la langue cible
+  // (ex. anglais : Y = « why », Z = « zee » ou « zed ») et la faire vérifier par une personne dont c'est la langue.
+  const LETTER_SAY = { fr: { A:'a', B:'bé', C:'cé', D:'dé', E:'e', F:'èfe', G:'gé', H:'hache', I:'i', J:'ji', K:'ka', L:'èle', M:'ème', N:'ène', O:'o', P:'pé', Q:'ku', R:'erre', S:'èsse', T:'té', U:'u', V:'vé', W:'double vé', X:'iks', Y:'i grec', Z:'zède' } };
+  const letterSay = (l) => LETTER_SAY.fr[l] || l;
   const MM = window.MM;
   const LV = MM.level, SW = LV.swing, FX = MM.fx;
   const TURBO_SPEED = 520;
@@ -1101,7 +1106,7 @@
       l.missed = true;
       const box = $('.letter-counter'), last = $('#letter-last');
       if (box && last) { last.textContent = l.letter; box.classList.remove('missed'); void box.offsetWidth; box.classList.add('missed'); clearTimeout(box._m); box._m = setTimeout(updateLetterCounter, 2600); }
-      if (gt - lastMissSay > 4 && !timerNoticePlaying) { lastMissSay = gt; sayText(`Oh ! Tu as oublié le ${l.letter} !`); }
+      if (gt - lastMissSay > 4 && !timerNoticePlaying) { lastMissSay = gt; sayText(`Oh ! Tu as oublié le ${letterSay(l.letter)} !`); }
       MM.haptic('tap'); break;
     }
   }
@@ -1400,7 +1405,7 @@
         FX.sparkle(letter.x, letter.y, 14, LETTER_COLORS, 190); FX.ring(letter.x, letter.y, '#ffffff', 56, .4, 5); FX.confetti(letter.x, letter.y, 12);
         const word = LETTER_WORDS[letter.letter];
         if (word) FX.text(letter.x, letter.y - 30, word[1], '#ffffff', 44);
-        sound('coin'); MM.haptic('letter'); if (!timerNoticePlaying) sayText(word ? `${letter.letter}, comme ${word[0]} !` : letter.letter); writeSave();
+        sound('coin'); MM.haptic('letter'); if (!timerNoticePlaying) sayText(word ? `${letterSay(letter.letter)}, comme ${word[0]} !` : letterSay(letter.letter)); writeSave();
         if (!mission.goldGiven && world.letters.every(l => l.collected)) { mission.goldGiven = true; awardSticker('gold'); }
         commitProgress(false);
       }
