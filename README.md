@@ -115,3 +115,7 @@ Filou reste accroché à sa toile tant qu'on ne saute pas (le bouton SAUT cligno
 - Marche de Ziggy redessinée (v0.43) : 7 images `ziggy_m0`…`ziggy_m6` où les jambes alternent vraiment (`ziggy_w1` reste l'image à l'arrêt).
 - Voix (v0.46) : `sayText(texte, fin, true)` = phrase secondaire (lettre ramassée, encouragement, compte des étoiles, autocollant trouvé, « oups ») : abandonnée si une voix parle déjà. Les autres (actions de l'enfant ou de l'adulte, devinette, minuteur, fin de mission) passent toujours.
 - Marche de Ziggy (v0.46) : seulement les 5 images debout (`ZIGGY_WALK`) ; `ziggy_m0` et `ziggy_m4`, trop accroupies, sont écartées.
+
+## « Ce que j'ai déjà trouvé » (v0.47)
+- Toucher un compteur du haut (⭐ étoiles, 👾 monstres, 🔤 lettres, drapeaux) ouvre une petite fenêtre juste en dessous : lettres allumées/éteintes, étoiles qui restent dans chaque morceau du niveau (▼ = où est le héros), monstres déjà amis.
+- Le jeu est en pause pendant ce temps ; la voix dit ce qu'il reste (`peekLeft` / `peekAll`) ; un toucher n'importe où referme.

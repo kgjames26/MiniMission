@@ -156,6 +156,7 @@
   let oneButton = !!save.oneButton;                // mode « un seul bouton » (3-4 ans) : ACTION et tir se déclenchent tout seuls
   const assist = { webReady: 0, lastAnchor: null, cueSince: 0 };            // dessin souple de la toile (purement visuel, ne change pas la physique du balancement)
   let fizzle = null;          // toile lancée dans le vide
+  let hudPeek = null;   // compteur du haut touché : petite fenêtre ouverte, jeu en pause
   let turboUntil = 0, turboReady = 0, punchReady = 0, coyote = 0;
   let lastDustAt = 0, lastBonkAt = 0, lastStreakAt = 0, abilityReadyShown = true;
   let musicEnabled = save.musicEnabled !== false;
@@ -278,7 +279,7 @@
   }
   function hash(value) { let h = 2166136261; for (let i=0;i<value.length;i++) { h ^= value.charCodeAt(i); h = Math.imul(h,16777619); } return h >>> 0; }
   function seeded(seed) { let s = seed || 1; return () => { s += 0x6D2B79F5; let t = s; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-  function setScreen(id) { if(id!=='puzzle-screen')cancelSpeech(); if(id!=='game-screen'){$('#toast')?.classList.remove('show');$('#award-banner')?.classList.remove('show');} if (id === 'pause-screen') renderPauseCollect(); screens.forEach(s => s.classList.toggle('active', s.id === id)); scene = id; if (id !== 'game-screen') releaseControls(); if (!['game-screen','puzzle-screen'].includes(id)) lastActiveTick=performance.now(); if (id === 'game-screen') resizeCanvas(); updateMusic(); }
+  function setScreen(id) { if(hudPeek){hudPeek=null;$('#hud-peek')?.classList.add('hidden');document.body.classList.remove('peeking');} if(id!=='puzzle-screen')cancelSpeech(); if(id!=='game-screen'){$('#toast')?.classList.remove('show');$('#award-banner')?.classList.remove('show');} if (id === 'pause-screen') renderPauseCollect(); screens.forEach(s => s.classList.toggle('active', s.id === id)); scene = id; if (id !== 'game-screen') releaseControls(); if (!['game-screen','puzzle-screen'].includes(id)) lastActiveTick=performance.now(); if (id === 'game-screen') resizeCanvas(); updateMusic(); }
   // la musique accompagne la partie ; elle se met en pause avec le jeu
   function updateMusic() {
     const should = audioEnabled && musicEnabled && !document.hidden && !idleMuted && (scene === 'game-screen' || scene === 'puzzle-screen');
@@ -455,7 +456,7 @@
     let k = 1;                                            // petit ralenti quand la toile s'accroche
     if (slowmo > 0) { const r = slowmo / SLOWMO_TIME; k = .3 + .7 * (1 - r) * (1 - r); slowmo -= elapsed; }
     const steps = Math.max(1, Math.ceil(elapsed / .034));
-    for (let i = 0; i < steps && scene === 'game-screen'; i++) update(elapsed * k / steps);
+    for (let i = 0; i < steps && scene === 'game-screen' && !hudPeek; i++) update(elapsed * k / steps);
     if (scene === 'game-screen') draw(now/1000);
     if (scene === 'game-screen') rafId = requestAnimationFrame(loop);
   }
@@ -1650,12 +1651,47 @@
     const box = $('#pause-collect'); if (!box || !mission) return;
     const letters = mission.letters || [];
     const abc = letters.map(l => `<i class="${l.collected ? 'on' : ''}">${l.letter}</i>`).join('');
-    const flags = world.passPts.slice(1).map((cp, k) => {
-      const i = k + 1, reached = world.passX >= cp, miss = reached ? segmentMissing(i) : 0;
-      const cls = !reached ? 'todo' : miss ? 'green' : 'gold';
-      return `<span class="pf ${cls}"><b>${!reached ? '' : miss ? '' : '★'}</b>${reached && miss ? `<em>${'☆'.repeat(Math.min(5, miss))}</em>` : ''}</span>`;
+    box.innerHTML = `<div class="pc-abc">${abc}</div><div class="pc-flags">${flagsHtml()}</div>`;
+  }
+  // all = fenêtre des étoiles : on montre aussi les étoiles des morceaux pas encore atteints, et où est le héros
+  function flagsHtml(all = false) {
+    const px = player ? player.x + player.w / 2 : 0;
+    return world.passPts.slice(1).map((cp, k) => {
+      const i = k + 1, reached = world.passX >= cp, miss = reached || all ? segmentMissing(i) : 0;
+      const here = all && px >= (world.passPts[i - 1] ?? 0) && (px < cp || i === world.passPts.length - 1);
+      const cls = (!reached ? 'todo' : miss ? 'green' : 'gold') + (here ? ' here' : '');
+      return `<span class="pf ${cls}"><b>${reached && !miss ? '★' : ''}</b>${miss ? `<em>${miss > 5 ? '☆' + miss : '☆'.repeat(miss)}</em>` : ''}</span>`;
     }).join('');
-    box.innerHTML = `<div class="pc-abc">${abc}</div><div class="pc-flags">${flags}</div>`;
+  }
+  // Petite fenêtre « ce que j'ai déjà trouvé » : un toucher sur un compteur du haut l'ouvre juste en dessous,
+  // le jeu se met en pause, la voix dit ce qu'il reste ; un toucher n'importe où la referme.
+  function openPeek(kind, anchor) {
+    if (scene !== 'game-screen' || !mission) return;
+    releaseControls();
+    const box = $('#hud-peek'), body = box.querySelector('.hp-body');
+    let html = '', a = 0, b = 0, pk = kind;
+    if (kind === 'letters') {
+      const L = mission.letters || []; a = L.filter(l => l.collected).length; b = L.length || alphabet().length;
+      html = `<div class="hp-head">🔤 <b>${a}/${b}</b></div><div class="pc-abc ${b > 30 ? 'long' : ''}">${L.map(l => `<i class="${l.collected ? 'on' : ''}">${l.letter}</i>`).join('')}</div>`;
+    } else if (kind === 'stars' || kind === 'flags') {
+      const C = mission.coins || []; a = C.filter(s => s.collected).length; b = C.length; pk = 'stars';
+      html = `<div class="hp-head">⭐ <b>${a}/${b}</b></div><div class="pc-flags hp-flags">${flagsHtml(true)}</div>`;
+    } else if (kind === 'monsters') {
+      const caught = (mission.monsters || []).filter(m => m.friendly).sort((x, y) => x.order - y.order); a = caught.length; b = MON_TOTAL;
+      html = `<div class="hp-head">👾 <b>${a}/${b}</b></div><div class="ten-frame">${Array.from({ length: MON_TOTAL }, (_, i) => caught[i] ? `<span class="mon-chip on" style="${monsterChipStyle(caught[i].imp ? -1 : caught[i].type + 5, 32)}"></span>` : '<span class="mon-chip"></span>').join('')}</div>`;
+    }
+    body.innerHTML = html;
+    box.classList.remove('hidden'); document.body.classList.add('peeking');
+    // la fenêtre se place sous le compteur touché, la petite flèche pointe dessus
+    const card = box.querySelector('.hp-card'), r = anchor.getBoundingClientRect(), W = innerWidth;
+    const cw = Math.min(card.offsetWidth, W - 16), left = Math.max(8, Math.min(W - cw - 8, r.left + r.width / 2 - cw / 2));
+    card.style.left = left + 'px'; card.style.top = (r.bottom + 12) + 'px';
+    card.style.setProperty('--ax', (r.left + r.width / 2 - left) + 'px');
+    hudPeek = kind; MM.haptic('tap');
+    sayText(a >= b ? T('peekAll') : T('peekLeft', { parts: MM.i18n.plural(pk, b - a) }));
+  }
+  function closePeek() {
+    if (!hudPeek) return; hudPeek = null; $('#hud-peek').classList.add('hidden'); document.body.classList.remove('peeking'); cancelSpeech();
   }
   function sprinkle(x, y) { FX.sparkle(x, y, 14); }
   function drawBuilding(pl) {
@@ -2306,6 +2342,14 @@
   $('#help-art-button').addEventListener('click',()=>setScreen('howto-screen'));
   $('#home-sound-toggle').addEventListener('click',()=>setAudioEnabled(!audioEnabled));
   $('#pause-button').addEventListener('click',()=>{if(scene==='game-screen'){pausedFrom='game-screen';setScreen('pause-screen');}});
+  [['.coin-counter', 'stars'], ['#friend-counter', 'monsters'], ['.letter-counter', 'letters'], ['.progress-wrap', 'flags']].forEach(([sel, kind]) => {
+    const el = $(sel); if (!el) return;
+    el.classList.add('peekable'); el.setAttribute('role', 'button'); el.tabIndex = 0;
+    el.addEventListener('click', e => { e.stopPropagation(); if (hudPeek === kind) closePeek(); else { closePeek(); openPeek(kind, el); } });
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } });
+  });
+  $('#hud-peek').addEventListener('pointerdown', e => { e.preventDefault(); closePeek(); });
+
   $('#resume-button').addEventListener('click',()=>{const target=pausedFrom;setScreen(target);lastActiveTick=performance.now();if(target==='game-screen'){startLoop();if(timerAnnouncementPending)speakTimerNotice();}else if(target==='puzzle-screen')readPuzzleAloud();});
   function showStats() {
     const letters = mission?.letters?.filter(item => item.collected).length || 0;

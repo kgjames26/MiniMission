@@ -18,7 +18,7 @@
       aGame: 'ミッション ちゅう', aCanvas: '2D アクションゲーム', pause: 'ポーズ', aStars: 'あつめた ほし', aFriends: 'つかまえた モンスター（20ぴき ちゅう）', aLetters: 'あつめた もじ',
       aProgress: 'しんちょく', aMute: 'おとを けす', aUnmute: 'おとを だす', aLR: 'ひだりか みぎに いく', aLeft: 'ひだりへ', aRight: 'みぎへ',
       aAction: 'アクション：ヒーローの ちからで いたずらっこを ともだちに する', aShoot: 'ちいさな モンスターに うつ', aJump: 'ジャンプ', newBadge: 'NEW',
-      aLeftToFind: 'まだ みつけていない もの', resume: 'つづける', restart: 'さいしょから', stats: 'きろく', quit: 'ミッションを やめる',
+      peekLeft: 'あと {parts} だよ。さがしてみよう！', peekAll: 'ぜんぶ みつけたね！ すごい！', aPeek: 'みつけたもの', aLeftToFind: 'まだ みつけていない もの', resume: 'つづける', restart: 'さいしょから', stats: 'きろく', quit: 'ミッションを やめる',
       aStatsScreen: 'ミッションの きろく', aBackPause: 'ポーズに もどる', statStars: '⭐ ほし', statFriends: '♥ ともだち', statLetters: '🔤 もじ', statStickers: '🏅 シール', statPuzzles: '❓ なぞなぞ',
       aPuzzle: 'どう たすけるか えらぶ', aQuit: 'やめる', aListenQ: 'しつもんを きく', aListenInstr: 'せつめいを きく', question: 'しつもん', super: 'やったね！',
       aEnd: 'クリア', bravo: 'すごい！', aAlphabet: 'あつめた もじ', aMenu: 'メニュー', aReplay: 'この まちを もういちど', aCityAlbum: 'この まちの アルバムを みる', aNext: 'つぎの まち',

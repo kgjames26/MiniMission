@@ -755,3 +755,24 @@ html:lang(ja) .jump-button strong,html:lang(de) .jump-button strong{font-size:.8
 /* v0.44 : boutons adulte de l'accueil plus grands (plus faciles à garder appuyés) */
 .home-top .settings-open,.home-top .timer-open{width:clamp(60px,9.5vmin,84px);height:clamp(60px,9.5vmin,84px);font-size:clamp(28px,4.6vmin,40px)}
 :lang(fr) .settings-open.need-hold::before,:lang(fr) .timer-open.need-hold::before,:lang(es) .settings-open.need-hold::before,:lang(es) .timer-open.need-hold::before,:lang(de) .settings-open.need-hold::before,:lang(de) .timer-open.need-hold::before{content:"✋ 1,5 s"}
+
+/* v0.47 : petite fenêtre « ce que j'ai déjà trouvé » sous un compteur du haut */
+.peekable{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.peekable:active{transform:scale(.94)}
+.hud-peek{position:fixed;inset:0;z-index:900;background:rgba(20,60,95,.18)}
+.hud-peek.hidden{display:none}
+.hp-card{position:fixed;width:max-content;max-width:min(470px,calc(100vw - 16px));padding:12px 14px 14px;background:#fff;border-radius:22px;box-shadow:0 10px 30px rgba(20,60,95,.3);animation:hp-pop .22s cubic-bezier(.3,1.5,.6,1)}
+.hp-arrow{position:absolute;top:-9px;left:var(--ax,50%);width:20px;height:20px;background:#fff;border-radius:4px;transform:translateX(-50%) rotate(45deg)}
+.hp-body{position:relative}
+.hp-head{text-align:center;font-size:24px;font-weight:1000;color:#2f6f9e;margin-bottom:8px}
+.hp-head b{font-size:26px}
+.hp-flags{padding-top:20px}
+.hp-card .ten-frame{background:#f2f7fb}
+.hp-card .pc-abc.long{grid-template-columns:repeat(10,minmax(0,1fr))}
+@keyframes hp-pop{from{opacity:0;transform:translateY(-8px) scale(.9)}to{opacity:1;transform:none}}
+.hp-flags .pf em{color:#e6a400;font-size:13px}
+.hp-flags .pf.here{outline:3px solid #3b8ff0;outline-offset:3px}
+.hp-flags .pf.here::after{content:"▼";position:absolute;bottom:-26px;left:50%;transform:translateX(-50%);color:#3b8ff0;font-size:14px;animation:hp-bob 1s ease-in-out infinite}
+@keyframes hp-bob{50%{transform:translate(-50%,3px)}}
+.hp-flags{padding-bottom:16px}
+body.peeking .fly-item{visibility:hidden}   /* les objets qui volent vers les compteurs ne passent pas sur la fenêtre */

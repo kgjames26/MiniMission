@@ -17,7 +17,7 @@
       aGame: 'Misión en curso', aCanvas: 'Juego de plataformas 2D', pause: 'Pausa', aStars: 'Estrellas recogidas', aFriends: 'Monstruos atrapados de 20', aLetters: 'Letras recogidas',
       aProgress: 'Progreso', aMute: 'Quitar el sonido', aUnmute: 'Poner el sonido', aLR: 'Ir a la izquierda o a la derecha', aLeft: 'Ir a la izquierda', aRight: 'Ir a la derecha',
       aAction: 'Acción: usar el poder del héroe y convertir a un bromista en amigo', aShoot: 'Disparar a los monstruitos', aJump: 'Saltar', newBadge: 'NUEVO',
-      aLeftToFind: 'Lo que te queda por encontrar', resume: 'Seguir', restart: 'Empezar de nuevo', stats: 'Estadísticas', quit: 'Salir de la misión',
+      peekLeft: '¡Todavía te falta encontrar {parts}!', peekAll: '¡Lo has encontrado todo, muy bien!', aPeek: 'Lo que ya has encontrado', aLeftToFind: 'Lo que te queda por encontrar', resume: 'Seguir', restart: 'Empezar de nuevo', stats: 'Estadísticas', quit: 'Salir de la misión',
       aStatsScreen: 'Estadísticas de la misión', aBackPause: 'Volver a la pausa', statStars: '⭐ estrellas', statFriends: '♥ amigos', statLetters: '🔤 letras', statStickers: '🏅 pegatinas', statPuzzles: '❓ acertijos',
       aPuzzle: 'Elegir cómo ayudar', aQuit: 'Salir', aListenQ: 'Escuchar la pregunta', aListenInstr: 'Escuchar las instrucciones', question: 'Pregunta', super: '¡Genial!',
       aEnd: 'Nivel terminado', bravo: '¡Muy bien!', aAlphabet: 'Letras recogidas', aMenu: 'Menú principal', aReplay: 'Volver a jugar esta ciudad', aCityAlbum: 'Ver el álbum de la ciudad', aNext: 'Siguiente ciudad',
