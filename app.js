@@ -25,7 +25,9 @@
     [64, 1.307, 254], [64, 1.224, 254], [68, 1.031, 254], [68, 1, 254], [62, 1.075, 254], [64, 1.031, 254], [58, 1.165, 254], [60, 1.173, 254], [64, 1.22, 254], [62, 1.413, 254],
     [72, 1.252, 254], [72, 1.177, 254], [92, .819, 254], [92, .878, 254], [60, .976, 254], [62, .969, 254], [100, .642, 254], [100, .866, 254], [46, 1.496, 254], [66, 1.11, 254],
     [58, 1.071, 254], [58, 1.094, 254]];
-  const MON_ROWS = 7;
+  const MON_ROWS = 9;
+  // 2e image d'animation (cases 35 à 40) : ailes qui battent (battements par seconde) ; la chenille fait sa bosse en rampant
+  const MON_ALT = { 2: 35, 7: 36, 30: 37, 31: 38, 29: 39, 28: 40 }, MON_FLAP = { 2: 5, 7: 4, 30: 9, 31: 9, 29: 3 };
   // les 15 petits monstres tranquilles : [case farceur, case ami, façon de bouger (0 marche, 1 saute, 2 vole, 3 costaud)]
   const CALM = [[0, 5, 0], [1, 6, 1], [2, 7, 2], [3, 8, 3],                    // hérisson, limon, chauve-souris, golem
     [10, 11, 2], [12, 13, 1], [14, 15, 0], [16, 17, 0], [18, 19, 1], [20, 21, 0],  // nuage, champignon, cactus, escargot, poulpe, dragon
@@ -43,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '52', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '53', asset = (p) => `${p}?v=${ASSET_V}`;
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
   const monsterImg = new Image(); monsterImg.src = asset('assets/monsters.webp');
   const movesImg = new Image(); movesImg.src = asset('assets/hero-moves.webp');
@@ -2195,8 +2197,10 @@
     const pop = m.flash > 0 ? 1 + Math.sin(m.flash * 18) * .08 : 1;
     ctx.translate(x, feet); ctx.rotate(rot); ctx.scale(pop * sx * face, pop * sy);
     ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(monsterImg, (index % 5) * MON_CELL.w, Math.floor(index / 5) * MON_CELL.h, MON_CELL.w, MON_CELL.h, -MON_CELL.w * k / 2, -(MON_CELL.h - MON_CELL.pad) * k, MON_CELL.w * k, MON_CELL.h * k);
-    if (m.flash > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.min(.6, m.flash * 1.6); ctx.drawImage(monsterImg, (index % 5) * MON_CELL.w, Math.floor(index / 5) * MON_CELL.h, MON_CELL.w, MON_CELL.h, -MON_CELL.w * k / 2, -(MON_CELL.h - MON_CELL.pad) * k, MON_CELL.w * k, MON_CELL.h * k); }
+    let cel = index;   // même échelle que le dessin principal : la 2e image est calée dessus
+    if (MON_ALT[index] != null) { const on = index === 28 ? Math.sin(ph * 6) > 0 : Math.sin(time * MON_FLAP[index] * Math.PI * 2 + id) > 0; if (on) cel = MON_ALT[index]; }
+    ctx.drawImage(monsterImg, (cel % 5) * MON_CELL.w, Math.floor(cel / 5) * MON_CELL.h, MON_CELL.w, MON_CELL.h, -MON_CELL.w * k / 2, -(MON_CELL.h - MON_CELL.pad) * k, MON_CELL.w * k, MON_CELL.h * k);
+    if (m.flash > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.min(.6, m.flash * 1.6); ctx.drawImage(monsterImg, (cel % 5) * MON_CELL.w, Math.floor(cel / 5) * MON_CELL.h, MON_CELL.w, MON_CELL.h, -MON_CELL.w * k / 2, -(MON_CELL.h - MON_CELL.pad) * k, MON_CELL.w * k, MON_CELL.h * k); }
     ctx.restore();
     // ----- petits détails dessinés en code -----
     const H = hw * scale;
