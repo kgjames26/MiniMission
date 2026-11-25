@@ -43,6 +43,8 @@
       restSay: 'ヒーローたちは これから やすみます。また あとでね！', timerResetDone: 'タイマーを リセットしました', newVoice: 'こんにちは！ あたらしい こえだよ。',
       noVoice: 'この端末には {lang} の音声がありません。端末の設定（テキスト読み上げ）で追加してください。',
       langTitle: 'ことばを えらんでね', aPuzzlePiece: 'パズルの ピース', aCardDown: 'うらがえしの カード', aColorN: 'いろ {n}',
+      // prénom de l'enfant (facultatif, reste sur l'appareil)
+      nameTitle: '保護者の方へ', nameQ: 'お子さまの名前（任意）', namePh: 'なまえ', nameSayLabel: '読み上げが正しくない場合は、ひらがなで読み方を入力してください', nameSayPh: '例：まえりす', nameListen: '名前を聞く', nameOk: 'はじめよう！', nameSkip: 'スキップ', nameLocal: '名前はこの端末の中だけに保存されます。', nameSetting: '👧 なまえ', nameNone: 'なし', helloN: 'こんにちは、{name}！', sayChooseCityN: '{name}、まちを えらんでね！', endSayLeftN: 'すごいね、{name}！ あと、{parts} のこってるよ。', endSayAllN: 'すごいね、{name}！ この まちは ぜんぶ クリアしたよ！', goldSayN: 'すごいね、{name}！ きんの シール！ {n}！', restSayN: 'ヒーローたちは これから やすみます。また あとでね、{name}！',
       mazeSay: '{a}を {b}の ところまで つれていってね！', jigsawSay: 'えを ただしい じゅんばんに ならべてね！', pairsSay: 'おなじ えを みつけてね！', simonSay: 'おとを きいて いろを みてね。それから まねしてね！'
     },
     plural: { stars: ['ほし {n}こ'], letters: ['もじ {n}こ'], monsters: ['モンスター {n}ひき'], games: ['ミニゲーム {n}こ'] },

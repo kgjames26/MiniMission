@@ -64,6 +64,8 @@
       restSay: 'Les héros vont se reposer maintenant. À tout à l’heure !', timerResetDone: 'Minuteur réinitialisé', newVoice: 'Bonjour ! Je suis ta nouvelle voix.',
       noVoice: 'Aucune voix {lang} n’est installée sur cet appareil : ajoute-la dans les réglages du téléphone (synthèse vocale).',
       langTitle: 'Choisis ta langue', aPuzzlePiece: 'Morceau de puzzle', aCardDown: 'Carte retournée', aColorN: 'Couleur {n}',
+      // prénom de l'enfant (facultatif, reste sur l'appareil)
+      nameTitle: 'Pour le parent', nameQ: 'Prénom de l’enfant (facultatif)', namePh: 'Prénom', nameSayLabel: 'Si la voix le dit mal, écrivez-le comme il se prononce', nameSayPh: 'ex. : Ma-é-liss', nameListen: 'Écouter le prénom', nameOk: 'C’est parti !', nameSkip: 'Passer', nameLocal: 'Le prénom reste uniquement sur cet appareil.', nameSetting: '👧 Prénom', nameNone: 'aucun', helloN: 'Bonjour {name} !', sayChooseCityN: 'Choisis une ville, {name} !', endSayLeftN: 'Bravo {name} ! Il te reste {parts}.', endSayAllN: 'Bravo {name} ! Tu as tout réussi dans cette ville !', goldSayN: 'Bravo {name} ! Autocollant d’or : {n} !', restSayN: 'Les héros vont se reposer maintenant. À tout à l’heure, {name} !',
       mazeSay: 'Aide {a} à trouver {b} !', jigsawSay: 'Remets l’image dans le bon ordre !', pairsSay: 'Retrouve les paires !', simonSay: 'Écoute la musique et regarde les couleurs, puis refais comme moi !'
     },
     plural: { stars: ['{n} étoile', '{n} étoiles'], letters: ['{n} lettre', '{n} lettres'], monsters: ['{n} monstre', '{n} monstres'], games: ['{n} mini-jeu', '{n} mini-jeux'] },
@@ -112,9 +114,9 @@
   /* ---------- moteur ---------- */
   const cur = () => L10N[lang || 'fr'] || L10N.fr;
   // coréen : particule après un nom selon qu'il finit par une consonne (받침) — {은}, {이}, {을}, {과}, {으로}
-  const JOSA = { '은': ['은', '는'], '는': ['은', '는'], '이': ['이', '가'], '가': ['이', '가'], '을': ['을', '를'], '를': ['을', '를'], '과': ['과', '와'], '와': ['과', '와'], '으로': ['으로', '로'] };
+  const JOSA = { '은': ['은', '는'], '는': ['은', '는'], '이': ['이', '가'], '가': ['이', '가'], '을': ['을', '를'], '를': ['을', '를'], '과': ['과', '와'], '와': ['과', '와'], '으로': ['으로', '로'], '아': ['아', '야'], '야': ['아', '야'] };
   function koFix(s) {
-    return s.replace(/([^\s{}])\{(은|는|이|가|을|를|과|와|으로)\}/g, (m, ch, p) => {
+    return s.replace(/([^\s{}])\{(은|는|이|가|을|를|과|와|으로|아|야)\}/g, (m, ch, p) => {
       const code = ch.charCodeAt(0); let batchim = false;
       if (code >= 0xAC00 && code <= 0xD7A3) batchim = (code - 0xAC00) % 28 !== 0; else if (/[0-9]/.test(ch)) batchim = '013678'.includes(ch);
       const [withB, without] = JOSA[p]; return ch + (batchim ? withB : without);
@@ -148,6 +150,7 @@
     root.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n, el.dataset.i18nN ? { n: el.dataset.i18nN } : null); });
     root.querySelectorAll('[data-i18n-aria]').forEach((el) => el.setAttribute('aria-label', t(el.dataset.i18nAria)));
     root.querySelectorAll('[data-i18n-title]').forEach((el) => el.setAttribute('title', t(el.dataset.i18nTitle)));
+    root.querySelectorAll('[data-i18n-ph]').forEach((el) => el.setAttribute('placeholder', t(el.dataset.i18nPh)));
     document.documentElement.lang = lang || 'fr';
   }
   // villes et autocollants : la version française reste en mémoire, la langue choisie la remplace à l'affichage

@@ -43,6 +43,8 @@
       restSay: '영웅들은 이제 쉴 거야. 이따 또 만나!', timerResetDone: '타이머를 초기화했어요', newVoice: '안녕! 나는 새 목소리야.',
       noVoice: '이 기기에는 {lang} 음성이 설치되어 있지 않습니다. 휴대폰 설정(텍스트 음성 변환)에서 추가해 주세요.',
       langTitle: '언어를 골라 봐', aPuzzlePiece: '퍼즐 조각', aCardDown: '뒤집힌 카드', aColorN: '색깔 {n}',
+      // prénom de l'enfant (facultatif, reste sur l'appareil)
+      nameTitle: '보호자분께', nameQ: '아이 이름 (선택)', namePh: '이름', nameSayLabel: '음성이 이름을 잘못 읽으면, 소리 나는 대로 적어 주세요', nameSayPh: '예: 마엘리스', nameListen: '이름 듣기', nameOk: '시작하자!', nameSkip: '건너뛰기', nameLocal: '이름은 이 기기에만 저장됩니다.', nameSetting: '👧 이름', nameNone: '없음', helloN: '안녕, {name}{아}!', sayChooseCityN: '{name}{아}, 도시를 골라 봐!', endSayLeftN: '{name}{아}, 잘했어! 아직 {parts} 남았어.', endSayAllN: '{name}{아}, 잘했어! 이 도시는 모두 끝냈어!', goldSayN: '{name}{아}, 잘했어! 금 스티커! {n}!', restSayN: '영웅들은 이제 쉴 거야. 이따 또 만나, {name}{아}!',
       mazeSay: '{a}{이} {b}{을} 찾도록 도와줘!', jigsawSay: '그림을 알맞은 순서로 맞춰 봐!', pairsSay: '같은 그림을 찾아 봐!', simonSay: '음악을 듣고 색깔을 잘 봐. 그리고 나처럼 따라 해 봐!'
     },
     plural: { stars: ['별 {n}개'], letters: ['글자 {n}개'], monsters: ['몬스터 {n}마리'], games: ['미니게임 {n}개'] },
