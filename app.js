@@ -308,7 +308,7 @@
     node.classList.remove('show'); void node.offsetWidth; node.classList.add('show');
     clearTimeout(showTierSplash.t); showTierSplash.t = setTimeout(() => node.classList.remove('show'), 3200);
     sound('turbo'); MM.haptic('gold');
-    if (!timerNoticePlaying) sayText(T('tierSay', { n: tier <= 20 ? countWord(tier) : tier }));
+    if (!timerNoticePlaying) sayText(T('tierSay', { n: tier <= 20 ? countWord(tier) : tier, d: tier }));
   }
   function startLevel(heroId, index) {
     if(!sessionActive){sessionActive=true;sessionElapsed=0;sessionTimerLimit=(Number(save.timerMinutes)||0)*60;stopAfterMission=false;timerWarningSent=false;timerAnnouncementPending=false;save.sessionActive=true;save.sessionElapsed=0;save.sessionTimerLimit=sessionTimerLimit;save.stopAfterMission=false;save.timerWarningSent=false;}sessionTimerLimit=(Number(save.timerMinutes)||0)*60;save.sessionTimerLimit=sessionTimerLimit;timerWarningSent=sessionTimerLimit>0&&sessionElapsed>=sessionTimerLimit;

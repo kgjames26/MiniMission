@@ -728,3 +728,7 @@ body.one-button .touch-controls{--jump:clamp(108px,22vh,150px)}
 /* alphabet long (japonais : 46 hiragana) sur l'écran de fin */
 .alphabet-grid.long{grid-template-columns:repeat(10,minmax(0,1fr))}
 .pc-abc{grid-template-columns:repeat(13,minmax(0,1fr))}
+/* textes plus longs selon la langue : le libellé du bouton ACTION reste sur une ligne */
+.action-button strong{white-space:nowrap}
+html:lang(ja) .action-button strong,html:lang(es) .action-button strong{font-size:.8em;letter-spacing:-.02em}
+html:lang(ja) .jump-button strong,html:lang(de) .jump-button strong{font-size:.86em}

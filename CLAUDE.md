@@ -12,7 +12,10 @@ PWA de plateforme 2D en français pour un enfant de 6 ans. Voir README.md.
 - Aucun écran n'est une image figée : tout est en CSS/SVG/canvas pour remplir tous les supports.
 - Rien n'est jamais punitif : pas de mort ni de dégâts.
 
-## Traductions (à venir) : elles doivent être parfaites
-- Tout ce que la voix dit doit être écrit pour être bien prononcé par la synthèse vocale, pas seulement bien orthographié. Exemple : les lettres seules sont dites via la table `LETTER_SAY` (« Y » → « i grec »), jamais la lettre brute.
-- Pour chaque langue : refaire `LETTER_SAY` et les mots « B comme ballon » (`LETTER_WORDS`, un mot simple qui commence vraiment par la lettre dans cette langue), les questions des énigmes, les noms et phrases des autocollants.
-- Écouter chaque phrase avec la voix du téléphone, et faire relire par une personne dont c'est la langue maternelle avant de publier.
+## Langues (fr, en, es, de, ja, ko) : les traductions doivent être parfaites
+- Moteur et français : `i18n.js` ; autres langues : `lang-en.js`, `lang-es.js`, `lang-de.js`, `lang-ja.js`, `lang-ko.js` (mêmes clés que le français).
+- Textes de la page : attributs `data-i18n` / `data-i18n-aria` / `data-i18n-title` ; dans le code : `T('clé', { variables })`.
+- Chaque langue a son alphabet à ramasser (`letters.alpha` : 26 lettres, ñ en espagnol, ä ö ü ß en allemand, 46 hiragana, 24 lettres du hangeul), le nom des lettres À DIRE (`letters.say`) et un mot par lettre (`letters.words`, avec une phrase complète en 3e position si besoin : « を », « ん », « ß »…).
+- Tout ce que la voix dit doit être écrit pour être bien PRONONCÉ par la synthèse vocale de la langue, pas seulement bien orthographié.
+- Coréen : écrire les particules {은} {이} {을} {과} après une variable, i18n.js choisit la bonne forme selon le 받침.
+- Toute nouvelle phrase : l'ajouter dans les 6 langues ; écouter avec la voix du téléphone ; faire relire par une personne dont c'est la langue maternelle.
