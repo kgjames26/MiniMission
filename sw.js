@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mini-mission-v43';
+const CACHE_NAME = 'mini-mission-v52';
 const CORE = ['./', './index.html', './i18n.js', './lang-en.js', './lang-es.js', './lang-de.js', './lang-ja.js', './lang-ko.js', './styles.css', './app.js', './levels.js', './cities.js', './fx.js', './stickers.js', './stickers-cities.js', './assets/friend-flame.webp', './minigames.js', './version.json', './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './assets/heroes-atlas.webp', './assets/heroes-hd.webp', './assets/hero-moves.webp', './assets/monsters.webp', './assets/sprites2.webp', './assets/sprites2.json', './assets/music.mp3'];
 // Le code passe d'abord par le réseau pour que les mises à jour arrivent sans attendre ; les images et la musique
 // restent servies depuis le cache. Hors ligne, tout vient du cache.
@@ -37,5 +37,8 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(Promise.race([network, slow]).catch(() => fromCache().then((cached) => cached || Response.error())));
     return;
   }
-  event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request).then((response) => store(event.request, response))));
+  // images : cache d'abord ; les noms changent à chaque version (?v=…), donc une nouvelle version va chercher la nouvelle image.
+  // Hors ligne, on se rabat sur la même image sans le ?v=… (copie mise en cache à l'installation).
+  event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request).then((response) => store(event.request, response))
+    .catch(() => caches.match(event.request, { ignoreSearch: true }).then((c) => c || Response.error()))));
 });

@@ -3,8 +3,8 @@
   const MM = (window.MM = window.MM || {}); (MM.L10N = MM.L10N || {});
   MM.L10N.en = {
     ui: {
-      aHome: 'Mini Mission home', aSettingsHold: 'Grown-up settings: hold for 2 seconds', tSettingsHold: 'Settings (hold)',
-      howto: 'How to play', aTimerHold: 'Play timer: hold for 2 seconds', tTimerHold: 'Timer (hold)', aSoundToggle: 'Turn sound on or off',
+      aHome: 'Mini Mission home', aSettingsHold: 'Grown-up settings: hold for 1.5 seconds', tSettingsHold: 'Settings (hold)',
+      howto: 'How to play', aTimerHold: 'Play timer: hold for 1.5 seconds', tTimerHold: 'Timer (hold)', aSoundToggle: 'Turn sound on or off',
       aAlbum: 'My sticker album', myAlbums: 'My albums', tagline: 'Fill your albums!', play: 'PLAY!',
       aChooseHero: 'Choose a hero', aBackHome: 'Back to home', chooseHero1: 'Choose your', chooseHero2: 'hero!',
       aZiggy: 'Choose Ziggy the Comet, the fast hero who zooms past obstacles', aFilou: 'Choose Filou the Weaver, the nimble hero who swings on webs', aTitan: 'Choose Titan, the strong hero who moves big rocks',
@@ -17,7 +17,7 @@
       aGame: 'Mission in progress', aCanvas: '2D platform game', pause: 'Pause', aStars: 'Stars collected', aFriends: 'Monsters caught out of 20', aLetters: 'Letters collected',
       aProgress: 'Progress', aMute: 'Sound off', aUnmute: 'Sound on', aLR: 'Go left or right', aLeft: 'Go left', aRight: 'Go right',
       aAction: 'Action: use the hero’s power and turn a prankster into a friend', aShoot: 'Shoot at the little monsters', aJump: 'Jump', newBadge: 'NEW',
-      aLeftToFind: 'What you still have to find', resume: 'Continue', restart: 'Start over', stats: 'Stats', quit: 'Leave the mission',
+      peekLeft: 'Still {parts} to find!', peekAll: 'You found them all, well done!', aPeek: 'What you have found so far', aLeftToFind: 'What you still have to find', resume: 'Continue', restart: 'Start over', stats: 'Stats', quit: 'Leave the mission',
       aStatsScreen: 'Mission stats', aBackPause: 'Back to pause', statStars: '⭐ stars', statFriends: '♥ friends', statLetters: '🔤 letters', statStickers: '🏅 stickers', statPuzzles: '❓ puzzles',
       aPuzzle: 'Choose how to help', aQuit: 'Leave', aListenQ: 'Listen to the question', aListenInstr: 'Listen to the instructions', question: 'Question', super: 'Great!',
       aEnd: 'Level complete', bravo: 'Well done!', aAlphabet: 'Letters collected', aMenu: 'Main menu', aReplay: 'Play this city again', aCityAlbum: 'See this city’s album', aNext: 'Next city',

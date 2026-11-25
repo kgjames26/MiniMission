@@ -5,6 +5,7 @@ PWA de plateforme 2D en français pour un enfant de 6 ans. Voir README.md.
 ## Numéro de version
 - `version.json` contient le numéro affiché en tout petit sur l'accueil (`v0.N`).
 - Il est incrémenté automatiquement à chaque nouveau message de l'utilisateur par le hook `UserPromptSubmit` (`.claude/settings.json` → `tools/bump-version.mjs`), qui met aussi à jour le nom du cache de `sw.js`.
+- Le même script met à jour `ASSET_V` dans `app.js` : les images (planches de monstres, de héros…) sont chargées avec `?v=N`, pour qu'un téléphone ne garde jamais une ancienne planche avec le nouveau code.
 - Si le hook n'a pas tourné, lancer `node tools/bump-version.mjs` une fois par nouvelle demande, avant de commiter.
 
 ## Règles de conception

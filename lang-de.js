@@ -3,8 +3,8 @@
   const MM = (window.MM = window.MM || {}); (MM.L10N = MM.L10N || {});
   MM.L10N.de = {
     ui: {
-      aHome: 'Startseite von Mini Mission', aSettingsHold: 'Einstellungen für Erwachsene: 2 Sekunden gedrückt halten', tSettingsHold: 'Einstellungen (gedrückt halten)',
-      howto: 'Anleitung', aTimerHold: 'Spielzeit-Timer: 2 Sekunden gedrückt halten', tTimerHold: 'Timer (gedrückt halten)', aSoundToggle: 'Ton an oder aus',
+      aHome: 'Startseite von Mini Mission', aSettingsHold: 'Einstellungen für Erwachsene: 1,5 Sekunden gedrückt halten', tSettingsHold: 'Einstellungen (gedrückt halten)',
+      howto: 'Anleitung', aTimerHold: 'Spielzeit-Timer: 1,5 Sekunden gedrückt halten', tTimerHold: 'Timer (gedrückt halten)', aSoundToggle: 'Ton an oder aus',
       aAlbum: 'Mein Stickeralbum', myAlbums: 'Meine Alben', tagline: 'Fülle deine Alben!', play: 'SPIELEN!',
       aChooseHero: 'Einen Helden wählen', aBackHome: 'Zurück zum Start', chooseHero1: 'Wähle deinen', chooseHero2: 'Helden!',
       aZiggy: 'Ziggy den Kometen wählen, den schnellen Helden, der durch Hindernisse saust', aFilou: 'Filou den Weber wählen, den flinken Helden, der sich an seinem Netz schwingt', aTitan: 'Titan wählen, den starken Helden, der große Felsen bewegt',
@@ -17,7 +17,7 @@
       aGame: 'Mission läuft', aCanvas: '2D-Jump-’n’-Run-Spiel', pause: 'Pause', aStars: 'Gesammelte Sterne', aFriends: 'Gefangene Monster von 20', aLetters: 'Gesammelte Buchstaben',
       aProgress: 'Fortschritt', aMute: 'Ton aus', aUnmute: 'Ton an', aLR: 'Nach links oder rechts laufen', aLeft: 'Nach links', aRight: 'Nach rechts',
       aAction: 'Aktion: die Kraft des Helden nutzen und einen Spaßvogel zum Freund machen', aShoot: 'Auf die kleinen Monster schießen', aJump: 'Springen', newBadge: 'NEU',
-      aLeftToFind: 'Was du noch finden musst', resume: 'Weiter', restart: 'Neu starten', stats: 'Statistik', quit: 'Mission verlassen',
+      peekLeft: 'Noch {parts} zu finden!', peekAll: 'Du hast alles gefunden, super!', aPeek: 'Was du schon gefunden hast', aLeftToFind: 'Was du noch finden musst', resume: 'Weiter', restart: 'Neu starten', stats: 'Statistik', quit: 'Mission verlassen',
       aStatsScreen: 'Statistik der Mission', aBackPause: 'Zurück zur Pause', statStars: '⭐ Sterne', statFriends: '♥ Freunde', statLetters: '🔤 Buchstaben', statStickers: '🏅 Sticker', statPuzzles: '❓ Rätsel',
       aPuzzle: 'Wählen, wie man hilft', aQuit: 'Verlassen', aListenQ: 'Frage anhören', aListenInstr: 'Aufgabe anhören', question: 'Frage', super: 'Super!',
       aEnd: 'Level geschafft', bravo: 'Super gemacht!', aAlphabet: 'Gesammelte Buchstaben', aMenu: 'Hauptmenü', aReplay: 'Diese Stadt nochmal spielen', aCityAlbum: 'Album der Stadt ansehen', aNext: 'Nächste Stadt',

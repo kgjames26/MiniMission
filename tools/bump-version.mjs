@@ -17,3 +17,9 @@ try {
   const sw = readFileSync(swFile, 'utf8');
   writeFileSync(swFile, sw.replace(/const CACHE_NAME = '[^']*';/, `const CACHE_NAME = 'mini-mission-v${data.build}';`));
 } catch {}
+
+try {
+  const appFile = join(root, 'app.js');
+  const app = readFileSync(appFile, 'utf8');
+  writeFileSync(appFile, app.replace(/const ASSET_V = '[^']*'/, `const ASSET_V = '${data.build}'`));
+} catch {}

@@ -24,8 +24,8 @@
   /* ---------- français ---------- */
   L10N.fr = {
     ui: {
-      aHome: 'Accueil de Mini Mission', aSettingsHold: 'Réglages pour l’adulte : garder appuyé 2 secondes', tSettingsHold: 'Réglages (garder appuyé)',
-      howto: 'Mode d’emploi', aTimerHold: 'Minuteur de jeu : garder appuyé 2 secondes', tTimerHold: 'Minuteur (garder appuyé)', aSoundToggle: 'Activer ou couper les sons',
+      aHome: 'Accueil de Mini Mission', aSettingsHold: 'Réglages pour l’adulte : garder appuyé 1,5 seconde', tSettingsHold: 'Réglages (garder appuyé)',
+      howto: 'Mode d’emploi', aTimerHold: 'Minuteur de jeu : garder appuyé 1,5 seconde', tTimerHold: 'Minuteur (garder appuyé)', aSoundToggle: 'Activer ou couper les sons',
       aAlbum: 'Mon album d’autocollants', myAlbums: 'Mes albums', tagline: 'Remplis tes albums !', play: 'JOUER !',
       aChooseHero: 'Choisir un héros', aBackHome: 'Retour à l’accueil', chooseHero1: 'Choisis ton', chooseHero2: 'héros !',
       aZiggy: 'Choisir Ziggy la Comète, le héros rapide qui traverse les obstacles', aFilou: 'Choisir Filou le Tisseur, le héros agile qui tisse des ponts', aTitan: 'Choisir Titan Puce, le héros fort qui déplace les rochers',
@@ -38,7 +38,7 @@
       aGame: 'Mission en cours', aCanvas: 'Jeu de plateforme 2D', pause: 'Pause', aStars: 'Étoiles ramassées', aFriends: 'Monstres capturés sur 20', aLetters: 'Lettres de l’alphabet récoltées',
       aProgress: 'Progression', aMute: 'Couper les sons', aUnmute: 'Activer les sons', aLR: 'Aller à gauche ou à droite', aLeft: 'Aller à gauche', aRight: 'Aller à droite',
       aAction: 'Action : utiliser le pouvoir du héros et transformer un farceur en ami', aShoot: 'Tirer sur les petits monstres', aJump: 'Sauter', newBadge: 'NOUVEAU',
-      aLeftToFind: 'Ce qu’il te reste à trouver', resume: 'Reprendre', restart: 'Recommencer', stats: 'Statistiques', quit: 'Quitter la mission',
+      peekLeft: 'Encore {parts} à trouver !', peekAll: 'Tu as tout trouvé, bravo !', aPeek: 'Ce que tu as déjà trouvé', aLeftToFind: 'Ce qu’il te reste à trouver', resume: 'Reprendre', restart: 'Recommencer', stats: 'Statistiques', quit: 'Quitter la mission',
       aStatsScreen: 'Statistiques de la mission', aBackPause: 'Retour à la pause', statStars: '⭐ étoiles', statFriends: '♥ amis', statLetters: '🔤 lettres', statStickers: '🏅 autocollants', statPuzzles: '❓ énigmes',
       aPuzzle: 'Choisir comment aider', aQuit: 'Quitter', aListenQ: 'Écouter la question', aListenInstr: 'Écouter la consigne', question: 'Question', super: 'Super !',
       aEnd: 'Niveau terminé', bravo: 'Bravo !', aAlphabet: 'Alphabet récolté', aMenu: 'Menu principal', aReplay: 'Rejouer cette ville', aCityAlbum: 'Voir l’album de la ville', aNext: 'Ville suivante',

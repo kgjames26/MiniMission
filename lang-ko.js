@@ -4,8 +4,8 @@
   const MM = (window.MM = window.MM || {}); (MM.L10N = MM.L10N || {});
   MM.L10N.ko = {
     ui: {
-      aHome: '미니 미션 홈', aSettingsHold: '보호자 설정: 2초 동안 길게 누르세요', tSettingsHold: '설정 (길게 누르기)',
-      howto: '놀이 방법', aTimerHold: '놀이 타이머: 2초 동안 길게 누르세요', tTimerHold: '타이머 (길게 누르기)', aSoundToggle: '소리 켜기 또는 끄기',
+      aHome: '미니 미션 홈', aSettingsHold: '보호자 설정: 1.5초 동안 길게 누르세요', tSettingsHold: '설정 (길게 누르기)',
+      howto: '놀이 방법', aTimerHold: '놀이 타이머: 1.5초 동안 길게 누르세요', tTimerHold: '타이머 (길게 누르기)', aSoundToggle: '소리 켜기 또는 끄기',
       aAlbum: '스티커 앨범', myAlbums: '내 앨범', tagline: '앨범을 스티커로 채워 봐!', play: '놀자!',
       aChooseHero: '영웅 고르기', aBackHome: '홈으로 돌아가기', chooseHero1: '영웅을', chooseHero2: '골라 봐!',
       aZiggy: '지기 고르기. 장애물을 휙휙 지나가는 빠른 영웅', aFilou: '필루 고르기. 거미줄로 그네를 타는 날쌘 영웅', aTitan: '타이탄 고르기. 커다란 바위를 옮기는 힘센 영웅',
@@ -18,7 +18,7 @@
       aGame: '미션 중', aCanvas: '2D 플랫폼 게임', pause: '일시 정지', aStars: '모은 별', aFriends: '잡은 몬스터 (20마리 중)', aLetters: '모은 글자',
       aProgress: '진행', aMute: '소리 끄기', aUnmute: '소리 켜기', aLR: '왼쪽이나 오른쪽으로 가기', aLeft: '왼쪽으로', aRight: '오른쪽으로',
       aAction: '액션: 영웅의 힘으로 장난꾸러기를 친구로 만들기', aShoot: '작은 몬스터에게 쏘기', aJump: '점프', newBadge: 'NEW',
-      aLeftToFind: '아직 찾아야 할 것', resume: '계속하기', restart: '처음부터', stats: '기록', quit: '미션 그만하기',
+      peekLeft: '{parts} 더 찾아 보자!', peekAll: '다 찾았어! 잘했어!', aPeek: '지금까지 찾은 것', aLeftToFind: '아직 찾아야 할 것', resume: '계속하기', restart: '처음부터', stats: '기록', quit: '미션 그만하기',
       aStatsScreen: '미션 기록', aBackPause: '일시 정지로 돌아가기', statStars: '⭐ 별', statFriends: '♥ 친구', statLetters: '🔤 글자', statStickers: '🏅 스티커', statPuzzles: '❓ 수수께끼',
       aPuzzle: '어떻게 도울지 고르기', aQuit: '그만하기', aListenQ: '질문 듣기', aListenInstr: '설명 듣기', question: '질문', super: '좋아!',
       aEnd: '단계 완료', bravo: '잘했어!', aAlphabet: '모은 글자', aMenu: '메뉴', aReplay: '이 도시 다시 하기', aCityAlbum: '이 도시 앨범 보기', aNext: '다음 도시',

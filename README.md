@@ -86,7 +86,7 @@ Filou reste accroché à sa toile tant qu'on ne saute pas (le bouton SAUT cligno
 - Fenêtres de saut plus larges : appui mémorisé 0,2 s, saut possible 0,14 s après le bord.
 - Réglage « 👶 Un seul bouton » : seuls ◀ ▶ et un très gros SAUT restent ; le tir part tout seul vers les farceurs devant, Filou lance sa toile en l'air et lâche au meilleur moment, Ziggy déclenche le turbo devant les barrières, petits obstacles et grands ravins (et saute tout seul au bord en turbo), Titan donne ses coups de poing devant les blocs.
 - Récompenses : étoiles et lettres s'envolent vers leur compteur ; « B, comme ballon ! » avec son dessin ; petit visage joyeux au-dessus du héros.
-- Verrou parent : ⚙ et ⏱️ s'ouvrent en gardant le doigt appuyé 2 secondes (un anneau se remplit, « ✋ 2 s » sur un simple tapotement).
+- Verrou parent : ⚙ et ⏱️ s'ouvrent en gardant le doigt appuyé 1,5 seconde (un anneau se remplit, « ✋ 1,5 s » sur un simple tapotement) ; boutons agrandis en v0.44.
 - Hors ligne : si le réseau traîne plus de 3 secondes, la version en cache s'affiche.
 - Le lutin de feu est redessiné (v0.31) : une petite flamme vivante grognonne, sans cornes ni queue de diable, pour qu'on le reconnaisse toujours comme le méchant sans rien d'effrayant. Une fois attrapé, il devient une flamme jaune toute souriante (`assets/friend-flame.webp`). Ses 28 images sont dans `assets/sprites2.webp` (noms `imp_*` dans `sprites2.json`, positions et points d'ancrage inchangés).
 
@@ -113,3 +113,14 @@ Filou reste accroché à sa toile tant qu'on ne saute pas (le bouton SAUT cligno
 - Sinon, fondu de 0,08 s entre l'ancienne et la nouvelle image (sauts, atterrissages, actions).
 - La course de Ziggy suit sa vitesse et repart toujours du même pied ; Ziggy et Titan ont un saut complet dessiné (`*_j0` à `*_j6`), comme Filou.
 - Marche de Ziggy redessinée (v0.43) : 7 images `ziggy_m0`…`ziggy_m6` où les jambes alternent vraiment (`ziggy_w1` reste l'image à l'arrêt).
+- Voix (v0.46) : `sayText(texte, fin, true)` = phrase secondaire (lettre ramassée, encouragement, compte des étoiles, autocollant trouvé, « oups ») : abandonnée si une voix parle déjà. Les autres (actions de l'enfant ou de l'adulte, devinette, minuteur, fin de mission) passent toujours.
+- Marche de Ziggy (v0.46) : seulement les 5 images debout (`ZIGGY_WALK`) ; `ziggy_m0` et `ziggy_m4`, trop accroupies, sont écartées.
+
+## « Ce que j'ai déjà trouvé » (v0.47)
+- Toucher un compteur du haut (⭐ étoiles, 👾 monstres, 🔤 lettres, drapeaux) ouvre une petite fenêtre juste en dessous : lettres allumées/éteintes, étoiles qui restent dans chaque morceau du niveau (▼ = où est le héros), monstres déjà amis.
+- Le jeu est en pause pendant ce temps ; la voix dit ce qu'il reste (`peekLeft` / `peekAll`) ; un toucher n'importe où referme.
+
+## 20 monstres tous différents (v0.48)
+- Par ville : 5 lutins de feu (un par façon d'attaquer, chacun sa couleur : `IMP_HUE`, teinte calculée une fois au chargement) + les 15 petits monstres tranquilles (`CALM` : case farceur, case ami, façon de bouger), dans un ordre mélangé.
+- `assets/monsters.webp` : 7 lignes de 5 cases (400×264) ; les 11 nouveaux monstres sont dans les cases 10 à 31 (farceur puis ami).
+- Monstres vivants (v0.50) : sans dessin en plus, dans `drawFriend` — ils se retournent, respirent ; les sauteurs s'écrasent et s'étirent, les marcheurs se dandinent, les costauds font des pas lourds avec de la poussière, l'escargot et la chenille ondulent, les volants penchent, le nuage gonfle et laisse tomber une goutte, le dragon souffle de la fumée ; les amis font des petits sauts de joie et un cœur s'envole de temps en temps (le robot danse, l'arc-en-ciel du nuage scintille).
