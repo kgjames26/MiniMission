@@ -119,3 +119,7 @@ Filou reste accroché à sa toile tant qu'on ne saute pas (le bouton SAUT cligno
 ## « Ce que j'ai déjà trouvé » (v0.47)
 - Toucher un compteur du haut (⭐ étoiles, 👾 monstres, 🔤 lettres, drapeaux) ouvre une petite fenêtre juste en dessous : lettres allumées/éteintes, étoiles qui restent dans chaque morceau du niveau (▼ = où est le héros), monstres déjà amis.
 - Le jeu est en pause pendant ce temps ; la voix dit ce qu'il reste (`peekLeft` / `peekAll`) ; un toucher n'importe où referme.
+
+## 20 monstres tous différents (v0.48)
+- Par ville : 5 lutins de feu (un par façon d'attaquer, chacun sa couleur : `IMP_HUE`, teinte calculée une fois au chargement) + les 15 petits monstres tranquilles (`CALM` : case farceur, case ami, façon de bouger), dans un ordre mélangé.
+- `assets/monsters.webp` : 7 lignes de 5 cases (400×264) ; les 11 nouveaux monstres sont dans les cases 10 à 31 (farceur puis ami).

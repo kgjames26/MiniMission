@@ -20,7 +20,20 @@
   const WORLD_H = LV.H;
   const MOVES = { cellW: 617, cellH: 421, foot: 376, scale: .48, rows: { titan: 0, ziggy: 1, filou: 2 }, hands: { filou: [[421.8, 230.3], [380.4, 290.1], [313.3, 188.1], [307.8, 242.3]] } };
   // monstres : [hauteur dans le monde, largeur/hauteur, hauteur du sprite dans sa case] ; 0-4 méchants, 5-9 gentils
-  const MON = [[66, 1.246, 252], [62, 1.044, 252], [72, 2.098, 183], [104, 1.111, 252], [104, .734, 252], [66, 1.056, 252], [62, 1.02, 252], [74, 1.032, 252], [104, 1.242, 252], [104, .841, 252]];
+  // assets/monsters.webp : cases de 400×264, 5 par ligne. [hauteur dans le jeu, largeur/hauteur, hauteur du dessin dans la case]
+  const MON = [[66, 1.246, 252], [62, 1.044, 252], [72, 2.098, 183], [104, 1.111, 252], [104, .734, 252], [66, 1.056, 252], [62, 1.02, 252], [74, 1.032, 252], [104, 1.242, 252], [104, .841, 252],
+    [64, 1.307, 254], [64, 1.224, 254], [68, 1.031, 254], [68, 1, 254], [62, 1.075, 254], [64, 1.031, 254], [58, 1.165, 254], [60, 1.173, 254], [64, 1.22, 254], [62, 1.413, 254],
+    [72, 1.252, 254], [72, 1.177, 254], [92, .819, 254], [92, .878, 254], [60, .976, 254], [62, .969, 254], [100, .642, 254], [100, .866, 254], [46, 1.496, 254], [66, 1.11, 254],
+    [58, 1.071, 254], [58, 1.094, 254]];
+  const MON_ROWS = 7;
+  // les 15 petits monstres tranquilles : [case farceur, case ami, façon de bouger (0 marche, 1 saute, 2 vole, 3 costaud)]
+  const CALM = [[0, 5, 0], [1, 6, 1], [2, 7, 2], [3, 8, 3],                    // hérisson, limon, chauve-souris, golem
+    [10, 11, 2], [12, 13, 1], [14, 15, 0], [16, 17, 0], [18, 19, 1], [20, 21, 0],  // nuage, champignon, cactus, escargot, poulpe, dragon
+    [22, 23, 3], [24, 25, 1], [26, 27, 3], [28, 29, 0], [30, 31, 2]];              // robot, grenouille, bonhomme de neige, chenille→papillon, abeille
+  const calmOf = (m) => CALM[m.type] || CALM[0], mvOf = (m) => calmOf(m)[2];
+  // les 5 lutins de feu (un par façon d'attaquer) ont chacun leur couleur de flamme
+  const IMP_HUE = [0, 190, 95, 250, 305];
+  const IMP_GLOW = [[255, 150, 50], [90, 170, 255], [120, 230, 90], [190, 120, 255], [255, 110, 200]];
   const MON_CELL = { w: 400, h: 264, pad: 6 };
   const HIT_WINDOW = 14, HIT_MAX = 3;
   const MON_COLORS = ['#5fa8ee', '#ffd23f', '#ffb8d8', '#8c9a7a', '#6fbf6a'];
@@ -1242,7 +1255,7 @@
     const rem = $('#ending-remaining');
     rem.classList.toggle('all', !left.length);
     rem.innerHTML = left.length ? escapeHtml(T('endLeft')) + left.map(([icon, , a, b]) => `<span class="rem">${icon} ${b - a}</span>`).join('') : escapeHtml(T('endAll'));
-    $('#ending-friends').innerHTML = `<div class="ten-frame" aria-label="${escapeHtml(T('friendsOf', { n: friendCount, t: MON_TOTAL }))}">${Array.from({ length: MON_TOTAL }, (_, i) => caught[i] ? `<span class="mon-chip on" style="${monsterChipStyle(caught[i].imp ? -1 : caught[i].type + 5, 38)}"></span>` : '<span class="mon-chip"></span>').join('')}</div>`;
+    $('#ending-friends').innerHTML = `<div class="ten-frame" aria-label="${escapeHtml(T('friendsOf', { n: friendCount, t: MON_TOTAL }))}">${Array.from({ length: MON_TOTAL }, (_, i) => caught[i] ? `<span class="mon-chip on" style="${chipFor(caught[i], 38)}"></span>` : '<span class="mon-chip"></span>').join('')}</div>`;
     $('#ending-friends').classList.toggle('hidden', !friendCount);
     const won = mission.stickersWon || [], S = MM.stickers, box = $('#ending-stickers');
     box.classList.toggle('hidden', !won.length);
@@ -1678,7 +1691,7 @@
       html = `<div class="hp-head">⭐ <b>${a}/${b}</b></div><div class="pc-flags hp-flags">${flagsHtml(true)}</div>`;
     } else if (kind === 'monsters') {
       const caught = (mission.monsters || []).filter(m => m.friendly).sort((x, y) => x.order - y.order); a = caught.length; b = MON_TOTAL;
-      html = `<div class="hp-head">👾 <b>${a}/${b}</b></div><div class="ten-frame">${Array.from({ length: MON_TOTAL }, (_, i) => caught[i] ? `<span class="mon-chip on" style="${monsterChipStyle(caught[i].imp ? -1 : caught[i].type + 5, 32)}"></span>` : '<span class="mon-chip"></span>').join('')}</div>`;
+      html = `<div class="hp-head">👾 <b>${a}/${b}</b></div><div class="ten-frame">${Array.from({ length: MON_TOTAL }, (_, i) => caught[i] ? `<span class="mon-chip on" style="${chipFor(caught[i], 32)}"></span>` : '<span class="mon-chip"></span>').join('')}</div>`;
     }
     body.innerHTML = html;
     box.classList.remove('hidden'); document.body.classList.add('peeking');
@@ -1821,18 +1834,21 @@
     const tw = (Math.sin(time * 5 + letter.bob * 3) + 1) / 2;
     ctx.save(); ctx.globalAlpha = tw; ctx.fillStyle = '#fff'; FX.starPath(ctx, x + 27, y - 27, 7, 2.4); ctx.fill(); ctx.restore();
   }
-  function monsterChipStyle(index, boxH) {
-    if (index < 0) return `width:${Math.round(boxH * .78)}px;height:${boxH}px;background:url(assets/friend-flame.webp) center/contain no-repeat`;
+  function chipFor(m, boxH) { return m.imp ? monsterChipStyle(-1, boxH, m.type) : monsterChipStyle(calmOf(m)[1], boxH); }
+  function monsterChipStyle(index, boxH, impType = 0) {
+    if (index < 0) return `width:${Math.round(boxH * .78)}px;height:${boxH}px;background:url(assets/friend-flame.webp) center/contain no-repeat${IMP_HUE[impType] ? `;filter:hue-rotate(${IMP_HUE[impType]}deg)` : ''}`;
     const [, , sh] = MON[index], row = Math.floor(index / 5), col = index % 5;
     const sw = Math.round(MON_CELL.w * 0), s = boxH / sh; void sw;
     const meta = MON[index], w = Math.round(sh * meta[1]);
-    return `width:${Math.round(w * s)}px;height:${Math.round(sh * s)}px;background:url(assets/monsters.webp) no-repeat;background-size:${MON_CELL.w * 5 * s}px ${MON_CELL.h * 2 * s}px;background-position:${-(col * MON_CELL.w + (MON_CELL.w - w) / 2) * s}px ${-(row * MON_CELL.h + (MON_CELL.h - MON_CELL.pad - sh)) * s}px`;
+    return `width:${Math.round(w * s)}px;height:${Math.round(sh * s)}px;background:url(assets/monsters.webp) no-repeat;background-size:${MON_CELL.w * 5 * s}px ${MON_CELL.h * MON_ROWS * s}px;background-position:${-(col * MON_CELL.w + (MON_CELL.w - w) / 2) * s}px ${-(row * MON_CELL.h + (MON_CELL.h - MON_CELL.pad - sh)) * s}px`;
   }
   function initMonsters(level, rnd) {
+    const calmDeck = CALM.map((_, i) => i); for (let i = calmDeck.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [calmDeck[i], calmDeck[j]] = [calmDeck[j], calmDeck[i]]; }
     if (!Array.isArray(mission.monsters)) mission.monsters = level.monsters.map(m => {
-      // moitié diablotins de feu (lanceurs), moitié petits monstres tranquilles : hérisson, limon, chauve-souris, golem
-      const imp = m.id % 2 === 0, type = imp ? (m.id / 2) % 5 : ((m.id - 1) / 2) % 4, y = !imp && type === 2 ? m.y - 150 - rnd() * 100 : m.y;
-      return { id: m.id, imp, type, x: m.x, y, homeX: m.x, homeY: y, hp: (type === 3 ? 2 : 1) + Math.min(4, mission.tier || 0), friendly: false, order: 0 };
+      // 20 monstres tous différents : 5 lutins de feu (un de chaque couleur, tous les 4) et les 15 petits monstres tranquilles, mélangés
+      const imp = m.id % 4 === 0, type = imp ? m.id / 4 : calmDeck[m.id - 1 - Math.floor(m.id / 4)], mv = imp ? -1 : CALM[type][2];
+      const y = mv === 2 ? m.y - 150 - rnd() * 100 : m.y;
+      return { id: m.id, imp, type, x: m.x, y, homeX: m.x, homeY: y, hp: ((imp ? type === 3 : mv === 3) ? 2 : 1) + Math.min(4, mission.tier || 0), friendly: false, order: 0 };
     });
     mission.monsters.forEach(m => { m.dir = rnd() < .5 ? 1 : -1; m.pd = m.dir; m.phase = rnd() * 6; m.hop = 0; m.cool = 1.2 + rnd() * 2.2; m.st = 'walk'; m.stT = 0; m.jy = 0; m.jv = 0; m.flash = 0; m.wrap = 0; m.hitT = 0; m.moving = false; if (m.imp) patrolRange(m); if (m.friendly) { m.x = player ? player.x : m.x; } });
     world.monsters = mission.monsters;
@@ -1850,7 +1866,7 @@
     if (bar.children.length !== MON_TOTAL) bar.innerHTML = Array.from({ length: MON_TOTAL }, () => '<i></i>').join('');
     [...bar.children].forEach((chip, i) => {
       const m = caught[i], was = chip.dataset.t;
-      if (m) { const key = m.imp ? 'L' : String(m.type); if (was !== key) { chip.dataset.t = key; chip.className = 'on pop'; chip.setAttribute('style', monsterChipStyle(m.imp ? -1 : m.type + 5, 22)); } }
+      if (m) { const key = m.imp ? 'L' + m.type : String(m.type); if (was !== key) { chip.dataset.t = key; chip.className = 'on pop'; chip.setAttribute('style', chipFor(m, 22)); } }
       else { chip.className = ''; chip.removeAttribute('style'); delete chip.dataset.t; }
     });
     // le panneau des amis se fait discret quand rien ne change : il cache moins le haut du jeu (et les anneaux de Filou)
@@ -1861,7 +1877,7 @@
     if (timerNoticePlaying) return;
     sayText(n === 10 ? T('count10') : n === 20 ? T('count20') : countWord(n), null, true);
   }
-  function monsterBox(m) { if (!m.imp) { const [hw, ratio] = MON[m.type]; return { cx: m.x, cy: m.y - hw / 2, hw: hw * ratio * .42 + 6, hh: hw * .5 + 4 }; } const big = m.type === 3 ? 1.27 : 1; return { cx: m.x, cy: m.y - (m.jy || 0) - 44 * big, hw: 30 * big + 4, hh: 46 * big }; }
+  function monsterBox(m) { if (!m.imp) { const [hw, ratio] = MON[calmOf(m)[0]]; return { cx: m.x, cy: m.y - hw / 2, hw: hw * ratio * .42 + 6, hh: hw * .5 + 4 }; } const big = m.type === 3 ? 1.27 : 1; return { cx: m.x, cy: m.y - (m.jy || 0) - 44 * big, hw: 30 * big + 4, hh: 46 * big }; }
   function patrolRange(m) {
     const def = [90, 0, 45, 60, 75][m.type] ?? 60; let lo = m.x - def, hi = m.x + def;
     if (m.y >= world.floor - 4) {
@@ -1906,9 +1922,10 @@
       { const bx = monsterBox(m); if (Math.abs(px - bx.cx) < bx.hw * .8 + player.w * .35 && Math.abs(pcy - bx.cy) < bx.hh * .85 + player.h * .4) playerHit(Math.sign(bx.cx - px) || 1); }   // toucher un monstre compte comme un impact
       m.phase += dt;
       if (!m.imp) {                                                  // petits monstres tranquilles : ils se promènent
-        if (m.type === 0 || m.type === 3) { const sp = m.type === 0 ? 46 : 24, rg = m.type === 0 ? 90 : 55; m.x += (m.dir || 1) * sp * dt; if (Math.abs(m.x - m.homeX) > rg) m.dir = -(m.dir || 1); }
-        else if (m.type === 1) { m.hop = Math.abs(Math.sin(m.phase * 3.2)) * 44; m.x = m.homeX + Math.sin(m.phase * .9) * 40; }
-        else if (m.type === 2) { m.x = m.homeX + Math.sin(m.phase * .8) * 110; m.y = m.homeY + Math.sin(m.phase * 1.7) * 55; }
+        const mv = mvOf(m);
+        if (mv === 0 || mv === 3) { const sp = mv === 0 ? 46 : 24, rg = mv === 0 ? 90 : 55; m.x += (m.dir || 1) * sp * dt; if (Math.abs(m.x - m.homeX) > rg) m.dir = -(m.dir || 1); }
+        else if (mv === 1) { m.hop = Math.abs(Math.sin(m.phase * 3.2)) * 44; m.x = m.homeX + Math.sin(m.phase * .9) * 40; }
+        else if (mv === 2) { m.x = m.homeX + Math.sin(m.phase * .8) * 110; m.y = m.homeY + Math.sin(m.phase * 1.7) * 55; }
         continue;
       }
       m.stT += dt;
@@ -2041,7 +2058,7 @@
   function captureMonster(m, by) {
     m.friendly = true; m.order = capturedCount() + 0.5; m.flash = .7; m.wrap = by === 'filou' ? .9 : 0;
     const sorted = world.monsters.filter(q => q.friendly).sort((a, b) => a.order - b.order); sorted.forEach((q, i) => { q.order = i + 1; });
-    const n = capturedCount(), hw = MON[m.type + 5][0]; m.st = 'walk'; m.jy = 0;
+    const n = capturedCount(), hw = m.imp ? MON[5][0] : MON[calmOf(m)[1]][0]; m.st = 'walk'; m.jy = 0;
     triggerHeroAnimation('collect', 400);
     FX.heart(m.x, m.y - hw); FX.sparkle(m.x, m.y - hw / 2, 14, ['#ffb5c8', '#ffdf8d', '#ffffff', '#9fe3ff'], 190);
     FX.text(m.x, m.y - hw - 18, String(n), '#fff6c4', 50);
@@ -2062,7 +2079,8 @@
       case 'land': name = 'imp_land'; break; case 'channel': name = 'imp_channel'; break; case 'emerge': name = 'imp_emerge'; break; case 'hold': name = 'imp_hold'; break;
       default: name = m.moving ? `imp_w${Math.floor(m.phase * 7) % 6}` : 'imp_w0';
     }
-    const f = S2.map[name]; if (!f) return;
+    const f0 = S2.map[name]; if (!f0) return;
+    const T = impTint(m.type), f = T ? T.map[name] : f0, IMG = T ? T.cv : S2.img;
     const k = impK(m), jy = m.jy || 0, lift = clamp(jy / 160, 0, 1);
     ctx.save();
     ctx.fillStyle = `rgba(60,30,20,${.22 * (1 - lift * .7)})`; ctx.beginPath(); ctx.ellipse(x, m.y + 1, 26 * k / .44 * (1 - lift * .4), 6, 0, 0, Math.PI * 2); ctx.fill();
@@ -2070,15 +2088,16 @@
     const charging = m.st === 'charge' || m.st === 'windup' || m.st === 'channel';
     ctx.globalCompositeOperation = 'lighter';
     const gr = ctx.createRadialGradient(x, m.y - jy - 50 * k / .44, 4, x, m.y - jy - 50 * k / .44, (charging ? 78 : 56) * k / .44);
-    gr.addColorStop(0, `rgba(255,150,50,${charging ? .5 + Math.sin(time * 25) * .1 : .1})`); gr.addColorStop(1, 'rgba(255,90,20,0)');
+    const gc = IMP_GLOW[m.type] || IMP_GLOW[0];
+    gr.addColorStop(0, `rgba(${gc},${charging ? .5 + Math.sin(time * 25) * .1 : .1})`); gr.addColorStop(1, `rgba(${gc},0)`);
     ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, m.y - jy - 50 * k / .44, 80 * k / .44, 0, Math.PI * 2); ctx.fill();
     ctx.globalCompositeOperation = 'source-over';
     ctx.translate(x, m.y - jy);
     const pop = m.flash > 0 ? 1 + Math.sin(m.flash * 18) * .08 : 1, breathe = m.moving || m.st !== 'walk' ? 1 : 1 + Math.sin(time * 4 + m.id) * .015;
     ctx.scale(m.dir * pop, pop * breathe);
     ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(S2.img, f.x, f.y, f.w, f.h, -f.ax * k, -f.ay * k, f.w * k, f.h * k);
-    if (m.flash > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.min(.6, m.flash * 1.6); ctx.drawImage(S2.img, f.x, f.y, f.w, f.h, -f.ax * k, -f.ay * k, f.w * k, f.h * k); }
+    ctx.drawImage(IMG, f.x, f.y, f.w, f.h, -f.ax * k, -f.ay * k, f.w * k, f.h * k);
+    if (m.flash > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.min(.6, m.flash * 1.6); ctx.drawImage(IMG, f.x, f.y, f.w, f.h, -f.ax * k, -f.ay * k, f.w * k, f.h * k); }
     ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
     if (m.type === 2 && (m.st === 'charge' || m.st === 'windup' || m.st === 'release')) {        // l'archer : arc de bois et flèche de feu
       const pull = m.st === 'charge' ? Math.min(1, m.stT / .7) : m.st === 'windup' ? 1 : 0;
@@ -2090,6 +2109,38 @@
     }
     ctx.restore();
   }
+  // Couleur des lutins : on fabrique une seule fois une copie teintée de leurs images (rotation de teinte, comme le filtre CSS hue-rotate).
+  function hueMatrix(deg) {
+    const a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+    return [.213 + c * .787 - s * .213, .715 - c * .715 - s * .715, .072 - c * .072 + s * .928,
+            .213 - c * .213 + s * .143, .715 + c * .285 + s * .140, .072 - c * .072 - s * .283,
+            .213 - c * .213 - s * .787, .715 - c * .715 + s * .715, .072 + c * .928 + s * .072];
+  }
+  function tintCanvas(cv, deg) {
+    const g = cv.getContext('2d', { willReadFrequently: true }), d = g.getImageData(0, 0, cv.width, cv.height), p = d.data, M = hueMatrix(deg);
+    for (let i = 0; i < p.length; i += 4) { if (!p[i + 3]) continue; const r = p[i], gg = p[i + 1], b = p[i + 2];
+      p[i] = M[0] * r + M[1] * gg + M[2] * b; p[i + 1] = M[3] * r + M[4] * gg + M[5] * b; p[i + 2] = M[6] * r + M[7] * gg + M[8] * b; }
+    g.putImageData(d, 0, 0);
+  }
+  const impTints = {}, leafTints = {};
+  function impTint(t) {
+    if (!IMP_HUE[t]) return null; if (impTints[t] !== undefined) return impTints[t];
+    if (!s2ok()) return null;
+    try {
+      const names = Object.keys(S2.map).filter(k => k.startsWith('imp_')); let x = 0, h = 0; const map = {};
+      for (const k of names) { const f = S2.map[k]; map[k] = { ...f, x, y: 0 }; x += f.w + 2; h = Math.max(h, f.h); }
+      const cv = document.createElement('canvas'); cv.width = x; cv.height = h; const g = cv.getContext('2d');
+      for (const k of names) { const f = S2.map[k]; g.drawImage(S2.img, f.x, f.y, f.w, f.h, map[k].x, 0, f.w, f.h); }
+      tintCanvas(cv, IMP_HUE[t]); impTints[t] = { cv, map };
+    } catch { impTints[t] = null; }
+    return impTints[t];
+  }
+  function leafTint(t) {
+    if (!IMP_HUE[t]) return null; if (leafTints[t] !== undefined) return leafTints[t];
+    if (!leafImg.complete || !leafImg.naturalWidth) return null;
+    try { const cv = document.createElement('canvas'); cv.width = leafImg.naturalWidth; cv.height = leafImg.naturalHeight; cv.getContext('2d').drawImage(leafImg, 0, 0); tintCanvas(cv, IMP_HUE[t]); leafTints[t] = cv; } catch { leafTints[t] = null; }
+    return leafTints[t];
+  }
   function drawFriend(m, time) {
     if (m.prev) return;
     const cam = world.camera, x = m.x - cam; if (x < -160 || x > view.w + 160) return;
@@ -2098,18 +2149,19 @@
       const hh = m.type === 3 ? 84 : 70, ww = hh * leafImg.naturalWidth / leafImg.naturalHeight, bob = Math.abs(Math.sin(time * 5 + m.id)) * 5;
       ctx.save(); ctx.fillStyle = 'rgba(40,60,80,.18)'; ctx.beginPath(); ctx.ellipse(x, m.y + 1, ww * .32, 5, 0, 0, Math.PI * 2); ctx.fill();
       const pop = m.flash > 0 ? 1 + Math.sin(m.flash * 18) * .1 : 1; ctx.translate(x, m.y - bob); ctx.scale(pop * (player.facing >= 0 ? 1 : -1), pop);
-      ctx.imageSmoothingQuality = 'high'; ctx.drawImage(leafImg, -ww / 2, -hh, ww, hh);
-      if (m.flash > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.min(.5, m.flash * 1.4); ctx.drawImage(leafImg, -ww / 2, -hh, ww, hh); }
+      const LI = leafTint(m.type) || leafImg;
+      ctx.imageSmoothingQuality = 'high'; ctx.drawImage(LI, -ww / 2, -hh, ww, hh);
+      if (m.flash > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.min(.5, m.flash * 1.4); ctx.drawImage(LI, -ww / 2, -hh, ww, hh); }
       ctx.restore(); return;
     }
-    const index = m.type + (m.friendly ? 5 : 0), [hw, , sh] = MON[index];
+    const mv = mvOf(m), index = calmOf(m)[m.friendly ? 1 : 0], [hw, , sh] = MON[index];
     const scale = m.friendly ? .8 : 1, k = hw * scale / sh;
     let feet = m.y;
-    if (m.friendly) feet += Math.sin(time * 4 + m.id) * 2; else if (m.type === 1) feet -= m.hop; else if (m.type === 2) feet += Math.sin(time * 6 + m.id) * 2;
+    if (m.friendly) feet += Math.sin(time * 4 + m.id) * 2; else if (mv === 1) feet -= m.hop; else if (mv === 2) feet += Math.sin(time * 6 + m.id) * 2;
     if (!monsterImg.complete || !monsterImg.naturalWidth) return;
     ctx.save();
-    if (m.type !== 2 && !m.friendly) { ctx.fillStyle = 'rgba(40,60,80,.2)'; ctx.beginPath(); ctx.ellipse(x, m.y + 1, hw * .45, 6, 0, 0, Math.PI * 2); ctx.fill(); }
-    if (!m.friendly && m.type === 4 && m.charge) { const g = ctx.createRadialGradient(x - 30, feet - 70, 4, x - 30, feet - 70, 40); g.addColorStop(0, 'rgba(255,120,30,.9)'); g.addColorStop(1, 'rgba(255,120,30,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x - 30, feet - 70, 40, 0, Math.PI * 2); ctx.fill(); }
+    if (mv !== 2 && !m.friendly) { ctx.fillStyle = 'rgba(40,60,80,.2)'; ctx.beginPath(); ctx.ellipse(x, m.y + 1, hw * .45, 6, 0, 0, Math.PI * 2); ctx.fill(); }
+    if (false) { const g = ctx.createRadialGradient(x - 30, feet - 70, 4, x - 30, feet - 70, 40); g.addColorStop(0, 'rgba(255,120,30,.9)'); g.addColorStop(1, 'rgba(255,120,30,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x - 30, feet - 70, 40, 0, Math.PI * 2); ctx.fill(); }
     const pop = m.flash > 0 ? 1 + Math.sin(m.flash * 18) * .08 : 1;
     ctx.translate(x, feet); ctx.scale(pop, pop);
     ctx.imageSmoothingQuality = 'high';
