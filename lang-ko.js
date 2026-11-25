@@ -4,8 +4,8 @@
   const MM = (window.MM = window.MM || {}); (MM.L10N = MM.L10N || {});
   MM.L10N.ko = {
     ui: {
-      aHome: '미니 미션 홈', aSettingsHold: '보호자 설정: 2초 동안 길게 누르세요', tSettingsHold: '설정 (길게 누르기)',
-      howto: '놀이 방법', aTimerHold: '놀이 타이머: 2초 동안 길게 누르세요', tTimerHold: '타이머 (길게 누르기)', aSoundToggle: '소리 켜기 또는 끄기',
+      aHome: '미니 미션 홈', aSettingsHold: '보호자 설정: 1.5초 동안 길게 누르세요', tSettingsHold: '설정 (길게 누르기)',
+      howto: '놀이 방법', aTimerHold: '놀이 타이머: 1.5초 동안 길게 누르세요', tTimerHold: '타이머 (길게 누르기)', aSoundToggle: '소리 켜기 또는 끄기',
       aAlbum: '스티커 앨범', myAlbums: '내 앨범', tagline: '앨범을 스티커로 채워 봐!', play: '놀자!',
       aChooseHero: '영웅 고르기', aBackHome: '홈으로 돌아가기', chooseHero1: '영웅을', chooseHero2: '골라 봐!',
       aZiggy: '지기 고르기. 장애물을 휙휙 지나가는 빠른 영웅', aFilou: '필루 고르기. 거미줄로 그네를 타는 날쌘 영웅', aTitan: '타이탄 고르기. 커다란 바위를 옮기는 힘센 영웅',

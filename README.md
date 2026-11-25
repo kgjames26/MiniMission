@@ -86,7 +86,7 @@ Filou reste accroché à sa toile tant qu'on ne saute pas (le bouton SAUT cligno
 - Fenêtres de saut plus larges : appui mémorisé 0,2 s, saut possible 0,14 s après le bord.
 - Réglage « 👶 Un seul bouton » : seuls ◀ ▶ et un très gros SAUT restent ; le tir part tout seul vers les farceurs devant, Filou lance sa toile en l'air et lâche au meilleur moment, Ziggy déclenche le turbo devant les barrières, petits obstacles et grands ravins (et saute tout seul au bord en turbo), Titan donne ses coups de poing devant les blocs.
 - Récompenses : étoiles et lettres s'envolent vers leur compteur ; « B, comme ballon ! » avec son dessin ; petit visage joyeux au-dessus du héros.
-- Verrou parent : ⚙ et ⏱️ s'ouvrent en gardant le doigt appuyé 2 secondes (un anneau se remplit, « ✋ 2 s » sur un simple tapotement).
+- Verrou parent : ⚙ et ⏱️ s'ouvrent en gardant le doigt appuyé 1,5 seconde (un anneau se remplit, « ✋ 1,5 s » sur un simple tapotement) ; boutons agrandis en v0.44.
 - Hors ligne : si le réseau traîne plus de 3 secondes, la version en cache s'affiche.
 - Le lutin de feu est redessiné (v0.31) : une petite flamme vivante grognonne, sans cornes ni queue de diable, pour qu'on le reconnaisse toujours comme le méchant sans rien d'effrayant. Une fois attrapé, il devient une flamme jaune toute souriante (`assets/friend-flame.webp`). Ses 28 images sont dans `assets/sprites2.webp` (noms `imp_*` dans `sprites2.json`, positions et points d'ancrage inchangés).
 

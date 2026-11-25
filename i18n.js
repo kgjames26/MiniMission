@@ -24,8 +24,8 @@
   /* ---------- français ---------- */
   L10N.fr = {
     ui: {
-      aHome: 'Accueil de Mini Mission', aSettingsHold: 'Réglages pour l’adulte : garder appuyé 2 secondes', tSettingsHold: 'Réglages (garder appuyé)',
-      howto: 'Mode d’emploi', aTimerHold: 'Minuteur de jeu : garder appuyé 2 secondes', tTimerHold: 'Minuteur (garder appuyé)', aSoundToggle: 'Activer ou couper les sons',
+      aHome: 'Accueil de Mini Mission', aSettingsHold: 'Réglages pour l’adulte : garder appuyé 1,5 seconde', tSettingsHold: 'Réglages (garder appuyé)',
+      howto: 'Mode d’emploi', aTimerHold: 'Minuteur de jeu : garder appuyé 1,5 seconde', tTimerHold: 'Minuteur (garder appuyé)', aSoundToggle: 'Activer ou couper les sons',
       aAlbum: 'Mon album d’autocollants', myAlbums: 'Mes albums', tagline: 'Remplis tes albums !', play: 'JOUER !',
       aChooseHero: 'Choisir un héros', aBackHome: 'Retour à l’accueil', chooseHero1: 'Choisis ton', chooseHero2: 'héros !',
       aZiggy: 'Choisir Ziggy la Comète, le héros rapide qui traverse les obstacles', aFilou: 'Choisir Filou le Tisseur, le héros agile qui tisse des ponts', aTitan: 'Choisir Titan Puce, le héros fort qui déplace les rochers',

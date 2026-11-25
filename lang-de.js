@@ -3,8 +3,8 @@
   const MM = (window.MM = window.MM || {}); (MM.L10N = MM.L10N || {});
   MM.L10N.de = {
     ui: {
-      aHome: 'Startseite von Mini Mission', aSettingsHold: 'Einstellungen für Erwachsene: 2 Sekunden gedrückt halten', tSettingsHold: 'Einstellungen (gedrückt halten)',
-      howto: 'Anleitung', aTimerHold: 'Spielzeit-Timer: 2 Sekunden gedrückt halten', tTimerHold: 'Timer (gedrückt halten)', aSoundToggle: 'Ton an oder aus',
+      aHome: 'Startseite von Mini Mission', aSettingsHold: 'Einstellungen für Erwachsene: 1,5 Sekunden gedrückt halten', tSettingsHold: 'Einstellungen (gedrückt halten)',
+      howto: 'Anleitung', aTimerHold: 'Spielzeit-Timer: 1,5 Sekunden gedrückt halten', tTimerHold: 'Timer (gedrückt halten)', aSoundToggle: 'Ton an oder aus',
       aAlbum: 'Mein Stickeralbum', myAlbums: 'Meine Alben', tagline: 'Fülle deine Alben!', play: 'SPIELEN!',
       aChooseHero: 'Einen Helden wählen', aBackHome: 'Zurück zum Start', chooseHero1: 'Wähle deinen', chooseHero2: 'Helden!',
       aZiggy: 'Ziggy den Kometen wählen, den schnellen Helden, der durch Hindernisse saust', aFilou: 'Filou den Weber wählen, den flinken Helden, der sich an seinem Netz schwingt', aTitan: 'Titan wählen, den starken Helden, der große Felsen bewegt',

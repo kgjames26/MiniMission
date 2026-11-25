@@ -4,8 +4,8 @@
   const MM = (window.MM = window.MM || {}); (MM.L10N = MM.L10N || {});
   MM.L10N.ja = {
     ui: {
-      aHome: 'ミニミッション ホーム', aSettingsHold: '保護者向け設定：2秒間 長押し', tSettingsHold: '設定（長押し）',
-      howto: 'あそびかた', aTimerHold: 'プレイタイマー：2秒間 長押し', tTimerHold: 'タイマー（長押し）', aSoundToggle: 'おとを オン・オフ',
+      aHome: 'ミニミッション ホーム', aSettingsHold: '保護者向け設定：1.5秒間 長押し', tSettingsHold: '設定（長押し）',
+      howto: 'あそびかた', aTimerHold: 'プレイタイマー：1.5秒間 長押し', tTimerHold: 'タイマー（長押し）', aSoundToggle: 'おとを オン・オフ',
       aAlbum: 'シール アルバム', myAlbums: 'アルバム', tagline: 'アルバムを シールで いっぱいに しよう！', play: 'あそぶ！',
       aChooseHero: 'ヒーローを えらぶ', aBackHome: 'ホームに もどる', chooseHero1: 'ヒーローを', chooseHero2: 'えらんでね！',
       aZiggy: 'ジギーを えらぶ。しょうがいぶつを すりぬける はやい ヒーロー', aFilou: 'フィルーを えらぶ。いとで ブランコの ように とぶ すばしっこい ヒーロー', aTitan: 'タイタンを えらぶ。おおきな いわを うごかす ちからもちの ヒーロー',

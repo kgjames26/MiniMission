@@ -3,8 +3,8 @@
   const MM = (window.MM = window.MM || {}); (MM.L10N = MM.L10N || {});
   MM.L10N.en = {
     ui: {
-      aHome: 'Mini Mission home', aSettingsHold: 'Grown-up settings: hold for 2 seconds', tSettingsHold: 'Settings (hold)',
-      howto: 'How to play', aTimerHold: 'Play timer: hold for 2 seconds', tTimerHold: 'Timer (hold)', aSoundToggle: 'Turn sound on or off',
+      aHome: 'Mini Mission home', aSettingsHold: 'Grown-up settings: hold for 1.5 seconds', tSettingsHold: 'Settings (hold)',
+      howto: 'How to play', aTimerHold: 'Play timer: hold for 1.5 seconds', tTimerHold: 'Timer (hold)', aSoundToggle: 'Turn sound on or off',
       aAlbum: 'My sticker album', myAlbums: 'My albums', tagline: 'Fill your albums!', play: 'PLAY!',
       aChooseHero: 'Choose a hero', aBackHome: 'Back to home', chooseHero1: 'Choose your', chooseHero2: 'hero!',
       aZiggy: 'Choose Ziggy the Comet, the fast hero who zooms past obstacles', aFilou: 'Choose Filou the Weaver, the nimble hero who swings on webs', aTitan: 'Choose Titan, the strong hero who moves big rocks',

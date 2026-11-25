@@ -979,9 +979,9 @@
     const a = heroAnim, t = a.timers, hero = activeHero, air = !player.grounded;
     const main = (col) => ({ s: 'main', col }), mv = (col) => ({ s: 'moves', col, row: MOVES.rows[hero] });
     const n = (f) => s2ok() && S2.map[f] ? { s: 's2', f } : null;
-    const walkN = (name, N, mul, ph = a.phase) => {
+    const walkN = (name, N, mul, ph = a.phase, blend = true) => {
       const t = ph * mul, i = Math.floor(t) % N, q = n(`${name}${i}`); if (!q) return null; q.cyc = name;
-      const f2 = `${name}${(i + 1) % N}`; if (S2.map[f2]) { q.f2 = f2; const fr = t - Math.floor(t); q.mix = fr * fr * (3 - 2 * fr); } return q;
+      const f2 = `${name}${(i + 1) % N}`; if (blend && S2.map[f2]) { q.f2 = f2; const fr = t - Math.floor(t); q.mix = fr * fr * (3 - 2 * fr); } return q;
     };
     const moving = Math.abs(player.vx) > 12;
     // saut complet dessiné (Ziggy, Titan) : monte, en haut, retombe, touche le sol, se redresse ; fête = bras écartés
@@ -1019,7 +1019,7 @@
       let q;
       if (gt < turboUntil && (q = air ? n('ziggy_r1') : walkN('ziggy_r', 4, 1, a.runPhase))) return q;
       if ((q = jumpPose('ziggy'))) return q;
-      if (!air && !t.celebrate && !t.land && !t.stumble) { if (moving && (q = walkN('ziggy_m', 7, 1.69))) return q; if (!moving && (q = n('ziggy_w1'))) return q; }
+      if (!air && !t.celebrate && !t.land && !t.stumble) { if (moving && (q = walkN('ziggy_m', 7, 1.69, a.phase, false))) return q; if (!moving && (q = n('ziggy_w1'))) return q; }
     }
     if (swing) return main(POSE.jump);
     if (t.punch) return main(POSE.land);
@@ -2279,8 +2279,8 @@
   $('#replay-button').addEventListener('click',()=>{if(lastFinished)startLevel(lastFinished.hero,lastFinished.index);});
   $('#next-level-button').addEventListener('click',()=>{if(lastFinished)startLevel(lastFinished.hero,lastFinished.index+1);});
   document.querySelectorAll('[data-go="home"]').forEach(b=>b.addEventListener('click',()=>setScreen('home')));
-  // Verrou parent : les réglages et le minuteur s'ouvrent en gardant le doigt appuyé 2 secondes (un tout-petit tape, un adulte attend).
-  const PARENT_HOLD = 2000;
+  // Verrou parent : les réglages et le minuteur s'ouvrent en gardant le doigt appuyé 1,5 seconde (un tout-petit tape, un adulte attend).
+  const PARENT_HOLD = 1500;
   function parentLock(button, open) {
     let timer = 0, pointer = null;
     const stop = () => { clearTimeout(timer); timer = 0; pointer = null; button.classList.remove('holding'); };
