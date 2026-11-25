@@ -123,3 +123,4 @@ Filou reste accroché à sa toile tant qu'on ne saute pas (le bouton SAUT cligno
 ## 20 monstres tous différents (v0.48)
 - Par ville : 5 lutins de feu (un par façon d'attaquer, chacun sa couleur : `IMP_HUE`, teinte calculée une fois au chargement) + les 15 petits monstres tranquilles (`CALM` : case farceur, case ami, façon de bouger), dans un ordre mélangé.
 - `assets/monsters.webp` : 7 lignes de 5 cases (400×264) ; les 11 nouveaux monstres sont dans les cases 10 à 31 (farceur puis ami).
+- Monstres vivants (v0.50) : sans dessin en plus, dans `drawFriend` — ils se retournent, respirent ; les sauteurs s'écrasent et s'étirent, les marcheurs se dandinent, les costauds font des pas lourds avec de la poussière, l'escargot et la chenille ondulent, les volants penchent, le nuage gonfle et laisse tomber une goutte, le dragon souffle de la fumée ; les amis font des petits sauts de joie et un cœur s'envole de temps en temps (le robot danse, l'arc-en-ciel du nuage scintille).

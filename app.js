@@ -43,7 +43,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '49', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '50', asset = (p) => `${p}?v=${ASSET_V}`;
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
   const monsterImg = new Image(); monsterImg.src = asset('assets/monsters.webp');
   const movesImg = new Image(); movesImg.src = asset('assets/hero-moves.webp');
@@ -2158,19 +2158,66 @@
       ctx.restore(); return;
     }
     const mv = mvOf(m), index = calmOf(m)[m.friendly ? 1 : 0], [hw, , sh] = MON[index];
-    const scale = m.friendly ? .8 : 1, k = hw * scale / sh;
-    let feet = m.y;
-    if (m.friendly) feet += Math.sin(time * 4 + m.id) * 2; else if (mv === 1) feet -= m.hop; else if (mv === 2) feet += Math.sin(time * 6 + m.id) * 2;
+    const scale = m.friendly ? .8 : 1, k = hw * scale / sh, T = m.type, ph = m.phase || 0, id = m.id;
     if (!monsterImg.complete || !monsterImg.naturalWidth) return;
+    // ----- petites animations en code (aucun dessin en plus) : chaque monstre bouge selon sa façon d'avancer -----
+    let feet = m.y, sx = 1, sy = 1, rot = 0, face = 1;
+    if (m.friendly) {
+      face = player.facing >= 0 ? 1 : -1;
+      const joy = Math.abs(Math.sin(time * 5 + id));                       // petits sauts de joie en suivant le héros
+      feet -= joy * (mv === 1 ? 9 : 5); if (joy < .25) { sx = 1 + (.25 - joy) * .5; sy = 1 - (.25 - joy) * .5; }
+      if (T === 10) { rot = Math.sin(time * 8 + id) * .14; sy *= 1 + Math.sin(time * 16 + id) * .03; }   // le robot ami danse
+    } else {
+      // il regarde là où il va
+      face = mv === 1 ? Math.sign(Math.cos(ph * .9)) || 1 : mv === 2 ? Math.sign(Math.cos(ph * .8)) || 1 : (m.dir || 1);
+      if (mv === 1) {                                                         // sauteurs : écrasés au sol, étirés en l'air
+        feet -= m.hop || 0; const h = (m.hop || 0) / 44;
+        if (h < .15) { const q = (.15 - h) / .15 * .2; sx = 1 + q; sy = 1 - q; } else { const st = .09 * (1 - h); sy = 1 + st; sx = 1 - st * .6; }
+      } else if (mv === 2) {                                                  // volants : flottent et penchent dans le sens du vol
+        feet += Math.sin(time * 6 + id) * 2; rot = Math.cos(ph * .8) * .12 * face + Math.sin(time * 3 + id) * .04;
+        if (T === 4) { const b = 1 + Math.sin(time * 2.2 + id) * .045; sx = b; sy = b; }   // le nuage gonfle et dégonfle
+      } else if (mv === 3) {                                                  // costauds : pas lourds qui balancent le corps
+        const st = Math.sin(ph * 4); rot = st * .06; feet -= Math.max(0, Math.cos(ph * 4)) * 2.5;
+        const sign = st >= 0 ? 1 : -1; if (m.stepSign && sign !== m.stepSign && onScreen(m.x, 60)) FX.dots(m.x - (m.dir || 1) * hw * .25, m.y - 3, 3, ['#d9cdb8', '#efe7da', '#c9bba3'], 55);
+        m.stepSign = sign;
+      } else if (T === 7) {                                                   // l'escargot s'allonge et se tasse
+        const w = Math.sin(ph * 3); sx = 1 + w * .07; sy = 1 - w * .05;
+      } else if (T === 13) {                                                  // la chenille ondule
+        const w = Math.sin(ph * 6); sx = 1 + w * .08; sy = 1 - w * .06;
+      } else {                                                                // marcheurs : dandinement et petit rebond à chaque pas
+        rot = Math.sin(ph * 8) * .07; feet -= Math.abs(Math.sin(ph * 8)) * 3;
+      }
+      const br = Math.sin(time * 2.4 + id) * .018; sy *= 1 + br; sx *= 1 - br * .5;   // tout le monde respire
+    }
     ctx.save();
-    if (mv !== 2 && !m.friendly) { ctx.fillStyle = 'rgba(40,60,80,.2)'; ctx.beginPath(); ctx.ellipse(x, m.y + 1, hw * .45, 6, 0, 0, Math.PI * 2); ctx.fill(); }
-    if (false) { const g = ctx.createRadialGradient(x - 30, feet - 70, 4, x - 30, feet - 70, 40); g.addColorStop(0, 'rgba(255,120,30,.9)'); g.addColorStop(1, 'rgba(255,120,30,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x - 30, feet - 70, 40, 0, Math.PI * 2); ctx.fill(); }
+    if (mv !== 2 && !m.friendly) { ctx.fillStyle = 'rgba(40,60,80,.2)'; ctx.beginPath(); ctx.ellipse(x, m.y + 1, hw * .45 * sx, 6, 0, 0, Math.PI * 2); ctx.fill(); }
     const pop = m.flash > 0 ? 1 + Math.sin(m.flash * 18) * .08 : 1;
-    ctx.translate(x, feet); ctx.scale(pop, pop);
+    ctx.translate(x, feet); ctx.rotate(rot); ctx.scale(pop * sx * face, pop * sy);
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(monsterImg, (index % 5) * MON_CELL.w, Math.floor(index / 5) * MON_CELL.h, MON_CELL.w, MON_CELL.h, -MON_CELL.w * k / 2, -(MON_CELL.h - MON_CELL.pad) * k, MON_CELL.w * k, MON_CELL.h * k);
     if (m.flash > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.min(.6, m.flash * 1.6); ctx.drawImage(monsterImg, (index % 5) * MON_CELL.w, Math.floor(index / 5) * MON_CELL.h, MON_CELL.w, MON_CELL.h, -MON_CELL.w * k / 2, -(MON_CELL.h - MON_CELL.pad) * k, MON_CELL.w * k, MON_CELL.h * k); }
     ctx.restore();
+    // ----- petits détails dessinés en code -----
+    const H = hw * scale;
+    if (!m.friendly && T === 4) {                                             // le nuage grognon laisse tomber une goutte
+      const t = (time * .45 + id * .37) % 1;
+      if (t < .4) { const dy = t / .4, gx = x + face * H * .1, gy = feet - H * .15 + dy * dy * 90; ctx.save(); ctx.globalAlpha = 1 - dy * .6; ctx.fillStyle = '#7cc4ff'; ctx.strokeStyle = '#3d7fc4'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(gx, gy - 9); ctx.quadraticCurveTo(gx + 6, gy - 1, gx, gy + 3); ctx.quadraticCurveTo(gx - 6, gy - 1, gx, gy - 9); ctx.fill(); ctx.stroke(); ctx.restore(); }
+    }
+    if (!m.friendly && T === 9) {                                             // le petit dragon souffle une bouffée de fumée
+      const t = (time * .33 + id * .29) % 1;
+      if (t < .3) { const q = t / .3; ctx.save(); ctx.globalAlpha = .55 * (1 - q); ctx.fillStyle = '#c9ced6';
+        for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(x + face * (H * .55 + q * 34 + i * 9), feet - H * .62 - q * 14 - i * 4, 5 + q * 9 - i * 1.5, 0, Math.PI * 2); ctx.fill(); } ctx.restore(); }
+    }
+    if (m.friendly) {
+      const t = (time * .22 + id * .41) % 1;                                  // de temps en temps, un cœur s'envole
+      if (t < .22) { const q = t / .22; ctx.save(); ctx.globalAlpha = 1 - q; ctx.font = `${Math.round(14 + q * 6)}px system-ui`; ctx.textAlign = 'center'; ctx.fillText('💗', x + Math.sin(q * 6 + id) * 6, feet - H - 6 - q * 40); ctx.restore(); }
+      if (T === 4) {                                                          // l'arc-en-ciel du nuage ami scintille
+        ctx.save(); ctx.fillStyle = '#fff'; for (let i = 0; i < 3; i++) { const tw = Math.max(0, Math.sin(time * 4 + i * 2.1 + id)); if (tw < .2) continue; ctx.globalAlpha = tw;
+          const sxp = x + (i - 1) * H * .35, syp = feet - H * .12 - (i % 2) * 8, r = 2.5 + tw * 2; ctx.beginPath(); ctx.moveTo(sxp, syp - r * 2); ctx.lineTo(sxp + r * .5, syp - r * .5); ctx.lineTo(sxp + r * 2, syp); ctx.lineTo(sxp + r * .5, syp + r * .5); ctx.lineTo(sxp, syp + r * 2); ctx.lineTo(sxp - r * .5, syp + r * .5); ctx.lineTo(sxp - r * 2, syp); ctx.lineTo(sxp - r * .5, syp - r * .5); ctx.fill(); }
+        ctx.restore();
+      }
+    }
     if (m.wrap > 0) {   // enroulement de toile autour du monstre capturé
       ctx.save(); ctx.translate(x, feet - hw * scale / 2); ctx.globalAlpha = Math.min(1, m.wrap * 2); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5;
       for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.ellipse(0, 0, hw * .5 * (1 - (.9 - m.wrap) * .3), hw * (.22 + i * .09), (i - 1.5) * .55 + m.wrap * 4, 0, Math.PI * 2); ctx.stroke(); }
