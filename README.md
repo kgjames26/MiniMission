@@ -20,7 +20,7 @@ Puis ouvrir `http://localhost:4173`. Le service worker et l'installation PWA né
 Après le choix du héros, on choisit une ville (`cities.js`) : Paris, New York, Tokyo, Rio, Le Caire, Londres, Venise, Sydney, Marrakech, Pékin. Chaque ville a ses couleurs, son monument en arrière-plan, ses maisons, ses arbres et son petit mobilier. Le niveau suivant s'ouvre quand on arrive au bout du précédent. La ville est toujours la même (graine fixe) : la progression (étoiles, lettres, monstres, questions, autocollants) est conservée et la carte indique ce qu'il reste à faire.
 À la fin d'un niveau, une feuille de statistiques résume ce qui a été réussi et ce qu'il reste à faire, avec un bouton « Menu ».
 
-## Le diablotin de feu (le seul ennemi)
+## Le lutin de feu (le seul ennemi)
 Les 20 petits monstres de chaque niveau : 10 diablotins de feu (lanceurs) et 10 petits monstres tranquilles (hérisson, limon, chauve-souris, golem). Les diablotins ont des attaques variées : boule de feu, double tir (dont un tir en cloche), flèche de feu (arc), tornade de feu (avec avertissement au sol) et grand saut. S'il touche le héros 3 fois en 14 secondes, celui-ci revient au dernier drapeau (point de passage). On les capture en les touchant : Ziggy et Filou avec leur tir, Titan avec son coup de poing de près ou son poing projeté à distance (qui casse aussi les obstacles). Un diablotin capturé devient un ami.
 
 ## Ziggy
@@ -88,3 +88,4 @@ Filou reste accroché à sa toile tant qu'on ne saute pas (le bouton SAUT cligno
 - Récompenses : étoiles et lettres s'envolent vers leur compteur ; « B, comme ballon ! » avec son dessin ; petit visage joyeux au-dessus du héros.
 - Verrou parent : ⚙ et ⏱️ s'ouvrent en gardant le doigt appuyé 2 secondes (un anneau se remplit, « ✋ 2 s » sur un simple tapotement).
 - Hors ligne : si le réseau traîne plus de 3 secondes, la version en cache s'affiche.
+- Le lutin de feu est redessiné (v0.31) : une petite flamme vivante grognonne, sans cornes ni queue de diable, pour qu'on le reconnaisse toujours comme le méchant sans rien d'effrayant. Ses 28 images sont dans `assets/sprites2.webp` (noms `imp_*` dans `sprites2.json`, positions et points d'ancrage inchangés).
