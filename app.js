@@ -367,6 +367,7 @@
     view.scale = Math.min(canvas.height/WORLD_H, canvas.width/520);
     view.w = canvas.width/view.scale; view.h = canvas.height/view.scale;
     view.ox = 0; view.oy = (view.h-WORLD_H)*view.scale;
+    hud.at = -9;
   }
   // Qualité automatique : si l'appareil n'arrive pas à suivre, le canvas est dessiné un peu moins finement
   // (2 → 1,5 → 1,25 pixel réel par pixel d'écran). Si ça n'aide pas (écran bridé à 30 images/s), on revient en arrière.
@@ -387,6 +388,14 @@
     }
   }
   const SLOWMO_TIME = .18; let slowmo = 0;
+  // la barre du haut et le panneau des amis, en unités du monde (pour garder les anneaux de Filou en dessous)
+  const hud = { top: 90, barBottom: 180, barRight: 0, at: -9 };
+  function measureHud() {
+    hud.at = performance.now() / 1000; const rect = canvas.getBoundingClientRect(); if (!rect.height) return;
+    const k = (canvas.width / rect.width) / view.scale, tb = $('.game-topbar')?.getBoundingClientRect(), mb = $('#monster-bar')?.getBoundingClientRect();
+    if (tb) hud.top = Math.max(0, (tb.bottom - rect.top) * k);
+    if (mb && mb.height) { hud.barBottom = Math.max(hud.top, (mb.bottom - rect.top) * k); hud.barRight = (mb.right - rect.left) * k; } else { hud.barBottom = hud.top; hud.barRight = 0; }
+  }
   // Une seule boucle à la fois, même après une pause/reprise très rapide.
   function startLoop() { lastTime = performance.now(); if (!rafId) rafId = requestAnimationFrame(loop); }
   function loop(now) {
@@ -464,7 +473,19 @@
     world.camera = Math.max(0, Math.min(world.width - view.w, player.x - view.w*.34));
     // caméra verticale : elle monte avec le héros (grands immeubles, trampoline) et redescend doucement
     { const extra = Math.max(0, view.h - WORLD_H); let target = Math.max(0, (-extra + 150) - player.y);
-      if (world.hintAnchor && !swing) target = Math.max(target, (-extra + 120) - world.hintAnchor.y);     // l'anneau de toile doit rester visible
+      if (hero === 'filou') {
+        // les anneaux de toile restent visibles SOUS la barre du haut et le panneau des amis : celui qui est à portée
+        // (ou celui où Filou est accroché) et le prochain devant lui, pour que l'enfant le voie arriver
+        if (performance.now() / 1000 - hud.at > 1) measureHud();
+        const need = (ax, ay) => { const sx = ax - world.camera, lim = sx < hud.barRight + 30 ? hud.barBottom : hud.top; return lim + 56 - extra - ay; };
+        let want = 0;
+        if (swing) want = need(swing.ax, swing.ay); else if (world.hintAnchor) want = need(world.hintAnchor.x, world.hintAnchor.y);
+        const cx = player.x + player.w / 2; let next = null, best = view.w * .62;
+        for (const a of world.anchors || []) { const dx = (a.x - cx) * player.facing; if (dx > -30 && dx < best && (!swing || a.x !== swing.ax)) { best = dx; next = a; } }
+        if (next) want = Math.max(want, need(next.x, next.y));
+        const maxCam = view.h - 60 - extra - (player.y + player.h);   // mais le héros reste toujours entier à l'écran
+        target = Math.max(target, Math.min(want, maxCam));
+      }
       world.camY += (target - world.camY) * Math.min(1, dt * (target > world.camY ? 6 : 3)); if (Math.abs(world.camY - target) < .5) world.camY = target; }
     for (let i = world.topples.length - 1; i >= 0; i--) {
       const q = world.topples[i]; q.t += dt;
@@ -715,16 +736,18 @@
       const x = a.x - cam; if (x < -60 || x > W + 60) return;
       const active = world.hintAnchor === a || (swing && swing.anchor === a), pulse = 1 + Math.sin(time * 5) * (active ? .14 : .06);
       ctx.save(); ctx.translate(x, a.y);
-      const glow = ctx.createRadialGradient(0, 0, 4, 0, 0, active ? 46 : 32); glow.addColorStop(0, active ? 'rgba(200,170,255,.85)' : 'rgba(200,170,255,.45)'); glow.addColorStop(1, 'rgba(200,170,255,0)');
-      ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(0, 0, active ? 46 : 32, 0, Math.PI*2); ctx.fill();
-      ctx.scale(pulse, pulse);
+      const gr = active ? 64 : 46;               // anneaux plus gros et plus lumineux : on les repère de loin
+      const glow = ctx.createRadialGradient(0, 0, 6, 0, 0, gr); glow.addColorStop(0, active ? 'rgba(210,185,255,.95)' : 'rgba(210,185,255,.6)'); glow.addColorStop(1, 'rgba(210,185,255,0)');
+      ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(0, 0, gr, 0, Math.PI*2); ctx.fill();
+      ctx.scale(pulse * 1.45, pulse * 1.45);
+      ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2); ctx.fill();
       ctx.strokeStyle = '#7d5bd6'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2); ctx.stroke();
       ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.beginPath(); for (let k = 0; k < 6; k++) { const ang = k * Math.PI / 3; ctx.moveTo(0, 0); ctx.lineTo(Math.cos(ang) * 13, Math.sin(ang) * 13); } ctx.stroke();
       ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2); ctx.stroke();
       ctx.restore();
     });
     if (world.hintAnchor && !swing) {            // flèche au bord haut de l'écran si l'anneau est encore hors champ
-      const a = world.hintAnchor, ax = a.x - cam, top = -Math.max(0, view.h - WORLD_H) - (world.camY || 0) + 60;
+      const a = world.hintAnchor, ax = a.x - cam, top = -Math.max(0, view.h - WORLD_H) - (world.camY || 0) + hud.top + 24;
       if (a.y < top - 20 && ax > 0 && ax < W) { ctx.save(); ctx.translate(ax, top + 10 + Math.sin(time * 6) * 4); ctx.fillStyle = '#7d5bd6'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0, -18); ctx.lineTo(18, 8); ctx.lineTo(-18, 8); ctx.closePath(); ctx.stroke(); ctx.fill(); ctx.restore(); }
     }
     world.coins.forEach(star => { if (star.collected) return; const x = star.x - cam; if (x < -30 || x > W + 30) return; drawStarItem(x, star.y, time, star.bob); });
@@ -1573,6 +1596,9 @@
       if (m) { const key = m.imp ? 'L' : String(m.type); if (was !== key) { chip.dataset.t = key; chip.className = 'on pop'; chip.setAttribute('style', monsterChipStyle(m.imp ? -1 : m.type + 5, 22)); } }
       else { chip.className = ''; chip.removeAttribute('style'); delete chip.dataset.t; }
     });
+    // le panneau des amis se fait discret quand rien ne change : il cache moins le haut du jeu (et les anneaux de Filou)
+    const n = caught.length;
+    if (bar.dataset.n !== String(n)) { bar.dataset.n = n; bar.classList.remove('idle'); clearTimeout(bar._idle); bar._idle = setTimeout(() => bar.classList.add('idle'), 3500); }
   }
   function speakCount(n) {
     if (timerNoticePlaying) return;

@@ -651,3 +651,6 @@ body.one-button .touch-controls{--jump:clamp(108px,22vh,150px)}
 .settings-open.need-hold::before,.timer-open.need-hold::before{content:"✋ 2 s";inset:auto;left:50%;top:calc(100% + 6px);transform:translateX(-50%);width:max-content;padding:3px 8px;border-radius:10px;background:#fff;color:#2f6f9e;font-size:13px;font-weight:900;text-shadow:none;box-shadow:0 2px 6px #0002;animation:hint-fade 1.6s forwards}
 @keyframes hint-fade{0%,70%{opacity:1}100%{opacity:0}}
 @media (prefers-reduced-motion:reduce){.action-button.ready,.action-button.ready::after{animation:none}}
+/* Panneau des amis : il se fait petit et transparent 3,5 s après la dernière capture, et revient en grand à la suivante */
+.monster-bar{transition:opacity .4s,transform .4s;transform-origin:top left}
+.monster-bar.idle{opacity:.45;transform:scale(.72)}
