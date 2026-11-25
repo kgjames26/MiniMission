@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '53', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '54', asset = (p) => `${p}?v=${ASSET_V}`;
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
   const monsterImg = new Image(); monsterImg.src = asset('assets/monsters.webp');
   const movesImg = new Image(); movesImg.src = asset('assets/hero-moves.webp');
@@ -401,7 +401,7 @@
     $('#attack-button').classList.remove('cooldown', 'active'); abilityReadyShown = true;
     const shootInfo = { ziggy: ['🔥', T('shotFire')], filou: ['🕸️', T('shotWeb')], titan: ['👊', T('shotPunch')] }[activeHero];
     $('#shoot-button .shoot-icon').textContent = shootInfo[0]; $('#shoot-button').setAttribute('aria-label', T('aShootX', { x: shootInfo[1] })); $('#shoot-button').dataset.hero = activeHero;
-    setScreen('game-screen'); startLoop(); maybeRotateHint();
+    setScreen('game-screen'); startLoop();
     if (resume && timerAnnouncementPending) speakTimerNotice();
     if (!resume) sound('start');
   }
@@ -1471,14 +1471,6 @@
     };
     for (const l of world.letters) if (!l.collected) pull(l);
     for (const st of world.coins) if (!st.collected) pull(st);
-  }
-  // en portrait, un petit téléphone qui pivote invite (sans obliger) à tourner l'écran — une fois par lancement du jeu
-  let rotateHintShown = false;
-  function maybeRotateHint() {
-    if (rotateHintShown || window.innerHeight <= window.innerWidth * 1.05) return;
-    rotateHintShown = true; const node = $('#rotate-hint'); if (!node) return;
-    node.classList.remove('show'); void node.offsetWidth; node.classList.add('show');
-    clearTimeout(node._t); node._t = setTimeout(() => node.classList.remove('show'), 3600);
   }
   function setOneButton(on) {
     oneButton = !!on; save.oneButton = oneButton; writeSave();
