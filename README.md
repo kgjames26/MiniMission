@@ -107,3 +107,8 @@ Filou reste accroché à sa toile tant qu'on ne saute pas (le bouton SAUT cligno
 - Après le choix de la langue (une seule fois), un écran « Pour le parent » propose le prénom (facultatif, bouton « Passer »), un bouton 🔊 pour l'écouter et une case pour l'écrire comme il se prononce si la voix se trompe. Modifiable dans ⚙ Réglages (« 👧 Prénom »).
 - Utilisé avec parcimonie : bonjour après la saisie, « Choisis une ville, Léa ! », fin de niveau, autocollant d'or, au revoir du minuteur. Coréen : 아/야 selon le 받침.
 - Le prénom reste uniquement sur l'appareil (localStorage), jamais envoyé.
+
+## Transitions d'animation (v0.41)
+- Images dessinées entre deux états (`TRANS` dans app.js) : arrêt ↔ marche pour les 3 héros, marche ↔ course turbo pour Ziggy ; elles sont ajoutées en bas de `assets/sprites2.webp` (noms `*_iw0`, `*_wi0`, `ziggy_wr*`, `ziggy_rw*`).
+- Sinon, fondu de 0,08 s entre l'ancienne et la nouvelle image (sauts, atterrissages, actions).
+- La course de Ziggy suit sa vitesse et repart toujours du même pied ; Ziggy et Titan ont un saut complet dessiné (`*_j0` à `*_j6`), comme Filou.

@@ -896,7 +896,8 @@
   // ===== Animation des héros =====
   // assets/heroes-atlas.webp : 3 lignes (Ziggy, Filou, Titan) × 6 poses. Chaque case est alignée sur les pieds
   // (bas de la case) et centrée sur le corps, donc on dessine toujours « pieds au sol » sans décalage.
-  // Une seule pose est dessinée à la fois : pas de fondu, pas de superposition.
+  // Changements d'état (arrêt, marche, course, saut) : images de transition dessinées quand il y en a (TRANS),
+  // sinon un fondu très court (FADE) de l'ancienne pose vers la nouvelle.
   const HERO_ATLAS = { cellW: 262, cellH: 303, pad: 3, scale: 0.48 };
   const HERO_ROW = { ziggy: 0, filou: 1, titan: 2 };
   const POSE = { walkA: 0, walkB: 1, duck: 2, dodge: 3, jump: 4, land: 5 };
@@ -904,7 +905,15 @@
   const STRIDE = 34; // unités de monde parcourues par pose de marche : les pieds ne glissent pas
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   // Toute l'animation est pilotée par le temps de jeu (dt) : une pause la fige, elle ne « saute » pas à la reprise.
-  function newHeroAnim() { return { time:0, phase:0, squash:0, timers:{}, stumbleAge:0, celebrateStart:0 }; }
+  function newHeroAnim() { return { time:0, phase:0, runPhase:0, squash:0, timers:{}, stumbleAge:0, celebrateStart:0, mode:'', trans:null, fade:null, lastKey:null, lastCyc:null }; }
+  const TRANS = {
+    'ziggy:walk>run': ['ziggy_wr0', 'ziggy_wr1'], 'ziggy:run>walk': ['ziggy_rw0', 'ziggy_rw1'],
+    'ziggy:idle>run': ['ziggy_iw0', 'ziggy_wr0', 'ziggy_wr1'], 'ziggy:run>idle': ['ziggy_rw0', 'ziggy_rw1', 'ziggy_wi0'],
+    'ziggy:idle>walk': ['ziggy_iw0'], 'ziggy:walk>idle': ['ziggy_wi0'],
+    'filou:idle>walk': ['filou_iw0'], 'filou:walk>idle': ['filou_wi0'],
+    'titan:idle>walk': ['titan_iw0'], 'titan:walk>idle': ['titan_wi0'],
+  };
+  const TR_STEP = .075, FADE = .08, RUN_FPS = 13;   // durée d'une image de transition ; durée du fondu ; images de course par seconde à pleine vitesse
   // Action ponctuelle ; ms = durée. L'écrasement/étirement (squash) donne du poids aux sauts et aux arrivées.
   function triggerHeroAnimation(name, ms = 400) {
     const a = heroAnim;
@@ -928,29 +937,70 @@
     if (a.timers.stumble) a.stumbleAge += dt;
     const moving = player.grounded && Math.abs(player.vx) > 12;
     if (moving) a.phase += Math.abs(player.vx) * dt / STRIDE; else if (player.grounded) a.phase = 0;
+    // la course de Ziggy suit sa vitesse réelle (et repart toujours du même pied après la transition)
+    if (gt < turboUntil) { if (player.grounded) a.runPhase += Math.abs(player.vx) * dt * RUN_FPS / TURBO_SPEED; } else a.runPhase = 0;
     // On ne fête que sur place : dès que le héros bouge, la fête s'arrête.
     if (a.timers.celebrate && (moving || !player.grounded)) delete a.timers.celebrate;
     a.squash *= Math.exp(-dt * 14);
     if (Math.abs(a.squash) < .002) a.squash = 0;
   }
-  // Quelle pose afficher, selon ce que fait le héros (du plus prioritaire au moins prioritaire).
+  // Grand état du héros, pour savoir quand jouer une transition.
+  function heroMode() {
+    const t = heroAnim.timers;
+    if (!player.grounded || swing) return 'air';
+    if (activeHero === 'ziggy' && gt < turboUntil && !t.shot) return 'run';
+    for (const k in t) if (k !== 'collect' && k !== 'jump' && k !== 'question') return 'act';
+    return Math.abs(player.vx) > 12 ? 'walk' : 'idle';
+  }
   function choosePose() {
+    const a = heroAnim, hero = activeHero, mode = heroMode();
+    if (mode !== a.mode) {
+      const seq = s2ok() && TRANS[`${hero}:${a.mode}>${mode}`];
+      a.trans = seq && seq.every(f => S2.map[f]) ? { seq, t0: a.time, to: mode } : null;
+      a.mode = mode;
+    }
+    let pose = null;
+    if (a.trans) {
+      const i = Math.floor((a.time - a.trans.t0) / TR_STEP);
+      if (i < a.trans.seq.length) pose = { s: 's2', f: a.trans.seq[i] };
+      else { if (a.trans.to === 'walk') a.phase = 0; else if (a.trans.to === 'run') a.runPhase = 0; a.trans = null; }   // on enchaîne sur la 1re image du cycle
+    }
+    if (!pose) pose = basePose();
+    // fondu court quand l'image change hors d'un cycle (le cycle de marche se fond déjà tout seul)
+    const key = pose.s === 's2' && !swing ? pose.f : null;
+    if (!key) a.fade = null;
+    else if (key !== a.lastKey && a.lastKey && !(pose.cyc && pose.cyc === a.lastCyc)) a.fade = { f: a.lastKey, t0: a.time };
+    a.lastKey = key; a.lastCyc = pose.cyc || null;
+    if (a.fade) { const k = (a.time - a.fade.t0) / FADE; if (k >= 1) a.fade = null; else { pose.fo = a.fade.f; pose.fa = 1 - k * k * (3 - 2 * k); } }
+    return pose;
+  }
+  // Quelle pose afficher, selon ce que fait le héros (du plus prioritaire au moins prioritaire).
+  function basePose() {
     const a = heroAnim, t = a.timers, hero = activeHero, air = !player.grounded;
     const main = (col) => ({ s: 'main', col }), mv = (col) => ({ s: 'moves', col, row: MOVES.rows[hero] });
     const n = (f) => s2ok() && S2.map[f] ? { s: 's2', f } : null;
-    const walkN = (name, N, mul) => {
-      const t = a.phase * mul, i = Math.floor(t) % N, q = n(`${name}${i}`); if (!q) return null;
+    const walkN = (name, N, mul, ph = a.phase) => {
+      const t = ph * mul, i = Math.floor(t) % N, q = n(`${name}${i}`); if (!q) return null; q.cyc = name;
       const f2 = `${name}${(i + 1) % N}`; if (S2.map[f2]) { q.f2 = f2; const fr = t - Math.floor(t); q.mix = fr * fr * (3 - 2 * fr); } return q;
     };
     const moving = Math.abs(player.vx) > 12;
+    // saut complet dessiné (Ziggy, Titan) : monte, en haut, retombe, touche le sol, se redresse ; fête = bras écartés
+    const seqJ = (q, h) => { if (q) q.cyc = `${h}_j`; return q; };   // images du saut dessinées pour s'enchaîner : pas de fondu entre elles
+    const jumpPose = (h) => {
+      if (air && !swing) { const vy = player.vy; return seqJ(n(vy < -300 ? `${h}_j1` : vy < 60 ? `${h}_j2` : vy < 380 ? `${h}_j3` : `${h}_j4`), h); }
+      if (t.land) return seqJ(n(t.land > .14 ? `${h}_j5` : `${h}_j6`), h);
+      if (t.stumble && h === 'ziggy') return n(a.stumbleAge < .18 ? `${h}_j0` : `${h}_j6`);
+      if (t.celebrate) return n(`${h}_j3`);
+      return null;
+    };
     if (hero === 'filou') {
       let q;
       if (swing) { q = n(swing.theta * swing.omega > 0 ? 'filou_s1' : 'filou_s0'); if (q) return q; return mv(Math.abs(swing.theta) < .45 ? 1 : swing.theta * swing.omega > 0 ? 2 : 0); }
       if (t.shot) { q = n(t.shot > .12 ? 'filou_launch' : 'filou_aim'); if (q) return q; return mv(2); }
       if (gt < flipUntil && (q = n('filou_s4'))) return q;
       if (t.release && (q = n('filou_s3'))) return q;
-      if (air) { if (Math.abs(player.carryVx) > 60 && !s2ok()) return mv(3); const vy = player.vy; q = n(vy < -300 ? 'filou_j1' : vy < 60 ? 'filou_j2' : vy < 380 ? 'filou_j3' : 'filou_j4'); if (q) return q; return main(POSE.jump); }
-      if (t.land && (q = n(t.land > .14 ? 'filou_j5' : 'filou_j6'))) return q;
+      if (air) { if (Math.abs(player.carryVx) > 60 && !s2ok()) return mv(3); const vy = player.vy; q = seqJ(n(vy < -300 ? 'filou_j1' : vy < 60 ? 'filou_j2' : vy < 380 ? 'filou_j3' : 'filou_j4'), 'filou'); if (q) return q; return main(POSE.jump); }
+      if (t.land && (q = seqJ(n(t.land > .14 ? 'filou_j5' : 'filou_j6'), 'filou'))) return q;
       if (t.stumble && (q = n(a.stumbleAge < .18 ? 'filou_j0' : 'filou_j6'))) return q;
       if (t.celebrate && (q = n('filou_j3'))) return q;
       if (moving && (q = walkN('filou_w', 8, 1.94))) return q;
@@ -961,12 +1011,14 @@
       if (t.shot) return mv(4);
       if (t.stumble) return mv(Math.floor(a.time * 6) % 2);
       let q;
+      if ((q = jumpPose('titan'))) return q;
       if (!air && !t.celebrate && !t.land) { if (moving && (q = walkN('titan_w', 7, 1.7))) return q; if (!moving && (q = n('titan_w7'))) return q; }
     }
     if (hero === 'ziggy') {
       if (t.shot) return main(POSE.dodge);
       let q;
-      if (gt < turboUntil && (q = air ? n('ziggy_r1') : n('ziggy_r' + (Math.floor(a.time * 13) % 4)))) return q;
+      if (gt < turboUntil && (q = air ? n('ziggy_r1') : walkN('ziggy_r', 4, 1, a.runPhase))) return q;
+      if ((q = jumpPose('ziggy'))) return q;
       if (!air && !t.celebrate && !t.land && !t.stumble) { if (moving && (q = walkN('ziggy_w', 5, 1.21))) return q; if (!moving && (q = n('ziggy_w1'))) return q; }
     }
     if (swing) return main(POSE.jump);
@@ -1025,6 +1077,7 @@
         c.scale(sx, sy);
         c.drawImage(S2.img, f.x, f.y, f.w, f.h, -f.ax * K, -f.ay * K, f.w * K, f.h * K);
         if (pose.f2 && pose.mix > .02) { const g2 = S2.map[pose.f2]; c.globalAlpha = alpha * pose.mix; c.drawImage(S2.img, g2.x, g2.y, g2.w, g2.h, -g2.ax * K, -g2.ay * K, g2.w * K, g2.h * K); }
+        if (pose.fo && pose.fa > .02 && S2.map[pose.fo]) { const g3 = S2.map[pose.fo]; c.globalAlpha = alpha * pose.fa; c.drawImage(S2.img, g3.x, g3.y, g3.w, g3.h, -g3.ax * K, -g3.ay * K, g3.w * K, g3.h * K); }
       } else if (isMoves && swing && hero === 'filou') {
         // en balancement : la main du héros est exactement au bout de la corde
         const h = SW.hand(swing), hnd = M.hands.filou[pose.col], s = M.scale, side = swing.ax >= h.x ? 1 : -1;
