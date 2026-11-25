@@ -371,7 +371,7 @@
     mission.letters.forEach(l => { if (!l.collected && player.x - l.x >= 280) l.missed = true; });
     mission.monsters.forEach(m => { if (m.friendly && !m.prev) { m.x = player.x; m.y = player.y + player.h; } });
     shots = []; fireballs = []; tornados = []; hitTimes = []; rewindAt = 0; litShown = -1; shootReady = 0; flipUntil = 0; hurtUntil = 0;
-    swing = null; fizzle = null; turboUntil = 0; turboReady = 0; punchReady = 0; coyote = 0; gt = 0; jumpBuffer = 0; slowmo = 0; perf.since = 0; perf.slowFor = 0; perf.ema = 16.7; perf.tried = null; rope = null;
+    swing = null; fizzle = null; turboUntil = 0; turboReady = 0; punchReady = 0; coyote = 0; gt = 0; jumpBuffer = 0; slowmo = 0; perf.since = 0; perf.slowFor = 0; perf.ema = 16.7; perf.tried = null; rope = null; zoomRef.feet = 0; zoomRef.hold = 1; zoomRef.wait = 0;
     FX.clear(); heroAnim = newHeroAnim(); lastPromptStation = -1;
     lastActiveTick = performance.now(); lastTime = performance.now();
     const power = { ziggy: ['☄️', T('turbo'), T('actTurbo')], filou: ['🕸️', T('web'), T('actWeb')], titan: ['👊', T('punch'), T('actPunch')] }[activeHero];
@@ -425,6 +425,7 @@
     }
   }
   const SLOWMO_TIME = .18; let slowmo = 0;
+  const zoomRef = { feet: 0, hold: 1, wait: 0 };   // zoom du paysage : sol de référence et zoom visé (avec une petite attente avant de rezoomer)
   // la barre du haut et le panneau des amis, en unités du monde (pour garder les anneaux de Filou en dessous)
   // mesurée en pixels d'écran ; u() convertit en unités du monde au zoom actuel
   const hud = { topPx: 60, barBottomPx: 110, barRightPx: 0, padRightPx: 0, ctrlPx: 34, r: 1, at: -9 };
@@ -528,26 +529,39 @@
     { const top0 = viewTop0(), bot0 = WORLD_H - view.cut, feet = player.y + player.h;
       let target = Math.max(0, (top0 + u(hud.topPx) + 70) - player.y);
       let zoomTo = 1;
+      if (player.grounded && !swing) zoomRef.feet = feet;            // hauteur du sol sous le héros : elle ne bouge pas pendant un saut
       if (hero === 'filou') {
         // les anneaux de toile restent visibles SOUS la barre du haut et le panneau des amis : celui qui est à portée
         // (ou celui où Filou est accroché) et le prochain devant lui, pour que l'enfant le voie arriver
         const limPx = (ax) => (ax - world.camera) < u(hud.barRightPx + 30) ? hud.barBottomPx : hud.topPx;
         const need = (ax, ay) => u(limPx(ax)) + 56 + top0 - ay;
-        let want = 0, high = null;
-        const take = (ax, ay) => { const n = need(ax, ay); if (n > want) { want = n; high = { ax, ay }; } };
-        if (swing) take(swing.ax, swing.ay); else if (world.hintAnchor) take(world.hintAnchor.x, world.hintAnchor.y);
-        const cx = player.x + player.w / 2; let next = null, best = view.w * .62;
+        const cands = [];
+        if (swing) cands.push([swing.ax, swing.ay]); else if (world.hintAnchor) cands.push([world.hintAnchor.x, world.hintAnchor.y]);
+        // « prochain anneau » cherché sur une distance FIXE (pas la largeur visible, qui change avec le zoom : sinon le zoom s'emballe)
+        const cx = player.x + player.w / 2; let next = null, best = canvas.width / view.base * .62;
         for (const a of world.anchors || []) { const dx = (a.x - cx) * player.facing; if (dx > -30 && dx < best && (!swing || a.x !== swing.ax)) { best = dx; next = a; } }
-        if (next) take(next.x, next.y);
+        if (next) cands.push([next.x, next.y]);
+        let want = 0;
+        for (const [ax, ay] of cands) {
+          want = Math.max(want, need(ax, ay));
+          // zoom nécessaire, calculé sans dépendre du zoom actuel : la hauteur à montrer (du sol du héros à l'anneau) dans la place libre
+          if (view.zMin < 1) {
+            const span = Math.max(zoomRef.feet || feet, feet) - ay + 56, freePx = canvas.height - (Math.max(hud.topPx, limPx(ax)) + hud.ctrlPx) * hud.r;
+            zoomTo = Math.min(zoomTo, freePx / span / view.base);
+          }
+        }
         const maxCam = bot0 - u(hud.ctrlPx) - feet;          // mais le héros reste toujours entier à l'écran
         target = Math.max(target, Math.min(want, maxCam));
-        // paysage : si l'anneau et le héros ne tiennent pas ensemble, on dézoome juste ce qu'il faut
-        if (high && want > maxCam && view.zMin < 1) {
-          const span = feet - high.ay + 56, freePx = canvas.height - (limPx(high.ax) + hud.ctrlPx) * hud.r;
-          zoomTo = Math.max(view.zMin, Math.min(1, freePx / span / view.base));
-        }
       }
-      if (view.zMin < 1 && Math.abs(zoomTo - view.z) > .002) { view.z += (zoomTo - view.z) * Math.min(1, dt * (zoomTo < view.z ? 3 : 1.5)); applyZoom(); }
+      // zoom calme : il recule tout de suite quand il le faut, mais n'avance à nouveau qu'après un petit moment stable
+      if (view.zMin < 1) {
+        zoomTo = Math.max(view.zMin, Math.min(1, zoomTo));
+        if (zoomTo < zoomRef.hold - .01) { zoomRef.hold = zoomTo; zoomRef.wait = 0; }
+        else if (zoomTo > zoomRef.hold + .03) { zoomRef.wait += dt; if (zoomRef.wait > .9) { zoomRef.hold = zoomTo; zoomRef.wait = 0; } }
+        else zoomRef.wait = 0;
+        const dz = zoomRef.hold - view.z;
+        if (Math.abs(dz) > .0015) { view.z += dz * Math.min(1, dt * (dz < 0 ? 2.6 : 1.4)); applyZoom(); }
+      }
       world.camY += (target - world.camY) * Math.min(1, dt * (target > world.camY ? 6 : 3)); if (Math.abs(world.camY - target) < .5) world.camY = target; }
     for (let i = world.topples.length - 1; i >= 0; i--) {
       const q = world.topples[i]; q.t += dt;
