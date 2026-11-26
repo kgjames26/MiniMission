@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '85', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '86', asset = (p) => `${p}?v=${ASSET_V}`;
   // la soucoupe des farceurs passe de temps en temps dans le ciel des villes (l'indice de l'histoire, chapitre 1)
   const ufoImg = new Image(); let UFO = null; ufoImg.src = asset('assets/aliens.webp'); fetch(asset('assets/aliens.json')).then(r => r.json()).then(j => { UFO = j.zap_f1; }).catch(() => {});
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
@@ -333,7 +333,7 @@
     if (restLocked()) { showRest(); return; }
     if(sessionActive&&stopAfterMission){endSession();return;}
     $('#session-timer-row').classList.toggle('hidden',sessionActive);
-    setScreen('chapter-screen');
+    updateChapters(); setScreen('chapter-screen');
     if (!timerNoticePlaying) sayText(TN('sayChooseChapter'), null, true);
   }
   function chooseHero(heroId) { if (!heroes[heroId]) return; startLevel(heroId, levelCity); }
@@ -344,8 +344,11 @@
   function chooseChapter(n) {
     if (n === 1) { book('prologue', openCities); return; }
     if (n === 2) { book('ch1end', openSpace); return; }
-    const card = $('.chap-card.c3'); card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); MM.haptic('oops'); sayText(T('finalSoonSay'));
+    // chapitre 3 : le grand final, ouvert quand Rose a fini le Soleil
+    if (roseDone().includes('soleil')) { location.href = 'rose-world.html?w=final'; return; }
+    const card = $('.chap-card.c3'); card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); MM.haptic('oops'); sayText(T('finalLockedSay'));
   }
+  function updateChapters() { const c3 = $('.chap-card.c3'); if (c3) c3.classList.toggle('locked', !roseDone().includes('soleil')); }
   // ----- chapitre 2 : les 10 mondes de Rose (chaque monde s'ouvre quand le précédent est fini) -----
   const PLANETS = [
     { id: 'lune', k: 'pLune', file: 'rose-world.html?w=lune', s: .62, c: ['#f4f4fa', '#a6a4c0'] },
@@ -2637,7 +2640,7 @@
   document.querySelectorAll('.hero-card[data-hero]').forEach(card=>card.addEventListener('click',()=>chooseHero(card.dataset.hero)));
   document.querySelectorAll('.chap-card').forEach(card=>card.addEventListener('click',()=>chooseChapter(Number(card.dataset.chap))));
   $('#space-map').addEventListener('click',e=>{const p=e.target.closest('.planet');if(p)pickPlanet(Number(p.dataset.i));});
-  $('#space-back').addEventListener('click',()=>{setScreen('chapter-screen');});
+  $('#space-back').addEventListener('click',()=>{updateChapters();setScreen('chapter-screen');});
   $('#library-open').addEventListener('click',()=>{cancelSpeech();if(MM.book)MM.book.library(MM.STORY_ORDER||[]);});
   MM.say=(t)=>sayText(t); MM.hush=()=>cancelSpeech();
   $('#hero-back').addEventListener('click',()=>{renderLevels();setScreen('level-screen');});
@@ -2815,6 +2818,7 @@
   if (!MM.i18n.chosen) { const g = MM.i18n.guess(); $('#lang-grid').querySelector(`[data-lang="${g}"]`)?.classList.add('guess'); setScreen('lang-screen'); }
   else if (!save.nameAsked) openNameScreen('home');
   else if (location.hash === '#space' && !restLocked()) openSpace();       // retour d'un monde de Rose : on revient sur la carte des planètes
+  else if (location.hash === '#chapters' && !restLocked()) startToday();   // retour du grand final : on revient aux chapitres
   if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   lastActiveTick=performance.now();setInterval(tickMissionClock,250);
   if('serviceWorker' in navigator && location.protocol!=='file:')navigator.serviceWorker.register('./sw.js').catch(()=>{});

@@ -119,12 +119,12 @@
                   P('Le savais-tu ? Le Soleil est si gros qu’on pourrait mettre plus d’un million de Terres dedans. Et attention : on ne le regarde jamais directement, même avec des lunettes de soleil !', '☀️🌍🙈')] },
   };
   for (const w in W) { S[w + '_a'] = { bg: 'space', world: w, pages: W[w].a }; S[w + '_c'] = { bg: 'space', world: w, pages: W[w].c }; }
-  // ---- chapitre 3 : le grand final (la partie viendra plus tard) ----
+  // ---- chapitre 3 : le grand final (rose-world.html?w=final : Rose vole, les trois héros courent avec elle) ----
   S.final_a = { bg: 'night', pages: [
     P('Un matin, le ciel se remplit de soucoupes ! Les farceurs débarquent sur la Terre, et Capitaine Farfouille secoue un énorme sac de poudre Grognon. « Toute la ville va bouder ! »', '🛸🛸🏙️'),
     P('Rose atterrit juste à temps dans le jardin. Ziggy, Filou et Titan courent vers elle. « Rose ! Tu es revenue ! » Les quatre amis se serrent très fort.', '🧑‍🚀🤗🦸'),
     P('« Cette fois, on y va tous les quatre, dit Rose. Ziggy, les avenues. Filou, les toits. Titan, le chantier. Et moi, le ciel ! » Les vingt amis veulent aider aussi.', '🗺️🦸💛'),
-    P('Et toi, avec qui veux-tu jouer ? Choisis ton héros… les trois autres t’aideront. C’est parti pour la grande bataille de bulles !', '🦸🦸🦸🧑‍🚀'),
+    P('À toi de jouer : tu voles avec Rose, et Ziggy, Filou et Titan courent à côté de toi en lançant des bulles. C’est parti pour la grande bataille de bulles !', '🧑‍🚀🦸🦸🦸🫧'),
   ] };
   S.final_c = { bg: 'night', pages: [
     P('Pop, pop, pop ! Toute la ville est remplie de bulles, avec des farceurs dedans. La dernière bulle, c’est celle de Capitaine Farfouille. Et là… il se met à pleurer.', '🫧🫧😢'),

@@ -801,6 +801,7 @@ body.peeking .fly-item{visibility:hidden}   /* les objets qui volent vers les co
 .chap-ufo{position:absolute;font-size:30cqh;left:14%;top:12%;animation:float 2.4s ease-in-out infinite}
 .chap-ufo.u2{font-size:20cqh;left:auto;right:12%;top:30%;animation-delay:-1s}
 .chap-lock{font-size:30cqh;margin-bottom:6cqh}
+.chap-card.c3:not(.locked) .chap-lock{display:none}
 .chap-soon{position:absolute;top:12px;right:12px;background:#fff;color:#8a5ae0;font-weight:1000;padding:3px 10px;border-radius:999px;font-size:clamp(12px,2vmin,16px)}
 .chap-card.shake{animation:shake-x .35s}
 @media (orientation:portrait){.chap-grid{grid-template-columns:1fr;grid-template-rows:repeat(3,minmax(0,1fr));width:min(560px,100%)}}
