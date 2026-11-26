@@ -262,7 +262,7 @@
   };
   const story = {}; for (const id in S) story[id] = { title: S[id][0], pages: S[id][1] };
   MM.STORY_L10N.en = { story, worlds: W, ui: { listen: 'Listen', close: 'Close' },
-    engine: { freed: ['Free!', 'Thank you!', 'Hooray!', 'One more friend!'], partial: 'Well done, {name}! You freed {n} friends. The others are still waiting on {on}!', again: 'Try again!',
+    engine: { partyN: "Well done, {name}! Thanks to you, everyone is friends! Let’s party!", party: "Well done! Thanks to you, everyone is friends! Let’s party!", dipTitle: "Superhero Diploma", dipLine: "saved the Earth with Rose, Ziggy, Filou and Titan", dipLineAnon: "You saved the Earth with Rose, Ziggy, Filou and Titan", dipSay: "Here is your superhero diploma!",  freed: ['Free!', 'Thank you!', 'Hooray!', 'One more friend!'], partial: 'Well done, {name}! You freed {n} friends. The others are still waiting on {on}!', again: 'Try again!',
       robot: 'Beep beep! The little robot is waking up!', heli: 'The little helicopter is flying with you!', bossStart: 'Here comes Captain Farfouille in his saucer! Send him some bubbles!',
       boss: ['Hee hee! You can’t catch me!', 'Oh! Another bubble?', 'No, no, no!'], bossPop: 'Pop! Captain Farfouille is in a bubble!', endN: 'Well done, {name}!', end: 'Well done!', replay: '↻ Play again' } };
 })();
