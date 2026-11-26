@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '75', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '76', asset = (p) => `${p}?v=${ASSET_V}`;
   // la soucoupe des farceurs passe de temps en temps dans le ciel des villes (l'indice de l'histoire, chapitre 1)
   const ufoImg = new Image(); let UFO = null; ufoImg.src = asset('assets/aliens.webp'); fetch(asset('assets/aliens.json')).then(r => r.json()).then(j => { UFO = j.zap_f1; }).catch(() => {});
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
@@ -424,6 +424,9 @@
     if (!Array.isArray(mission.letters)) { mission.lettersLang = MM.i18n.lang; } 
     if (!Array.isArray(mission.letters)) mission.letters = level.letterSpots.map((spot, i) => ({ letter: alphabet()[i], x: spot.x, y: spot.y, diff: spot.diff, collected: false, bob: rnd()*6 }));
     world.coins = mission.coins; world.letters = mission.letters;
+    // l'objet de la leçon de la ville (le livre) : 5 cadeaux à ramasser pour les petits monstres (croissants à Paris, fleurs à New York…)
+    if (!Array.isArray(mission.gifts)) mission.gifts = [.15, .33, .5, .67, .84].map((f, i) => ({ x: safeGroundX(world.width * f), y: world.floor - 64, got: false, bob: i * 1.3 }));
+    world.gifts = mission.gifts;
     world.hintAnchor = null;
     initMonsters(level, rnd);
     if (!mission.priorApplied && mission.level) {       // ce qui a déjà été réussi dans cette ville est conservé
@@ -678,6 +681,8 @@
           ctx.fillStyle = L.win;
           for (let r = 0; r < h / 34 - 1; r++) for (let c = 0; c < w / 28 - 1; c++) if ((hv >>> (r + c)) % 3) ctx.fillRect(x + 12 + c * 26, L.base - h + 14 + r * 30, 12, 16);
           if (hv % 4 === 0) { ctx.fillStyle = L.col; ctx.fillRect(x + w / 2 - 2, L.base - h - 26, 4, 28); }
+          else if (hv % 4 === 1) { ctx.fillStyle = L.col; ctx.fillRect(x + 18, L.base - h - 34, 4, 34); ctx.fillRect(x + 40, L.base - h - 34, 4, 34); roundRect(x + 12, L.base - h - 62, 38, 30, 8, true); ctx.fillRect(x + 10, L.base - h - 66, 42, 6); }   // réservoir d'eau sur le toit
+          else if (hv % 4 === 2) { ctx.fillStyle = L.col; ctx.fillRect(x + w - 30, L.base - h - 22, 14, 22); ctx.fillStyle = L.win; ctx.fillRect(x + w - 32, L.base - h - 24, 18, 4); }   // cheminée
         }
       });
       drawLandmark();
@@ -685,6 +690,7 @@
     }
     drawLandmark();
     const TH = theme();
+    if (activeHero === 'titan') drawCranes(time);      // le chantier de Titan : grues au loin
     for (let i = 0; i < Math.ceil(W/430)+3; i++) {
       const wx = i*430 + 80, x = wx - cam*.48; if (x < -130 || x > W+130) continue;
       drawHouse(i, x, 390, 108 + (i%2)*25, 110 + (i%3)*22, TH);
@@ -693,6 +699,39 @@
       const x = i*600 + 230 - cam*.75; if (x < -90 || x > W+90) continue;
       drawTree(x, TH.treeCols[i%3], TH.tree);
     }
+    if (activeHero === 'ziggy') drawAvenue(time);      // les grandes avenues de Ziggy : lampadaires, feux et voitures
+    if (activeHero === 'titan') drawSite(time);        // le chantier : barrières, cônes, échafaudages
+  }
+  // ----- un quartier par héros (chapitre 1 : Ziggy les avenues, Filou les toits, Titan le chantier) -----
+  function drawAvenue(time) {
+    const W = view.w, cam = world.camera;
+    const k1 = .62; for (let i = Math.floor(cam * k1 / 260) - 1; i < Math.floor(cam * k1 / 260) + Math.ceil(W / 260) + 2; i++) { const x = i * 260 - cam * k1; if (x < -40 || x > W + 40) continue;
+      ctx.fillStyle = '#5d6b7a'; ctx.fillRect(x - 3, 300, 6, 96); ctx.beginPath(); ctx.arc(x + 14, 300, 16, Math.PI, Math.PI * 1.9); ctx.lineWidth = 6; ctx.strokeStyle = '#5d6b7a'; ctx.stroke();
+      ctx.fillStyle = '#fff3b0'; ctx.beginPath(); ctx.ellipse(x + 28, 304, 8, 5, 0, 0, 7); ctx.fill();
+      if (i % 3 === 0) { ctx.fillStyle = '#3c4652'; roundRect(x + 60, 318, 18, 46, 5, true); ctx.fillRect(x + 67, 364, 4, 32); const ph = Math.floor(time / 2 + i) % 3;
+        ['#ff5b4d', '#ffc53a', '#5bd36a'].forEach((c, k) => { ctx.fillStyle = k === ph ? c : 'rgba(255,255,255,.18)'; ctx.beginPath(); ctx.arc(x + 69, 326 + k * 14, 5, 0, 7); ctx.fill(); }); } }
+    // voitures qui passent au loin (taxis, bus)
+    const cars = ['#ffcc33', '#ef4b43', '#3fa4ea', '#5fbf68'];
+    for (let i = 0; i < 6; i++) { const sp = 60 + (i % 3) * 25, span = W + 400, x = ((i * 380 + time * sp - cam * .55) % span + span) % span - 200, c = cars[i % 4], bus = i % 3 === 2, w = bus ? 92 : 58;
+      ctx.fillStyle = c; roundRect(x, 372, w, 18, 6, true); roundRect(x + (bus ? 4 : 12), bus ? 356 : 362, bus ? w - 8 : 32, bus ? 20 : 14, 5, true);
+      ctx.fillStyle = 'rgba(255,255,255,.75)'; if (bus) for (let k = 0; k < 4; k++) ctx.fillRect(x + 10 + k * 20, 360, 14, 10); else ctx.fillRect(x + 16, 365, 24, 8);
+      ctx.fillStyle = '#2b2f36'; ctx.beginPath(); ctx.arc(x + 14, 391, 6, 0, 7); ctx.arc(x + w - 14, 391, 6, 0, 7); ctx.fill(); }
+  }
+  function drawCranes(time) {
+    const W = view.w, cam = world.camera, k = .34, step = 900;
+    for (let i = Math.floor(cam * k / step) - 1; i < Math.floor(cam * k / step) + Math.ceil(W / step) + 2; i++) { const x = i * step + 300 - cam * k; if (x < -260 || x > W + 260) continue;
+      ctx.strokeStyle = '#f2b53a'; ctx.lineWidth = 4; ctx.strokeRect(x - 10, 120, 20, 280); for (let y = 120; y < 400; y += 20) { ctx.beginPath(); ctx.moveTo(x - 10, y); ctx.lineTo(x + 10, y + 20); ctx.stroke(); }
+      ctx.strokeRect(x - 60, 110, 230, 14); for (let xx = x - 60; xx < x + 170; xx += 20) { ctx.beginPath(); ctx.moveTo(xx, 110); ctx.lineTo(xx + 20, 124); ctx.stroke(); }
+      ctx.fillStyle = '#5d6b7a'; ctx.fillRect(x - 70, 112, 26, 22);
+      const hx = x + 120 + Math.sin(time * .6 + i) * 22, hy = 220 + Math.sin(time * .9 + i) * 12; ctx.strokeStyle = '#3c4652'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(hx, 124); ctx.lineTo(hx, hy); ctx.stroke();
+      ctx.fillStyle = '#ef4b43'; roundRect(hx - 24, hy, 48, 14, 3, true); }
+  }
+  function drawSite(time) {
+    const W = view.w, cam = world.camera, k = .7;
+    for (let i = Math.floor(cam * k / 340) - 1; i < Math.floor(cam * k / 340) + Math.ceil(W / 340) + 2; i++) { const x = i * 340 - cam * k; if (x < -120 || x > W + 120) continue;
+      if (i % 2 === 0) { ctx.fillStyle = '#ffffff'; ctx.fillRect(x, 360, 96, 12); ctx.fillStyle = '#ef4b43'; for (let s = 0; s < 4; s++) ctx.fillRect(x + 6 + s * 24, 360, 12, 12); ctx.fillStyle = '#5d6b7a'; ctx.fillRect(x + 8, 372, 6, 24); ctx.fillRect(x + 82, 372, 6, 24); }
+      else { ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 4; ctx.strokeRect(x, 290, 80, 106); ctx.beginPath(); ctx.moveTo(x, 290); ctx.lineTo(x + 80, 343); ctx.lineTo(x, 396); ctx.moveTo(x, 343); ctx.lineTo(x + 80, 343); ctx.stroke(); ctx.fillStyle = '#c69a5a'; ctx.fillRect(x - 6, 286, 92, 8); }
+      ctx.fillStyle = '#ff7a1f'; ctx.beginPath(); ctx.moveTo(x + 130, 396); ctx.lineTo(x + 140, 368); ctx.lineTo(x + 150, 396); ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillRect(x + 135, 380, 10, 4); }
   }
   function drawLandmark() {
     const TH = theme(), W = view.w, cam = world.camera, fn = MM.landmarks[TH.lm]; if (!fn) return;
@@ -925,6 +964,9 @@
       if (a.y < top - 20 && ax > 0 && ax < W) { ctx.save(); ctx.translate(ax, top + 10 + Math.sin(time * 6) * 4); ctx.fillStyle = '#7d5bd6'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0, -18); ctx.lineTo(18, 8); ctx.lineTo(-18, 8); ctx.closePath(); ctx.stroke(); ctx.fill(); ctx.restore(); }
     }
     world.coins.forEach(star => { if (star.collected) return; const x = star.x - cam; if (x < -30 || x > W + 30) return; drawStarItem(x, star.y, time, star.bob); });
+    (world.gifts || []).forEach(g => { if (g.got) return; const x = g.x - cam; if (x < -40 || x > W + 40) return; const y = g.y + Math.sin(time * 2.4 + g.bob) * 5;
+      const gl = ctx.createRadialGradient(x, y, 4, x, y, 34); gl.addColorStop(0, 'rgba(255,255,255,.95)'); gl.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(x, y, 34, 0, 7); ctx.fill();
+      ctx.font = '34px system-ui, "Apple Color Emoji", "Noto Color Emoji"'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(giftIcon(), x, y + 1); });
     world.letters.forEach((letter, i) => { if (letter.collected) return; const x = letter.x - cam; if (x < -40 || x > W + 40) return; drawLetterItem(x, letter, i, time); });
     world.monsters.forEach(m => drawMonster(m, time));
     drawHelpClouds(time);
@@ -1311,6 +1353,8 @@
     save.activeMission = null; save.activeHero = null; save.activeDate = null; save.progress = 0; save.sessionElapsed = sessionElapsed; save.stopAfterMission = stopAfterMission; writeSave();
     $('#ending-hero').innerHTML = `<span class="sprite" style="--col:2;--row:${HERO_ROW[activeHero] ?? 0}"></span>`;
     $('#ending-city').textContent = `${city.flag} ${city.name} ${city.icon}`;
+    const ng = (mission.gifts || []).filter(g => g.got).length, eg = $('#ending-gifts');
+    if (eg) { eg.classList.toggle('hidden', !ng); eg.innerHTML = ng ? `<span>${escapeHtml(T('giftLine'))}</span> <b>${giftIcon().repeat(ng)}</b>` : ''; }
     const caught = mission.monsters.filter(m => m.friendly).sort((a, b) => a.order - b.order), friendCount = caught.length;
     const found = mission.letters.filter(item => item.collected).map(item => item.letter);
     const stars = mission.coins.filter(s => s.collected).length, qDone = Math.max(readLevel(lv.hero, lv.index).q || 0, (mission.stationsDone || []).filter(Boolean).length);
@@ -1608,8 +1652,16 @@
     node.classList.toggle('active', !!swing);
     node.classList.toggle('ready', activeHero === 'filou' && !swing && !!world.hintAnchor);   // un anneau est à portée : appuie !
   }
+  const GIFTS = ['🥐', '🌸', '🏮', '💧', '⏳', '🎵', '💛', '🎈', '👋', '🤝'];
+  const giftIcon = () => GIFTS[(mission && mission.level ? mission.level.index : 0) % GIFTS.length];
   function collectPickups() {
     const cx = player.x + player.w/2;
+    for (const g of world.gifts || []) {
+      if (g.got) continue;
+      if (player.x + player.w > g.x - 26 && player.x < g.x + 26 && player.y < g.y + 30 && player.y + player.h > g.y - 30) {
+        g.got = true; triggerHeroAnimation('collect', 330); FX.sparkle(g.x, g.y, 10, ['#ffffff', '#ffd6f0', '#c9f0ff'], 150); FX.ring(g.x, g.y, '#ffffff', 44, .35, 4); sound('coin'); MM.haptic('star'); writeSave();
+      }
+    }
     for (const star of world.coins) {
       if (star.collected) continue;
       if (player.x + player.w > star.x - 22 && player.x < star.x + 22 && player.y < star.y + 24 && player.y + player.h > star.y - 24) {
