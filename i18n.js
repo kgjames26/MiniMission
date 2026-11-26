@@ -73,7 +73,7 @@
     letters: {
       alpha: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
       // nom des lettres tel qu'il se prononce (la synthèse vocale lit mal une lettre seule : « Y » devient « i »)
-      say: { A: 'a', B: 'bé', C: 'cé', D: 'dé', E: 'e', F: 'èfe', G: 'gé', H: 'hache', I: 'i', J: 'ji', K: 'ka', L: 'èle', M: 'ème', N: 'ène', O: 'o', P: 'pé', Q: 'ku', R: 'erre', S: 'èsse', T: 'té', U: 'u', V: 'vé', W: 'double vé', X: 'iks', Y: 'i grec', Z: 'zède' },
+      say: { A: 'a', B: 'bé', C: 'cé', D: 'dé', E: 'e', F: 'effe', G: 'gé', H: 'hache', I: 'i', J: 'ji', K: 'ka', L: 'elle', M: 'emme', N: 'enne', O: 'o', P: 'pé', Q: 'ku', R: 'erre', S: 'esse', T: 'té', U: 'u', V: 'vé', W: 'double vé', X: 'iks', Y: 'i grec', Z: 'zède' },
       words: { A: ['avion', '✈️'], B: ['ballon', '🎈'], C: ['chat', '🐱'], D: ['dauphin', '🐬'], E: ['éléphant', '🐘'], F: ['fusée', '🚀'], G: ['girafe', '🦒'], H: ['hibou', '🦉'], I: ['igloo', '🏠'], J: ['jus', '🧃'], K: ['koala', '🐨'], L: ['lion', '🦁'], M: ['maison', '🏡'], N: ['nuage', '☁️'], O: ['ours', '🐻'], P: ['pomme', '🍎'], Q: ['quatre', '4️⃣'], R: ['robot', '🤖'], S: ['soleil', '☀️'], T: ['tortue', '🐢'], U: ['ukulélé', '🎸'], V: ['vélo', '🚲'], W: ['wagon', '🚃'], X: ['xylophone', '🎶'], Y: ['yaourt', '🥛'], Z: ['zèbre', '🦓'] }
     },
     quiz: {
