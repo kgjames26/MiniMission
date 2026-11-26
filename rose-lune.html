@@ -97,12 +97,12 @@
   };
 
   // ================= réglages de Rose (unités : pixels de sa planche, ~210 px du casque aux pieds) =================
-  const WALK = 172, WALK_ACC = 300, WALK_DEC = 700, STEP_PX = 13.2, WALK_START = 4;
-  const FLY = 360, DASH_AT = 290, FLY_ACC = 520, RISE = 260, SINK = 200;
-  const FADE = .13, STOP_FADE = .24, RW = 40, RH = 196;   // demi-largeur et hauteur de Rose pour les collisions
-  const A = { idle: { n: 10, fps: 6, loop: 'pp' }, hover: { n: 30, fps: 10, loop: 'loop' }, fly: { n: 27, fps: 10, loop: 'loop' }, dash: { n: 30, fps: 10, loop: 'pp' },
-              lift: { n: 20, fps: 14, loop: 'once' }, up: { n: 18, fps: 13, loop: 'once' }, down: { n: 20, fps: 13, loop: 'once' }, drop: { n: 20, fps: 14, loop: 'once', src: 'lift', rev: true },
-              win: { n: 30, fps: 10, loop: 'once' }, walk: { n: 30, loop: 'loop' } };
+  const WALK = 205, WALK_ACC = 900, WALK_DEC = 1400, STEP_PX = 13.2, WALK_START = 4;
+  const FLY = 400, DASH_AT = 300, FLY_ACC = 1000, RISE = 330, SINK = 270;
+  const FADE = .07, STOP_FADE = .11, RW = 40, RH = 196;   // demi-largeur et hauteur de Rose pour les collisions
+  const A = { idle: { n: 10, fps: 6, loop: 'pp' }, hover: { n: 30, fps: 13, loop: 'loop' }, fly: { n: 27, fps: 14, loop: 'loop' }, dash: { n: 30, fps: 15, loop: 'pp' },
+              lift: { n: 20, fps: 26, loop: 'once' }, up: { n: 18, fps: 24, loop: 'once' }, down: { n: 20, fps: 26, loop: 'once' }, drop: { n: 20, fps: 28, loop: 'once', src: 'lift', rev: true },
+              win: { n: 30, fps: 13, loop: 'once' }, walk: { n: 30, loop: 'loop' } };
   function sample(name, pos) {
     const a = A[name], n = a.n, src = 'rose_' + (a.src || name); let q;
     if (a.loop === 'loop') q = ((pos % n) + n) % n;
@@ -236,10 +236,10 @@
       const sf = surfaceAt(rose.x, rose.base);
       if (sf < rose.base - 2 && !a) { rose.mode = 'air'; rose.y = rose.base - (topOf('rose_hover0') - topOf('rose_idle0')); rose.vy = 0; rose.airPose = 'hover'; rose.airT = 0; rose.walking = false; }
       else rose.base = sf;
-      if (key.fly && !a && rose.mode === 'ground') { if (Math.abs(rose.vx) > 40) play('up', 'air', { vx0: rose.vx }); else play('lift', 'air'); rose.walking = false; }
+      if (key.fly && !a && rose.mode === 'ground') { if (Math.abs(rose.vx) > 60) play('up', 'air', { vx0: rose.vx }); else play('lift', 'air'); rose.walking = false; }
     } else if (rose.mode === 'air') {
       const ty = key.fly ? RISE : -SINK;
-      rose.vy += Math.max(-600 * dt, Math.min(600 * dt, ty - rose.vy));
+      rose.vy += Math.max(-1300 * dt, Math.min(1300 * dt, ty - rose.vy));
       const target = dir * FLY;
       rose.vx += Math.max(-FLY_ACC * dt, Math.min(FLY_ACC * dt, target - rose.vx));
       moveX(rose.vx * dt, true);
