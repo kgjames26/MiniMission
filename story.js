@@ -142,5 +142,9 @@
   for (const w in WN) { S[w + '_a'].title = WN[w] + ' ①'; S[w + '_c'].title = WN[w] + ' ②'; }
   // ordre de la bibliothèque
   MM.STORY_ORDER = ['prologue', ...CN.flatMap((_, i) => ['c' + i + 'a', 'c' + i + 'c']), 'ch1end', ...Object.keys(WN).flatMap(w => [w + '_a', w + '_c']), 'final_a', 'final_c'];
+  // images à dessiner (25) : une grande image par double page marquée 'img' ; 'auto' = scène dessinée par le jeu
+  S.prologue.art = ['img', 'img']; S.ch1end.art = ['img', 'auto']; S.final_a.art = ['img', 'auto']; S.final_c.art = ['auto', 'img', 'auto'];
+  CN.forEach((_, i) => { S['c' + i + 'a'].art = ['img']; });
+  for (const w in WN) S[w + '_a'].art = ['img'];
   MM.STORY = S;
 })();

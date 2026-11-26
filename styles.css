@@ -841,3 +841,5 @@ body.peeking .fly-item{visibility:hidden}   /* les objets qui volent vers les co
 .chap-heroes .sprite:nth-child(2){--sh:66cqh}
 .chap-heroes .sprite{--sh:min(60cqh,36cqw)}
 .chap-heroes .sprite:nth-child(2){--sh:min(66cqh,40cqw)}
+
+.ending-gifts{margin:4px 0;font-weight:900;color:#7a4a9a;font-size:clamp(14px,2.4vmin,18px)}.ending-gifts b{font-size:1.5em;letter-spacing:.06em}

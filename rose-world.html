@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#7a3018">
+<title>Mini Mission · Rose</title>
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #7a3018; touch-action: none; -webkit-user-select: none; user-select: none; font-family: "Baloo 2", system-ui, sans-serif; }
+  canvas { display: block; width: 100vw; height: 100dvh; }
+  .hud { position: fixed; top: max(8px, env(safe-area-inset-top)); left: max(10px, env(safe-area-inset-left)); right: max(10px, env(safe-area-inset-right)); display: flex; gap: 8px; align-items: center; pointer-events: none; }
+  .chip { background: rgba(255,255,255,.92); border-radius: 999px; padding: 4px 12px; font-weight: 900; font-size: clamp(15px, 3.6vmin, 22px); color: #3b2f7a; box-shadow: 0 3px 0 rgba(0,0,0,.18); }
+  .chip.pop { animation: pop .35s; }
+  @keyframes pop { 50% { transform: scale(1.25); } }
+  .close { pointer-events: auto; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255,255,255,.92); font-size: 22px; color: #3b2f7a; box-shadow: 0 3px 0 rgba(0,0,0,.18); }
+  .sp { flex: 1; }
+  .pad { position: fixed; bottom: max(16px, env(safe-area-inset-bottom)); display: flex; gap: 14px; align-items: flex-end; }
+  .pad.l { left: max(16px, env(safe-area-inset-left)); }
+  .pad.r { right: max(16px, env(safe-area-inset-right)); }
+  .b { width: clamp(64px, 17vmin, 100px); height: clamp(64px, 17vmin, 100px); border-radius: 50%; border: 0; font-size: clamp(28px, 8vmin, 44px); color: #fff;
+       background: linear-gradient(#69d36a, #2f9c3b); box-shadow: 0 6px 0 #1f6e2a, 0 10px 18px rgba(0,0,0,.35); -webkit-tap-highlight-color: transparent; }
+  .b.on { transform: translateY(4px); box-shadow: 0 2px 0 #1f6e2a; }
+  .b.fly { background: linear-gradient(#ffb04a, #f2702c); box-shadow: 0 6px 0 #b4471a, 0 10px 18px rgba(0,0,0,.35); width: clamp(84px, 23vmin, 130px); height: clamp(84px, 23vmin, 130px); }
+  .b.fly.on { box-shadow: 0 2px 0 #b4471a; }
+  .b.shoot { background: linear-gradient(#8fe3ff, #3aa6e8); box-shadow: 0 6px 0 #1f6fa8, 0 10px 18px rgba(0,0,0,.35); }
+  .b.shoot.on { box-shadow: 0 2px 0 #1f6fa8; }
+  #stickzone { position: fixed; left: 0; bottom: 0; width: 55vw; top: 64px; touch-action: none; }
+  .stick { position: fixed; width: clamp(150px, 36vmin, 220px); height: clamp(150px, 36vmin, 220px); margin: calc(clamp(150px, 36vmin, 220px) / -2) 0 0 calc(clamp(150px, 36vmin, 220px) / -2); pointer-events: none; transition: opacity .2s; }
+  .stick .ring { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.18) 0 38%, rgba(255,255,255,.08) 39% 100%); border: 4px solid rgba(255,255,255,.55); box-shadow: 0 0 0 6px rgba(120,90,255,.18); }
+  .stick .knob { position: absolute; left: 50%; top: 50%; width: 44%; height: 44%; margin: -22% 0 0 -22%; border-radius: 50%; background: linear-gradient(#ffb04a, #f2702c); box-shadow: 0 5px 0 #b4471a, 0 8px 16px rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center; font-size: clamp(26px, 7vmin, 40px); }
+  .stick .arrow { position: absolute; left: 50%; top: 50%; width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent; border-bottom: 26px solid rgba(255,255,255,.9); transform-origin: 50% 100%; opacity: 0; margin: -26px 0 0 -16px; }
+  .stick.idle { opacity: .55; }
+  .stick.idle .knob { animation: hint 1.6s ease-in-out infinite; }
+  @keyframes hint { 0%, 100% { transform: translate(0, 0); } 30% { transform: translate(40%, -35%); } 60% { transform: translate(40%, 0); } }
+  .big-shoot { width: clamp(84px, 23vmin, 130px); height: clamp(84px, 23vmin, 130px); font-size: clamp(36px, 10vmin, 56px); }
+  .ov { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(15,10,50,.55); z-index: 10; }
+  .ov.show { display: flex; }
+  .card { background: #fff; border-radius: 28px; padding: clamp(14px, 3vmin, 26px); width: min(92vw, 720px); box-shadow: 0 12px 40px rgba(0,0,0,.4); text-align: center; animation: pop .3s; }
+  .q { font-size: clamp(17px, 4.2vmin, 26px); font-weight: 800; color: #3b2f7a; margin: 4px 8px 14px; line-height: 1.25; }
+  .opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(8px, 2vmin, 16px); }
+  .opt { border: 4px solid #d9d3ff; background: #f6f3ff; border-radius: 22px; padding: 10px 6px; font-size: clamp(14px, 3.4vmin, 20px); font-weight: 800; color: #3b2f7a; }
+  .opt i { display: block; font-style: normal; font-size: clamp(44px, 13vmin, 80px); line-height: 1.1; }
+  .opt.good { border-color: #4cc95a; background: #e7ffe9; }
+  .opt.no { animation: no .4s; }
+  @keyframes no { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+  .row { display: flex; gap: 12px; justify-content: center; margin-top: 14px; }
+  .big { border: 0; border-radius: 999px; padding: 12px 22px; font-size: clamp(18px, 4.4vmin, 26px); font-weight: 900; color: #fff; background: linear-gradient(#ffb04a, #f2702c); box-shadow: 0 5px 0 #b4471a; }
+  .big.alt { background: linear-gradient(#8f7bff, #5b47d6); box-shadow: 0 5px 0 #3b2c99; }
+  .say { border: 0; background: #ede9ff; border-radius: 50%; width: 52px; height: 52px; font-size: 24px; }
+  .stats { display: flex; gap: 12px; justify-content: center; font-size: clamp(20px, 5vmin, 30px); font-weight: 900; color: #3b2f7a; margin: 8px 0; flex-wrap: wrap; }
+  .title { font-size: clamp(26px, 7vmin, 44px); font-weight: 900; color: #f2702c; margin: 0; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud">
+  <button class="close" id="quit" aria-label="Retour">✕</button>
+  <span class="chip" id="cStars">⭐ 0</span>
+  <span class="chip" id="cLetters">🔤 0</span>
+  <span class="chip" id="cFriends">💛 0</span>
+  <span class="sp"></span>
+  <span class="chip" id="wchip"></span>
+</div>
+<div id="stickzone" aria-label="Joystick : glisser le pouce pour marcher et voler"></div>
+<div id="stick" class="stick idle"><div class="ring"></div><div class="arrow" id="sarrow"></div><div class="knob" id="sknob">🚀</div></div>
+<div class="pad r"><button class="b shoot big-shoot" id="bs" aria-label="Bulles">🫧</button></div>
+<div class="ov" id="quiz"><div class="card"><div class="row" style="margin:0 0 6px"><button class="say" id="qsay" aria-label="Écouter">🔊</button></div><div class="q" id="qtext"></div><div class="opts" id="qopts"></div></div></div>
+<div class="ov" id="end"><div class="card"><p class="title">Bravo, Rose !</p><div class="stats" id="estats"></div><div class="row"><button class="big alt" id="again">↻ Rejouer</button><button class="big" id="home">🏠</button><button class="big alt" id="next" aria-label="La Lune">🌙</button></div></div></div>
+<script src="story.js"></script>
+<script src="book-art.js"></script>
+<script src="book.js"></script>
+<script src="i18n.js"></script>
+<script src="rose-worlds.js"></script>
+<script src="rose-engine.js"></script>
+</body>
+</html>

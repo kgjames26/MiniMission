@@ -45,7 +45,9 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '72', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '82', asset = (p) => `${p}?v=${ASSET_V}`;
+  // la soucoupe des farceurs passe de temps en temps dans le ciel des villes (l'indice de l'histoire, chapitre 1)
+  const ufoImg = new Image(); let UFO = null; ufoImg.src = asset('assets/aliens.webp'); fetch(asset('assets/aliens.json')).then(r => r.json()).then(j => { UFO = j.zap_f1; }).catch(() => {});
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
   const monsterImg = new Image(); monsterImg.src = asset('assets/monsters.webp');
   const movesImg = new Image(); movesImg.src = asset('assets/hero-moves.webp');
@@ -346,16 +348,16 @@
   }
   // ----- chapitre 2 : les 10 mondes de Rose (chaque monde s'ouvre quand le précédent est fini) -----
   const PLANETS = [
-    { id: 'lune', k: 'pLune', file: 'rose-lune.html', s: .62, c: ['#f4f4fa', '#a6a4c0'] },
-    { id: 'mars', k: 'pMars', file: 'rose-mars.html', s: .58, c: ['#ffb08a', '#c4502a'] },
-    { id: 'venus', k: 'pVenus', s: .72, c: ['#fff1c4', '#e0a84a'] },
-    { id: 'mercure', k: 'pMercure', s: .5, c: ['#e2d6cc', '#8f7f74'] },
-    { id: 'jupiter', k: 'pJupiter', s: 1, c: ['#ffe2b8', '#c98a52'], band: 1 },
-    { id: 'saturne', k: 'pSaturne', s: .86, c: ['#fff0c0', '#d8b46a'], ring: 1 },
-    { id: 'uranus', k: 'pUranus', s: .74, c: ['#d8fbff', '#6fd0d8'], ring: 2 },
-    { id: 'neptune', k: 'pNeptune', s: .72, c: ['#a8c8ff', '#3555d8'] },
-    { id: 'terre', k: 'pTerre', s: .7, c: ['#9fe0ff', '#2f7fe0'], earth: 1 },
-    { id: 'soleil', k: 'pSoleil', s: 1.1, c: ['#fff6a8', '#ff9a1a'], sun: 1 },
+    { id: 'lune', k: 'pLune', file: 'rose-world.html?w=lune', s: .62, c: ['#f4f4fa', '#a6a4c0'] },
+    { id: 'mars', k: 'pMars', file: 'rose-world.html?w=mars', s: .58, c: ['#ffb08a', '#c4502a'] },
+    { id: 'venus', k: 'pVenus', file: 'rose-world.html?w=venus', s: .72, c: ['#fff1c4', '#e0a84a'] },
+    { id: 'mercure', k: 'pMercure', file: 'rose-world.html?w=mercure', s: .5, c: ['#e2d6cc', '#8f7f74'] },
+    { id: 'jupiter', k: 'pJupiter', file: 'rose-world.html?w=jupiter', s: 1, c: ['#ffe2b8', '#c98a52'], band: 1 },
+    { id: 'saturne', k: 'pSaturne', file: 'rose-world.html?w=saturne', s: .86, c: ['#fff0c0', '#d8b46a'], ring: 1 },
+    { id: 'uranus', k: 'pUranus', file: 'rose-world.html?w=uranus', s: .74, c: ['#d8fbff', '#6fd0d8'], ring: 2 },
+    { id: 'neptune', k: 'pNeptune', file: 'rose-world.html?w=neptune', s: .72, c: ['#a8c8ff', '#3555d8'] },
+    { id: 'terre', k: 'pTerre', file: 'rose-world.html?w=terre', s: .7, c: ['#9fe0ff', '#2f7fe0'], earth: 1 },
+    { id: 'soleil', k: 'pSoleil', file: 'rose-world.html?w=soleil', s: 1.1, c: ['#fff6a8', '#ff9a1a'], sun: 1 },
   ];
   const roseDone = () => { try { const d = JSON.parse(localStorage.getItem('mm.rose.done') || '[]'); if (localStorage.getItem('mm.rose.world') && !d.includes('lune')) d.push('lune'); return d; } catch (e) { return []; } };
   function openSpace() {
@@ -422,6 +424,9 @@
     if (!Array.isArray(mission.letters)) { mission.lettersLang = MM.i18n.lang; } 
     if (!Array.isArray(mission.letters)) mission.letters = level.letterSpots.map((spot, i) => ({ letter: alphabet()[i], x: spot.x, y: spot.y, diff: spot.diff, collected: false, bob: rnd()*6 }));
     world.coins = mission.coins; world.letters = mission.letters;
+    // l'objet de la leçon de la ville (le livre) : 5 cadeaux à ramasser pour les petits monstres (croissants à Paris, fleurs à New York…)
+    if (!Array.isArray(mission.gifts)) mission.gifts = [.15, .33, .5, .67, .84].map((f, i) => ({ x: safeGroundX(world.width * f), y: world.floor - 64, got: false, bob: i * 1.3 }));
+    world.gifts = mission.gifts;
     world.hintAnchor = null;
     initMonsters(level, rnd);
     if (!mission.priorApplied && mission.level) {       // ce qui a déjà été réussi dans cette ville est conservé
@@ -659,7 +664,8 @@
     drawWorld(time); drawPlayer(time); drawShots(time); FX.draw(ctx, world.camera);
     ctx.restore(); drawAmbient(time);
   }
-  function drawSky(time){const W=view.w,p=mission?.palette||[],extra=Math.max(0,-viewTop0());const g=ctx.createLinearGradient(0,0,0,WORLD_H);g.addColorStop(0,p[0]||'#70d0f4');g.addColorStop(.67,p[2]||'#c8f1fa');g.addColorStop(1,'#e8f9e9');ctx.fillStyle=g;ctx.fillRect(0,-extra-2,W,extra+WORLD_H+4);for(let i=0;i<Math.ceil(W/260)+2;i++){const x=((i*260-world.camera*.16+time*3)%(W+260))-130,y=55+(i%3)*48;cloud(x,y,1+(i%2)*.18);}if(extra>40)for(let i=0;i<Math.ceil(W/300)+2;i++){const x=((i*300-world.camera*.1+time*2)%(W+300))-150,y=-extra*(.2+(i%3)*.25);cloud(x,y,1.1+(i%2)*.25);}}
+  function drawSky(time){const W=view.w,p=mission?.palette||[],extra=Math.max(0,-viewTop0());const g=ctx.createLinearGradient(0,0,0,WORLD_H);g.addColorStop(0,p[0]||'#70d0f4');g.addColorStop(.67,p[2]||'#c8f1fa');g.addColorStop(1,'#e8f9e9');ctx.fillStyle=g;ctx.fillRect(0,-extra-2,W,extra+WORLD_H+4);for(let i=0;i<Math.ceil(W/260)+2;i++){const x=((i*260-world.camera*.16+time*3)%(W+260))-130,y=55+(i%3)*48;cloud(x,y,1+(i%2)*.18);}if(extra>40)for(let i=0;i<Math.ceil(W/300)+2;i++){const x=((i*300-world.camera*.1+time*2)%(W+300))-150,y=-extra*(.2+(i%3)*.25);cloud(x,y,1.1+(i%2)*.25);}drawUfo(time);}
+  function drawUfo(time){if(!UFO||!ufoImg.complete)return;const W=view.w,per=22,ph=(time%per)/per;if(ph>.5)return;const k=ph/.42,x=-120+(W+240)*k,y=250+Math.sin(time*2.2)*14+Math.sin(k*Math.PI)*-20,s=.6;ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(time*3)*.08);ctx.globalAlpha=.95;ctx.drawImage(ufoImg,UFO.x,UFO.y,UFO.w,UFO.h,-UFO.w*s/2,-UFO.h*s/2,UFO.w*s,UFO.h*s);ctx.restore();ctx.fillStyle='rgba(190,120,255,.55)';for(let i=0;i<5;i++){const a=time*5+i*1.3,d=(i*17+time*40)%60;ctx.beginPath();ctx.arc(x-UFO.w*s*.3-d,y+12+Math.sin(a)*6,2.5,0,7);ctx.fill();}}
   function cloud(x,y,s=1){ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.fillStyle='rgba(255,255,255,.78)';ctx.beginPath();ctx.ellipse(0,12,49,18,0,0,Math.PI*2);ctx.ellipse(-23,2,24,20,0,0,Math.PI*2);ctx.ellipse(0,-5,28,27,0,0,Math.PI*2);ctx.ellipse(26,4,24,19,0,0,Math.PI*2);ctx.fill();ctx.restore();}
   function drawHills(){const W=view.w,TH=theme();if(TH.far)MM.farDraw[TH.far](ctx,W,372,world.camera,TH.far==='fuji'?'#a9a4d0':TH.far==='dunes'?TH.dirt:TH.hill[1]);ctx.fillStyle=TH.hill[0];ctx.beginPath();ctx.moveTo(0,355);for(let x=0;x<=W;x+=5){ctx.lineTo(x,350+28*Math.sin((x+world.camera*.18)/160)+16*Math.sin(x/63));}ctx.lineTo(W,540);ctx.lineTo(0,540);ctx.fill();ctx.fillStyle=TH.hill[1];ctx.beginPath();ctx.moveTo(0,395);for(let x=0;x<=W;x+=5)ctx.lineTo(x,390+22*Math.sin((x+world.camera*.31)/125));ctx.lineTo(W,540);ctx.lineTo(0,540);ctx.fill();}
   function drawTown(time) {
@@ -675,6 +681,8 @@
           ctx.fillStyle = L.win;
           for (let r = 0; r < h / 34 - 1; r++) for (let c = 0; c < w / 28 - 1; c++) if ((hv >>> (r + c)) % 3) ctx.fillRect(x + 12 + c * 26, L.base - h + 14 + r * 30, 12, 16);
           if (hv % 4 === 0) { ctx.fillStyle = L.col; ctx.fillRect(x + w / 2 - 2, L.base - h - 26, 4, 28); }
+          else if (hv % 4 === 1) { ctx.fillStyle = L.col; ctx.fillRect(x + 18, L.base - h - 34, 4, 34); ctx.fillRect(x + 40, L.base - h - 34, 4, 34); roundRect(x + 12, L.base - h - 62, 38, 30, 8, true); ctx.fillRect(x + 10, L.base - h - 66, 42, 6); }   // réservoir d'eau sur le toit
+          else if (hv % 4 === 2) { ctx.fillStyle = L.col; ctx.fillRect(x + w - 30, L.base - h - 22, 14, 22); ctx.fillStyle = L.win; ctx.fillRect(x + w - 32, L.base - h - 24, 18, 4); }   // cheminée
         }
       });
       drawLandmark();
@@ -682,6 +690,7 @@
     }
     drawLandmark();
     const TH = theme();
+    if (activeHero === 'titan') drawCranes(time);      // le chantier de Titan : grues au loin
     for (let i = 0; i < Math.ceil(W/430)+3; i++) {
       const wx = i*430 + 80, x = wx - cam*.48; if (x < -130 || x > W+130) continue;
       drawHouse(i, x, 390, 108 + (i%2)*25, 110 + (i%3)*22, TH);
@@ -690,6 +699,40 @@
       const x = i*600 + 230 - cam*.75; if (x < -90 || x > W+90) continue;
       drawTree(x, TH.treeCols[i%3], TH.tree);
     }
+    if (activeHero === 'ziggy') drawAvenue(time);      // les grandes avenues de Ziggy : lampadaires, feux et voitures
+    if (activeHero === 'titan') drawSite(time);        // le chantier : barrières, cônes, échafaudages
+  }
+  // ----- un quartier par héros (chapitre 1 : Ziggy les avenues, Filou les toits, Titan le chantier) -----
+  function drawAvenue(time) {
+    const W = view.w, cam = world.camera;
+    const k1 = .62; for (let i = Math.floor(cam * k1 / 260) - 1; i < Math.floor(cam * k1 / 260) + Math.ceil(W / 260) + 2; i++) { const x = i * 260 - cam * k1; if (x < -40 || x > W + 40) continue;
+      ctx.fillStyle = '#5d6b7a'; ctx.fillRect(x - 3, 300, 6, 96); ctx.beginPath(); ctx.arc(x + 14, 300, 16, Math.PI, Math.PI * 1.9); ctx.lineWidth = 6; ctx.strokeStyle = '#5d6b7a'; ctx.stroke();
+      ctx.fillStyle = '#fff3b0'; ctx.beginPath(); ctx.ellipse(x + 28, 304, 8, 5, 0, 0, 7); ctx.fill();
+      if (i % 3 === 0) { ctx.fillStyle = '#3c4652'; roundRect(x + 60, 318, 18, 46, 5, true); ctx.fillRect(x + 67, 364, 4, 32); const ph = Math.floor(time / 2 + i) % 3;
+        ['#ff5b4d', '#ffc53a', '#5bd36a'].forEach((c, k) => { ctx.fillStyle = k === ph ? c : 'rgba(255,255,255,.18)'; ctx.beginPath(); ctx.arc(x + 69, 326 + k * 14, 5, 0, 7); ctx.fill(); }); } }
+    // voitures qui passent au loin (taxis, bus)
+    const cars = ['#ffcc33', '#ef4b43', '#3fa4ea', '#5fbf68'];
+    for (let i = 0; i < 6; i++) { const sp = 60 + (i % 3) * 25, span = W + 400, x = ((i * 380 + time * sp - cam * .55) % span + span) % span - 200, c = cars[i % 4], bus = i % 3 === 2, w = bus ? 92 : 58;
+      ctx.fillStyle = c; roundRect(x, 372, w, 18, 6, true); roundRect(x + (bus ? 4 : 12), bus ? 356 : 362, bus ? w - 8 : 32, bus ? 20 : 14, 5, true);
+      ctx.fillStyle = 'rgba(255,255,255,.75)'; if (bus) for (let k = 0; k < 4; k++) ctx.fillRect(x + 10 + k * 20, 360, 14, 10); else ctx.fillRect(x + 16, 365, 24, 8);
+      ctx.fillStyle = '#2b2f36'; ctx.beginPath(); ctx.arc(x + 14, 391, 6, 0, 7); ctx.arc(x + w - 14, 391, 6, 0, 7); ctx.fill(); }
+  }
+  function drawCranes(time) {
+    const W = view.w, cam = world.camera, k = .34, step = 900;
+    for (let i = Math.floor(cam * k / step) - 1; i < Math.floor(cam * k / step) + Math.ceil(W / step) + 2; i++) { const x = i * step + 300 - cam * k; if (x < -260 || x > W + 260) continue;
+      ctx.strokeStyle = '#f2b53a'; ctx.lineWidth = 4; ctx.strokeRect(x - 10, 120, 20, 280); for (let y = 120; y < 400; y += 20) { ctx.beginPath(); ctx.moveTo(x - 10, y); ctx.lineTo(x + 10, y + 20); ctx.stroke(); }
+      ctx.strokeRect(x - 60, 110, 230, 14); for (let xx = x - 60; xx < x + 170; xx += 20) { ctx.beginPath(); ctx.moveTo(xx, 110); ctx.lineTo(xx + 20, 124); ctx.stroke(); }
+      ctx.fillStyle = '#5d6b7a'; ctx.fillRect(x - 70, 112, 26, 22);
+      const hx = x + 120 + Math.sin(time * .6 + i) * 22, hy = 220 + Math.sin(time * .9 + i) * 12; ctx.strokeStyle = '#3c4652'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(hx, 124); ctx.lineTo(hx, hy); ctx.stroke();
+      ctx.fillStyle = '#ef4b43'; roundRect(hx - 24, hy, 48, 14, 3, true); }
+  }
+  function drawSite(time) {
+    const W = view.w, cam = world.camera, k = .7; ctx.save(); ctx.globalAlpha = .6;   // au loin : à ne pas confondre avec les vrais obstacles
+    for (let i = Math.floor(cam * k / 340) - 1; i < Math.floor(cam * k / 340) + Math.ceil(W / 340) + 2; i++) { const x = i * 340 - cam * k; if (x < -120 || x > W + 120) continue;
+      if (i % 2 === 0) { ctx.fillStyle = '#ffffff'; ctx.fillRect(x, 360, 96, 12); ctx.fillStyle = '#ef4b43'; for (let s = 0; s < 4; s++) ctx.fillRect(x + 6 + s * 24, 360, 12, 12); ctx.fillStyle = '#5d6b7a'; ctx.fillRect(x + 8, 372, 6, 24); ctx.fillRect(x + 82, 372, 6, 24); }
+      else { ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 4; ctx.strokeRect(x, 290, 80, 106); ctx.beginPath(); ctx.moveTo(x, 290); ctx.lineTo(x + 80, 343); ctx.lineTo(x, 396); ctx.moveTo(x, 343); ctx.lineTo(x + 80, 343); ctx.stroke(); ctx.fillStyle = '#c69a5a'; ctx.fillRect(x - 6, 286, 92, 8); }
+      ctx.fillStyle = '#ff7a1f'; ctx.beginPath(); ctx.moveTo(x + 132, 392); ctx.lineTo(x + 140, 372); ctx.lineTo(x + 148, 392); ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillRect(x + 136, 382, 8, 3); }
+    ctx.restore();
   }
   function drawLandmark() {
     const TH = theme(), W = view.w, cam = world.camera, fn = MM.landmarks[TH.lm]; if (!fn) return;
@@ -922,6 +965,9 @@
       if (a.y < top - 20 && ax > 0 && ax < W) { ctx.save(); ctx.translate(ax, top + 10 + Math.sin(time * 6) * 4); ctx.fillStyle = '#7d5bd6'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0, -18); ctx.lineTo(18, 8); ctx.lineTo(-18, 8); ctx.closePath(); ctx.stroke(); ctx.fill(); ctx.restore(); }
     }
     world.coins.forEach(star => { if (star.collected) return; const x = star.x - cam; if (x < -30 || x > W + 30) return; drawStarItem(x, star.y, time, star.bob); });
+    (world.gifts || []).forEach(g => { if (g.got) return; const x = g.x - cam; if (x < -40 || x > W + 40) return; const y = g.y + Math.sin(time * 2.4 + g.bob) * 5;
+      const gl = ctx.createRadialGradient(x, y, 4, x, y, 34); gl.addColorStop(0, 'rgba(255,255,255,.95)'); gl.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(x, y, 34, 0, 7); ctx.fill();
+      ctx.font = '34px system-ui, "Apple Color Emoji", "Noto Color Emoji"'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(giftIcon(), x, y + 1); });
     world.letters.forEach((letter, i) => { if (letter.collected) return; const x = letter.x - cam; if (x < -40 || x > W + 40) return; drawLetterItem(x, letter, i, time); });
     world.monsters.forEach(m => drawMonster(m, time));
     drawHelpClouds(time);
@@ -1308,6 +1354,8 @@
     save.activeMission = null; save.activeHero = null; save.activeDate = null; save.progress = 0; save.sessionElapsed = sessionElapsed; save.stopAfterMission = stopAfterMission; writeSave();
     $('#ending-hero').innerHTML = `<span class="sprite" style="--col:2;--row:${HERO_ROW[activeHero] ?? 0}"></span>`;
     $('#ending-city').textContent = `${city.flag} ${city.name} ${city.icon}`;
+    const ng = (mission.gifts || []).filter(g => g.got).length, eg = $('#ending-gifts');
+    if (eg) { eg.classList.toggle('hidden', !ng); eg.innerHTML = ng ? `<span>${escapeHtml(T('giftLine'))}</span> <b>${giftIcon().repeat(ng)}</b>` : ''; }
     const caught = mission.monsters.filter(m => m.friendly).sort((a, b) => a.order - b.order), friendCount = caught.length;
     const found = mission.letters.filter(item => item.collected).map(item => item.letter);
     const stars = mission.coins.filter(s => s.collected).length, qDone = Math.max(readLevel(lv.hero, lv.index).q || 0, (mission.stationsDone || []).filter(Boolean).length);
@@ -1605,8 +1653,16 @@
     node.classList.toggle('active', !!swing);
     node.classList.toggle('ready', activeHero === 'filou' && !swing && !!world.hintAnchor);   // un anneau est à portée : appuie !
   }
+  const GIFTS = ['🥐', '🌸', '🏮', '💧', '⏳', '🎵', '💛', '🎈', '👋', '🤝'];
+  const giftIcon = () => GIFTS[(mission && mission.level ? mission.level.index : 0) % GIFTS.length];
   function collectPickups() {
     const cx = player.x + player.w/2;
+    for (const g of world.gifts || []) {
+      if (g.got) continue;
+      if (player.x + player.w > g.x - 26 && player.x < g.x + 26 && player.y < g.y + 30 && player.y + player.h > g.y - 30) {
+        g.got = true; triggerHeroAnimation('collect', 330); FX.sparkle(g.x, g.y, 10, ['#ffffff', '#ffd6f0', '#c9f0ff'], 150); FX.ring(g.x, g.y, '#ffffff', 44, .35, 4); sound('coin'); MM.haptic('star'); writeSave();
+      }
+    }
     for (const star of world.coins) {
       if (star.collected) continue;
       if (player.x + player.w > star.x - 22 && player.x < star.x + 22 && player.y < star.y + 24 && player.y + player.h > star.y - 24) {
@@ -2178,7 +2234,15 @@
     updateFriendCounter(); setTimeout(() => { if (scene === 'game-screen') speakCount(n); }, 650); writeSave(); commitProgress(false);
     if (!mission.monGiven && n >= MON_TOTAL) { mission.monGiven = true; setTimeout(() => { if (scene === 'game-screen') { awardSticker('silver'); commitProgress(false); } }, 2400); }
   }
-  function drawMonster(m, time) {
+  function drawMonster(m, time) { drawMonster0(m, time); if (!m.friendly) drawGrognon(m, time); }
+  // la poudre Grognon (chapitre 1) : quelques paillettes violettes qui tournent au-dessus des monstres encore grognons
+  function drawGrognon(m, time) {
+    const x = m.x - world.camera; if (x < -100 || x > view.w + 100) return;
+    const top = m.y - (m.imp ? 105 : 80) - (m.jy || 0);
+    for (let i = 0; i < 4; i++) { const a = time * 2.4 + i * Math.PI / 2 + m.x, r = 16 + Math.sin(time * 3 + i) * 3;
+      ctx.fillStyle = `rgba(${i % 2 ? '200,140,255' : '160,90,240'},${.55 + .3 * Math.sin(time * 4 + i)})`; ctx.beginPath(); ctx.arc(x + Math.cos(a) * r, top + Math.sin(a) * r * .35, 2.6, 0, 7); ctx.fill(); }
+  }
+  function drawMonster0(m, time) {
     if (m.friendly || !m.imp || !s2ok()) return drawFriend(m, time);
     const cam = world.camera, x = m.x - cam; if (x < -160 || x > view.w + 160) return;
     let name;
