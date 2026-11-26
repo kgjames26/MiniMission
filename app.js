@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '58', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '59', asset = (p) => `${p}?v=${ASSET_V}`;
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
   const monsterImg = new Image(); monsterImg.src = asset('assets/monsters.webp');
   const movesImg = new Image(); movesImg.src = asset('assets/hero-moves.webp');
@@ -359,6 +359,7 @@
     const rnd = seeded(mission.seed);
     const level = LV.build(activeHero, seeded(mission.seed), alphabet().length);
     world.width = level.width; world.floor = level.floor; world.camera = 0; world.checkpoint = 60;
+    cloudHelp = {}; cloudPuff = null;
     world.gaps = level.gaps; world.platforms = level.platforms.slice(); world.tramps = (level.tramps || []).map(t => ({ ...t, hit: -9 })); world.topples = []; world.camY = 0; world.anchors = level.anchors; world.pads = [];
     const broken = new Set(mission.brokenBumps || []), damage = mission.damage || {};
     level.bumps.filter(b => b.kind === 'pillar' && broken.has(b.id)).forEach(b => world.platforms.push(logPlatform(b)));   // un pilier déjà tombé reste un pont
@@ -523,7 +524,10 @@
     if (swing) updateSwing(dt);
     else if (moveAndCollide(dt, turboOn)) return;
     if (rope) updateRope(dt);
-    if (player.y > 650) respawn(fallSpot());
+    // nuage d'aide : après 2 chutes dans le même trou, un nuage tout doux attend dedans et fait rebondir le héros de l'autre côté
+    { const g = gapUnder(), key = g && Math.round(g.x);
+      if (g && cloudHelp[key] >= 2 && player.vy > 0 && player.y + player.h > world.floor + 24) cloudBounce(g); }
+    if (player.y > 650) { const g = gapUnder(); if (g) { const key = Math.round(g.x); cloudHelp[key] = (cloudHelp[key] || 0) + 1; } respawn(fallSpot()); }
     // la maison au bout du chemin termine la mission, qu'on ait ouvert toutes les caisses ou non
     if (player.x + player.w >= world.width - 150 && player.grounded && !swing) { finishMission(); return; }
     // plaques de vitesse (Ziggy)
@@ -869,6 +873,7 @@
     world.coins.forEach(star => { if (star.collected) return; const x = star.x - cam; if (x < -30 || x > W + 30) return; drawStarItem(x, star.y, time, star.bob); });
     world.letters.forEach((letter, i) => { if (letter.collected) return; const x = letter.x - cam; if (x < -40 || x > W + 40) return; drawLetterItem(x, letter, i, time); });
     world.monsters.forEach(m => drawMonster(m, time));
+    drawHelpClouds(time);
     world.stations.forEach(station => {
       const x = station.x - cam; if (x < -100 || x > W + 100) return;
       const bob = Math.sin(time*2 + station.bob)*2;
@@ -1354,6 +1359,44 @@
     let x = g.x - 430;
     for (let k = 0; k < 8; k++) { const inside = world.gaps.find(q => x > q.x - 20 && x < q.x + q.w + 20); if (!inside) break; x = inside.x - 130; }
     return safeGroundX(Math.max(120, x));
+  }
+  // ----- nuage d'aide pour les sauts difficiles -----
+  let cloudHelp = {}, cloudPuff = null;      // chutes par trou ; nuage qui vient de faire rebondir le héros (pour le dessin)
+  function gapUnder() { const cx = player.x + player.w / 2; return world.gaps.find(q => cx > q.x - 30 && cx < q.x + q.w + 30); }
+  function cloudBounce(g) {
+    const F = world.floor, cx = player.x + player.w / 2, target = g.x + g.w + 80;
+    const vy0 = -Math.max(860, Math.min(1150, 780 + Math.abs(target - cx) * .3)), y0 = player.y,   // petit trou : petit rebond ; grand trou : plus haut
+          dy = (F - player.h) - y0, G = 1450;
+    const t = (-vy0 + Math.sqrt(vy0 * vy0 + 2 * G * dy)) / G;          // temps de vol jusqu'au sol de l'autre côté
+    player.vy = vy0; player.carryVx = (target - cx) / t; player.vx = player.carryVx; player.facing = 1; player.grounded = false;
+    swing = null; hurtUntil = gt + t + .8;                                   // rien ne peut le gêner pendant le vol
+    cloudPuff = { x: cx, y: F + 20, t: gt, key: Math.round(g.x) };
+    FX.sparkle(cx, F, 16, ['#ffffff', '#e8f6ff', '#ffe9a8', '#ffd1e8'], 220); FX.ring(cx, F + 10, '#ffffff', 80, .4, 6);
+    triggerHeroAnimation('jump', 500); sound('jump'); MM.haptic('good');
+  }
+  function drawHelpClouds(time) {
+    const cam = world.camera, F = world.floor;
+    const puff = (x, y, k, a) => {                                         // un nuage rond et doux, avec deux petits yeux souriants
+      ctx.save(); ctx.globalAlpha = a; ctx.translate(x, y); ctx.scale(k, k);
+      ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#bcdcf5'; ctx.lineWidth = 3;
+      ctx.beginPath(); for (const [ox, oy, r] of [[-34, 4, 22], [-12, -10, 28], [16, -8, 26], [36, 6, 20], [0, 10, 26]]) { ctx.moveTo(ox + r, oy); ctx.arc(ox, oy, r, 0, Math.PI * 2); }
+      ctx.fill(); ctx.stroke(); ctx.fill();
+      ctx.fillStyle = '#4a6a8a'; ctx.beginPath(); ctx.arc(-9, 0, 3.2, 0, Math.PI * 2); ctx.arc(9, 0, 3.2, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#4a6a8a'; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(0, 5, 6, .2, Math.PI - .2); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,150,180,.5)'; ctx.beginPath(); ctx.arc(-17, 7, 4, 0, Math.PI * 2); ctx.arc(17, 7, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    };
+    for (const g of world.gaps) {
+      const key = Math.round(g.x); if ((cloudHelp[key] || 0) < 2) continue;
+      if (cloudPuff && cloudPuff.key === key && gt - cloudPuff.t < .9) continue;
+      const x = g.x + g.w / 2 - cam; if (x < -120 || x > view.w + 120) continue;
+      const born = cloudHelp['t' + key] ?? (cloudHelp['t' + key] = gt), k = Math.min(1, (gt - born) * 2.5);
+      puff(x, F + 26 + Math.sin(time * 2.5) * 5, .9 * (0.6 + .4 * k), k);   // il attend dans le trou en flottant doucement
+    }
+    if (cloudPuff) {
+      const a = gt - cloudPuff.t; if (a > .9) cloudPuff = null;
+      else { const sq = a < .15 ? 1 - a * 2 : 1; puff(cloudPuff.x - cam, cloudPuff.y + 6, 1.05, 1 - Math.max(0, a - .5) / .4); }
+    }
   }
   function respawn(toX) {
     swing = null; rope = null; turboUntil = 0; player.carryVx = 0;
