@@ -11,11 +11,32 @@ A=[('rose_idle','statvol',.88,(191,538),range(0,10)),
    ('rose_pick','choix',.6/FINAL*.5,None,range(0,30))]
 FEET=424*.964
 AIR=[('rose_hover','stationnaire',.93,(197,24),range(0,30)),('rose_fly','vol_lent',.82,(198,29),range(0,30)),('rose_dash','vol_rapide',1.02,(321,25),range(0,30))]
+import numpy as np
+# Dans le GIF « statique -> vol » (et un peu dans la victoire), Rose est plus longiligne : tête plus petite pour la même taille.
+# On agrandit l'image pour que la tête ait la même taille qu'ailleurs, puis on tasse doucement le bas du corps
+# pour garder la même hauteur casque -> pieds : la silhouette rejoint celle des autres animations.
+FIX={'statvol':(1.16,538),'victoire':(1.08,540)}
+def refit(im,src,gy):
+    if src not in FIX: return im, gy
+    g,gy0=FIX[src]; a=np.asarray(im); al=a[...,3]>40; ys=np.where(al.any(1))[0]; top=ys[0]
+    W,H=im.size; big=im.resize((round(W*g),round(H*g)),Image.LANCZOS); B=np.asarray(big)
+    t2=top*g; ground2=gy0*g; Hf=gy0-top                     # hauteur voulue casque -> sol
+    split=t2+(ground2-t2)*.42                               # au-dessus : tête et épaules intactes
+    keep=split-t2; rest=Hf-keep; src_rest=ground2-split     # en dessous : tassé pour retomber sur le sol
+    out_h=round(top+Hf+(B.shape[0]-ground2)*(rest/src_rest)+2)
+    ys_out=np.arange(out_h); ysrc=np.where(ys_out<top+keep, t2+(ys_out-top), split+(ys_out-top-keep)*src_rest/rest)
+    ysrc=np.clip(ysrc,0,B.shape[0]-1)
+    y0=np.floor(ysrc).astype(int); y1=np.minimum(y0+1,B.shape[0]-1); w=(ysrc-y0)[:,None,None]
+    O=(B[y0]*(1-w)+B[y1]*w).astype(np.uint8)
+    xoff=round((big.width-W)/2); O=O[:,xoff:xoff+W] if big.width>=W else O
+    return Image.fromarray(O,'RGBA'), gy0
 ims=[]
 for nm,src,s,anc,rg in A:
     k=s*FINAL
     for j,i in enumerate(rg):
-        im=Image.open(f'{src}_{i:02d}.png'); im=im.resize((round(im.width*k),round(im.height*k)),Image.LANCZOS)
+        im=Image.open(f'{src}_{i:02d}.png')
+        if anc: im,_=refit(im,src,anc[1])
+        im=im.resize((round(im.width*k),round(im.height*k)),Image.LANCZOS)
         ax,ay=(anc[0]*k,anc[1]*k) if anc else (im.width/2,im.height)
         ims.append((f'{nm}{j}',im,ax,ay))
 for nm,src,s,(px,py),rg in AIR:

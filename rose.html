@@ -27,8 +27,8 @@
 <script>
 (() => {
   // ---------- planche de Rose (assets/rose.webp + rose.json) ----------
-  const img = new Image(); img.src = 'assets/rose.webp?v=2';
-  let F = null; fetch('assets/rose.json?v=2').then(r => r.json()).then(j => { F = j; });
+  const img = new Image(); img.src = 'assets/rose.webp?v=3';
+  let F = null; fetch('assets/rose.json?v=3').then(r => r.json()).then(j => { F = j; });
   const N = (p) => { let n = 0; while (F[p + n]) n++; return n; };
 
   // ---------- réglages (en pixels de la planche : Rose mesure ~230 px du casque aux pieds) ----------
