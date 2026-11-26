@@ -61,16 +61,38 @@
           <span class="home-hero hh-filou"><span class="sprite" style="--col:2;--row:1"></span></span>
           <span class="home-hero hh-titan"><span class="sprite" style="--col:2;--row:2"></span></span>
         </div>
-        <div class="home-album-row"><button id="album-open" class="pill-btn" type="button" aria-label="Mon album d’autocollants" data-i18n-aria="aAlbum"><span aria-hidden="true" class="album-ico">📒</span><span data-i18n="myAlbums">Mes albums</span><b id="album-badge" class="album-badge">0</b></button></div>
+        <div class="home-album-row"><button id="library-open" class="pill-btn" type="button" aria-label="Mes livres"><span aria-hidden="true" class="album-ico">📚</span></button><button id="album-open" class="pill-btn" type="button" aria-label="Mon album d’autocollants" data-i18n-aria="aAlbum"><span aria-hidden="true" class="album-ico">📒</span><span data-i18n="myAlbums">Mes albums</span><b id="album-badge" class="album-badge">0</b></button></div>
         <p class="home-tagline" data-i18n="tagline">Remplis tes albums&nbsp;!</p>
         <button id="start-button" class="play-button" type="button"><span data-i18n="play">JOUER&nbsp;!</span> <span aria-hidden="true">▶</span></button>
         <span id="home-version" class="home-version" aria-hidden="true"></span>
       </section>
 
-      <section id="hero-select" class="screen hero-screen" aria-label="Choisir un héros" data-i18n-aria="aChooseHero">
+      <section id="chapter-screen" class="screen chapter-screen" aria-label="Choisir un chapitre" data-i18n-aria="aChooseChapter">
         <header class="screen-top">
           <button class="round-btn" type="button" data-go="home" aria-label="Retour à l’accueil" data-i18n-aria="aBackHome">←</button>
-          <h2 class="screen-title"><span class="t-orange" data-i18n="chooseHero1">Choisis ton</span> <span class="t-red" data-i18n="chooseHero2">héros&nbsp;!</span></h2>
+          <h2 class="screen-title"><span class="t-orange" data-i18n="chooseChap1">Choisis ton</span> <span class="t-red" data-i18n="chooseChap2">chapitre&nbsp;!</span></h2>
+          <span class="top-spacer"></span>
+        </header>
+        <div class="chap-grid">
+          <button class="chap-card c1" type="button" data-chap="1"><span class="chap-num">1</span><span class="chap-art"><span class="chap-globe"></span><span class="chap-heroes"><span class="sprite" style="--col:0;--row:0"></span><span class="sprite" style="--col:2;--row:1"></span><span class="sprite" style="--col:2;--row:2"></span></span></span><b class="chap-name" data-i18n="chap1">La Terre</b></button>
+          <button class="chap-card c2" type="button" data-chap="2"><span class="chap-num">2</span><span class="chap-art"><span class="chap-planet p1"></span><span class="chap-planet p2"></span><span class="chap-planet p3"></span><img class="chap-rose" src="assets/rose-card.webp" alt=""></span><b class="chap-name" data-i18n="chap2">L’espace</b></button>
+          <button class="chap-card c3 locked" type="button" data-chap="3"><span class="chap-num">3</span><span class="chap-art"><span class="chap-ufo">🛸</span><span class="chap-ufo u2">🛸</span><span class="chap-lock">🔒</span></span><b class="chap-name" data-i18n="chap3">Le grand final</b><span class="chap-soon" data-i18n="soon">Bientôt</span></button>
+        </div>
+      </section>
+
+      <section id="space-screen" class="screen space-screen" aria-label="Choisir une planète" data-i18n-aria="aChoosePlanet">
+        <header class="screen-top">
+          <button id="space-back" class="round-btn" type="button" aria-label="Retour aux chapitres" data-i18n-aria="aBackChapters">←</button>
+          <h2 class="screen-title"><img class="space-rose" src="assets/rose-card.webp" alt=""><span class="t-red">Rose</span></h2>
+          <span class="top-spacer"></span>
+        </header>
+        <div id="space-map" class="space-map" role="list"></div>
+      </section>
+
+      <section id="hero-select" class="screen hero-screen" aria-label="Choisir un héros" data-i18n-aria="aChooseHero">
+        <header class="screen-top">
+          <button id="hero-back" class="round-btn" type="button" aria-label="Retour aux villes" data-i18n-aria="aBackCities">←</button>
+          <h2 class="screen-title"><span id="hero-city" class="hero-city" aria-hidden="true"></span><span class="t-orange" data-i18n="chooseHero1">Choisis ton</span> <span class="t-red" data-i18n="chooseHero2">héros&nbsp;!</span></h2>
           <span class="top-spacer"></span>
         </header>
         <div class="hero-grid">
@@ -86,10 +108,6 @@
             <span class="hero-stage"><span class="sprite" style="--col:2;--row:2"></span></span>
             <span class="hero-info"><span class="hero-name">Titan</span><span class="hero-power"><span data-i18n="strength">Force</span> <b>★★★★☆</b></span><span class="choose-pill">CHOISIR</span></span>
           </button>
-          <a class="hero-card rose" href="rose-lune.html" aria-label="Choisir Rose l'exploratrice de l'espace (nouveau)">
-            <span class="hero-stage"><img class="rose-pic" src="assets/rose-card.webp" alt=""><span class="new-tag">NOUVEAU</span></span>
-            <span class="hero-info"><span class="hero-name">Rose</span><span class="hero-power">🚀 <b>★★★★☆</b></span><span class="choose-pill">CHOISIR</span></span>
-          </a>
         </div>
         <div id="session-timer-row" class="session-timer-row"><label for="session-timer-select"><span data-i18n="sessionTimer">Minuteur de partie</span> <span data-i18n="optional">(facultatif)</span></label><select id="session-timer-select"><option value="0" data-i18n="off">Désactivé</option><option value="300" data-i18n="minutes" data-i18n-n="5">5 minutes</option><option value="600" data-i18n="minutes" data-i18n-n="10">10 minutes</option><option value="900" data-i18n="minutes" data-i18n-n="15">15 minutes</option><option value="1200" data-i18n="minutes" data-i18n-n="20">20 minutes</option><option value="1800" data-i18n="minutes" data-i18n-n="30">30 minutes</option><option value="2700" data-i18n="minutes" data-i18n-n="45">45 minutes</option><option value="3600" data-i18n="hour1">1 heure</option></select></div>
       </section>
@@ -97,8 +115,8 @@
 
       <section id="level-screen" class="screen level-screen" aria-label="Choisir une ville" data-i18n-aria="aChooseCity">
         <header class="screen-top">
-          <button id="level-back" class="round-btn" type="button" aria-label="Changer de héros" data-i18n-aria="aChangeHero">←</button>
-          <h2 class="screen-title"><span id="level-hero" class="level-hero" aria-hidden="true"></span><span id="level-title" class="t-red">Ville</span></h2>
+          <button id="level-back" class="round-btn" type="button" aria-label="Retour aux chapitres" data-i18n-aria="aBackChapters">←</button>
+          <h2 class="screen-title"><span id="level-hero" class="level-hero" aria-hidden="true">🌍</span><span id="level-title" class="t-red" data-i18n="chap1">La Terre</span></h2>
           <span class="top-spacer"></span>
         </header>
         <div id="level-grid" class="level-grid" role="list"></div>
@@ -282,6 +300,8 @@
       </section>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </main>
+    <script src="story.js" defer></script>
+    <script src="book.js" defer></script>
     <script src="i18n.js" defer></script>
     <script src="lang-en.js" defer></script>
     <script src="lang-es.js" defer></script>

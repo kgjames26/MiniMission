@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '70', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '72', asset = (p) => `${p}?v=${ASSET_V}`;
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
   const monsterImg = new Image(); monsterImg.src = asset('assets/monsters.webp');
   const movesImg = new Image(); movesImg.src = asset('assets/hero-moves.webp');
@@ -246,34 +246,45 @@
     if (done) L.done = true;
     writeSave();
   }
-  let levelHero = 'ziggy';
-  function openLevels(heroId) {
-    levelHero = heroId; const h = heroes[heroId], row = HERO_ROW[heroId] ?? 0;
-    $('#level-hero').innerHTML = `<span class="sprite" style="--col:${heroId === 'ziggy' ? 0 : 2};--row:${row}"></span>`;
-    $('#level-title').textContent = h.name.split(' ')[0];
-    renderLevels(); setScreen('level-screen');
-    if (!timerNoticePlaying) sayText(TN('sayChooseCity'), null, true);
+  // ----- chapitre 1 : on choisit la ville, puis le héros (une ville s'ouvre dès qu'un héros a fini la précédente) -----
+  const HEROES3 = ['ziggy', 'filou', 'titan'];
+  let levelCity = 0;
+  const cityDone = i => HEROES3.some(h => readLevel(h, i).done);
+  const cityUnlocked = i => i === 0 || cityDone(i - 1);
+  const heroMini = h => `<span class="sprite" style="--col:${h === 'ziggy' ? 0 : 2};--row:${HERO_ROW[h] ?? 0}"></span>`;
+  function openCities() { renderLevels(); setScreen('level-screen'); if (!timerNoticePlaying) sayText(TN('sayChooseCity'), null, true); }
+  function openLevels() { openHeroes(levelCity); }
+  function openHeroes(i) {
+    levelCity = i; const c = MM.cities[i];
+    $('#hero-city').textContent = c ? c.flag + ' ' + c.name + ' · ' : '';
+    document.querySelectorAll('.hero-card[data-hero]').forEach(card => {
+      const L = readLevel(card.dataset.hero, i), t = L.tot; card.classList.toggle('city-done', !!L.done);
+      let p = card.querySelector('.hero-prog'); if (!p) { p = document.createElement('span'); p.className = 'hero-prog'; card.querySelector('.hero-info').appendChild(p); }
+      p.innerHTML = t ? `⭐ ${L.stars.length}/${t.s} · 👾 ${L.monsters.length}/${t.m}` : `<span class="lv-new">${T('newBadge')}</span>`;
+    });
+    setScreen('hero-select');
+    // une petite page pour chaque héros qui vient de finir son quartier, puis la conclusion quand les 3 ont fini
+    const pend = HEROES3.filter(h => readLevel(h, i).done).map(h => 'c' + i + h);
+    if (HEROES3.every(h => readLevel(h, i).done)) pend.push('c' + i + 'c');
+    if (MM.cities.every((_, k) => HEROES3.every(h => readLevel(h, k).done))) pend.push('ch1end');
+    const todo = pend.filter(id => MM.book && !MM.book.seen(id));
+    if (todo.length) { bookChain(todo, () => { if (!timerNoticePlaying && c) sayText(T('sayChooseHeroCity', { city: c.say || c.name }), null, true); }); return; }
+    if (!timerNoticePlaying && c) sayText(T('sayChooseHeroCity', { city: c.say || c.name }), null, true);
   }
   function renderLevels() {
     const grid = $('#level-grid');
     grid.innerHTML = MM.cities.map((c, i) => {
-      const L = readLevel(levelHero, i), open = levelUnlocked(levelHero, i), t = L.tot, nl = lettersIn(L), na = alphabet().length;
-      let inner;
-      if (!open) inner = '<span class="lv-lock" aria-hidden="true">🔒</span>';
-      else if (!t) inner = `<span class="lv-new">${T('newBadge')}</span>`;
-      else {
-        const chip = (icon, a, b) => `<span class="lv-chip ${a >= b ? 'full' : ''}"><i style="--p:${b ? a / b : 0}"></i>${icon} ${a}/${b}</span>`;
-        inner = `<div class="lv-chips">${chip('⭐', L.stars.length, t.s)}${chip('🔤', nl, na)}${chip('👾', L.monsters.length, t.m)}${chip('🎮', L.q, t.q)}</div><div class="lv-chips"><span class="lv-chip ${L.silver ? 'med' : ''}" style="opacity:${L.silver ? 1 : .55}">🥈${L.silver ? '✓' : ''}</span><span class="lv-chip ${L.gold ? 'med' : ''}" style="opacity:${L.gold ? 1 : .55}">🥇${L.gold ? '✓' : ''}</span></div>`;
-      }
-      const tierBadge = (L.tier ? `<span class="lv-tier" aria-label="${T('aDifficulty', { n: L.tier })}">${swords(L.tier)}</span>` : '') + (levelComplete(L) ? `<span class="lv-again" aria-label="${T('aAgain')}">↻⚔️</span>` : '');
-      const rem = t ? T('aLevelLeft', { s: t.s - L.stars.length, l: na - nl, m: t.m - L.monsters.length }) : '';
-      return `<button type="button" role="listitem" class="level-card ${open ? '' : 'locked'} ${L.done ? 'done' : ''} ${L.tier ? 'hard' : ''}" data-i="${i}" style="--a:${c.sky[0]};--b:${c.sky[1]};--g:${c.grass}" aria-label="${escapeHtml(T('aLevel', { n: i + 1, city: c.name }))}${open ? '' : T('aLocked')}.${rem}"><span class="lv-num">${i + 1}</span><span class="lv-flag">${c.flag}</span><span class="lv-icon">${c.icon}</span><b class="lv-name">${escapeHtml(c.name)}</b>${inner}${tierBadge}</button>`;
+      const open = cityUnlocked(i), Ls = HEROES3.map(h => readLevel(h, i)), all = Ls.every(L => L.done), any = Ls.some(L => L.tot);
+      // les 3 héros de la ville : chacun son quartier, coché quand il l'a fini
+      const inner = !open ? '<span class="lv-lock" aria-hidden="true">🔒</span>'
+        : `<div class="lv-heroes">${HEROES3.map((h, k) => `<span class="lv-h ${Ls[k].done ? 'ok' : Ls[k].tot ? 'go' : ''}">${heroMini(h)}</span>`).join('')}</div>${any ? '' : `<span class="lv-new">${T('newBadge')}</span>`}`;
+      return `<button type="button" role="listitem" class="level-card ${open ? '' : 'locked'} ${all ? 'done' : ''}" data-i="${i}" style="--a:${c.sky[0]};--b:${c.sky[1]};--g:${c.grass}" aria-label="${escapeHtml(T('aLevel', { n: i + 1, city: c.name }))}${open ? '' : T('aLocked')}"><span class="lv-num">${i + 1}</span><span class="lv-flag">${c.flag}</span><span class="lv-icon">${c.icon}</span><b class="lv-name">${escapeHtml(c.name)}</b>${inner}</button>`;
     }).join('');
   }
   function pickLevel(i) {
     const card = $(`#level-grid .level-card[data-i="${i}"]`);
-    if (!levelUnlocked(levelHero, i)) { if (card) { card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); } MM.haptic('oops'); showToast(T('lockedToast')); sayText(T('lockedSay')); return; }
-    startLevel(levelHero, i);
+    if (!cityUnlocked(i)) { if (card) { card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); } MM.haptic('oops'); showToast(T('lockedToast')); sayText(T('lockedSay')); return; }
+    book('c' + i + 'a', () => openHeroes(i));
   }
   // position d'un drapeau : sur le sol, hors des trous, obstacles et immeubles
   function flagX(x) {
@@ -320,9 +331,49 @@
     if (restLocked()) { showRest(); return; }
     if(sessionActive&&stopAfterMission){endSession();return;}
     $('#session-timer-row').classList.toggle('hidden',sessionActive);
-    setScreen('hero-select');
+    setScreen('chapter-screen');
+    if (!timerNoticePlaying) sayText(TN('sayChooseChapter'), null, true);
   }
-  function chooseHero(heroId) { if (!heroes[heroId]) return; openLevels(heroId); }
+  function chooseHero(heroId) { if (!heroes[heroId]) return; startLevel(heroId, levelCity); }
+  // ----- chapitres -----
+  // le livre : une histoire avant (et après) chaque monde, lue une seule fois, puis rangée dans la bibliothèque
+  const book = (id, then) => { if (MM.book && MM.STORY && MM.STORY[id] && !MM.book.seen(id)) { cancelSpeech(); MM.book.open(id, { onDone: then }); } else if (then) then(); };
+  const bookChain = (ids, then) => { const next = () => { const id = ids.shift(); if (id) book(id, next); else if (then) then(); }; next(); };
+  function chooseChapter(n) {
+    if (n === 1) { book('prologue', openCities); return; }
+    if (n === 2) { book('ch1end', openSpace); return; }
+    const card = $('.chap-card.c3'); card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); MM.haptic('oops'); sayText(T('finalSoonSay'));
+  }
+  // ----- chapitre 2 : les 10 mondes de Rose (chaque monde s'ouvre quand le précédent est fini) -----
+  const PLANETS = [
+    { id: 'lune', k: 'pLune', file: 'rose-lune.html', s: .62, c: ['#f4f4fa', '#a6a4c0'] },
+    { id: 'mars', k: 'pMars', file: 'rose-mars.html', s: .58, c: ['#ffb08a', '#c4502a'] },
+    { id: 'venus', k: 'pVenus', s: .72, c: ['#fff1c4', '#e0a84a'] },
+    { id: 'mercure', k: 'pMercure', s: .5, c: ['#e2d6cc', '#8f7f74'] },
+    { id: 'jupiter', k: 'pJupiter', s: 1, c: ['#ffe2b8', '#c98a52'], band: 1 },
+    { id: 'saturne', k: 'pSaturne', s: .86, c: ['#fff0c0', '#d8b46a'], ring: 1 },
+    { id: 'uranus', k: 'pUranus', s: .74, c: ['#d8fbff', '#6fd0d8'], ring: 2 },
+    { id: 'neptune', k: 'pNeptune', s: .72, c: ['#a8c8ff', '#3555d8'] },
+    { id: 'terre', k: 'pTerre', s: .7, c: ['#9fe0ff', '#2f7fe0'], earth: 1 },
+    { id: 'soleil', k: 'pSoleil', s: 1.1, c: ['#fff6a8', '#ff9a1a'], sun: 1 },
+  ];
+  const roseDone = () => { try { const d = JSON.parse(localStorage.getItem('mm.rose.done') || '[]'); if (localStorage.getItem('mm.rose.world') && !d.includes('lune')) d.push('lune'); return d; } catch (e) { return []; } };
+  function openSpace() {
+    const done = roseDone();
+    $('#space-map').innerHTML = PLANETS.map((p, i) => {
+      const open = i === 0 || done.includes(PLANETS[i - 1].id), ready = !!p.file;
+      return `<button type="button" role="listitem" class="planet ${open ? '' : 'locked'} ${ready ? '' : 'soon'} ${done.includes(p.id) ? 'done' : ''}" data-i="${i}" style="--s:${p.s};--c1:${p.c[0]};--c2:${p.c[1]};--y:${(i % 2 ? 1 : -1) * 18}%"><span class="pl-ball ${p.band ? 'band' : ''} ${p.earth ? 'earth' : ''} ${p.sun ? 'sun' : ''}">${p.ring ? `<i class="pl-ring r${p.ring}"></i>` : ''}</span><b class="pl-name">${escapeHtml(T(p.k))}</b>${!open ? '<span class="pl-badge">🔒</span>' : !ready ? `<span class="pl-badge soon">${escapeHtml(T('soon'))}</span>` : ''}</button>`;
+    }).join('');
+    setScreen('space-screen');
+    if (!timerNoticePlaying) sayText(T('sayChoosePlanet'), null, true);
+  }
+  function pickPlanet(i) {
+    const p = PLANETS[i], done = roseDone(), open = i === 0 || done.includes(PLANETS[i - 1].id), btn = $(`#space-map .planet[data-i="${i}"]`);
+    const shake = () => { if (btn) { btn.classList.remove('shake'); void btn.offsetWidth; btn.classList.add('shake'); } MM.haptic('oops'); };
+    if (!open) { shake(); sayText(T('lockedPlanetSay')); return; }
+    if (!p.file) { shake(); sayText(T(p.k) + '. ' + T('soonSay')); return; }
+    location.href = p.file;
+  }
   function showTierSplash(tier) {
     const node = $('#tier-splash'); if (!node) return;
     node.querySelector('.ts-swords').textContent = swords(tier);
@@ -335,7 +386,7 @@
   function startLevel(heroId, index) {
     if(!sessionActive){sessionActive=true;sessionElapsed=0;sessionTimerLimit=(Number(save.timerMinutes)||0)*60;stopAfterMission=false;timerWarningSent=false;timerAnnouncementPending=false;save.sessionActive=true;save.sessionElapsed=0;save.sessionTimerLimit=sessionTimerLimit;save.stopAfterMission=false;save.timerWarningSent=false;}sessionTimerLimit=(Number(save.timerMinutes)||0)*60;save.sessionTimerLimit=sessionTimerLimit;timerWarningSent=sessionTimerLimit>0&&sessionElapsed>=sessionTimerLimit;
     sessionTimerLimit = (Number(save.timerMinutes) || 0) * 60; save.sessionTimerLimit = sessionTimerLimit; timerWarningSent = sessionTimerLimit > 0 && sessionElapsed >= sessionTimerLimit; save.timerWarningSent = timerWarningSent;
-    activeHero = heroId;
+    activeHero = heroId; levelCity = index;
     if (levelComplete(readLevel(heroId, index))) {
       const E = levelEntry(heroId, index); E.tier = (E.tier || 0) + 1;
       E.stars = []; E.letters = []; E.monsters = []; E.q = 0; E.silver = E.gold = E.mon = false; writeSave();
@@ -1287,7 +1338,7 @@
     save.activeMission = null; save.activeHero = null; save.activeDate = null; save.progress = 0; writeSave();
     mission = null; activeHero = null; puzzleTask = null; puzzleStation = null;
     releaseControls();
-    if (hero && !(sessionActive && stopAfterMission)) openLevels(hero); else startToday();
+    if (hero && !(sessionActive && stopAfterMission)) openHeroes(levelCity); else startToday();
   }
   function moveAndCollide(dt, turboOn) {
     const F = world.floor, wasGrounded = player.grounded;
@@ -2520,13 +2571,18 @@
 
   $('#start-button').addEventListener('click',startToday);
   document.querySelectorAll('.hero-card[data-hero]').forEach(card=>card.addEventListener('click',()=>chooseHero(card.dataset.hero)));
-  { const rc=document.querySelector('.hero-card.rose'); if(rc) rc.addEventListener('click',e=>{ let w=null; try{ w=localStorage.getItem('mm.rose.world'); }catch(_){} if(w&&/^rose-[a-z]+\.html$/.test(w)){ e.preventDefault(); location.href=w; } }); }   // Rose reprend au dernier monde ouvert
+  document.querySelectorAll('.chap-card').forEach(card=>card.addEventListener('click',()=>chooseChapter(Number(card.dataset.chap))));
+  $('#space-map').addEventListener('click',e=>{const p=e.target.closest('.planet');if(p)pickPlanet(Number(p.dataset.i));});
+  $('#space-back').addEventListener('click',()=>{setScreen('chapter-screen');});
+  $('#library-open').addEventListener('click',()=>{cancelSpeech();if(MM.book)MM.book.library(MM.STORY_ORDER||[]);});
+  MM.say=(t)=>sayText(t); MM.hush=()=>cancelSpeech();
+  $('#hero-back').addEventListener('click',()=>{renderLevels();setScreen('level-screen');});
   $('#level-grid').addEventListener('click',e=>{const card=e.target.closest('.level-card');if(card)pickLevel(Number(card.dataset.i));});
   $('#album-grid').addEventListener('click',e=>{const slot=e.target.closest('.album-slot.got');if(slot)openStickerDetail(Number(slot.dataset.id));});
   $('#sticker-close').addEventListener('click',closeStickerDetail);
   $('#sd-listen').addEventListener('click',()=>{cancelSpeech();sayText(stickerSpeech);});
   $('#sticker-detail').addEventListener('click',e=>{if(e.target.id==='sticker-detail')closeStickerDetail();});
-  $('#level-back').addEventListener('click',()=>setScreen('hero-select'));
+  $('#level-back').addEventListener('click',()=>setScreen('chapter-screen'));
   $('#replay-button').addEventListener('click',()=>{if(lastFinished)startLevel(lastFinished.hero,lastFinished.index);});
   $('#next-level-button').addEventListener('click',()=>{if(lastFinished)startLevel(lastFinished.hero,lastFinished.index+1);});
   document.querySelectorAll('[data-go="home"]').forEach(b=>b.addEventListener('click',()=>setScreen('home')));
@@ -2694,6 +2750,8 @@
   updateNameSetting();
   if (!MM.i18n.chosen) { const g = MM.i18n.guess(); $('#lang-grid').querySelector(`[data-lang="${g}"]`)?.classList.add('guess'); setScreen('lang-screen'); }
   else if (!save.nameAsked) openNameScreen('home');
+  else if (location.hash === '#space' && !restLocked()) openSpace();       // retour d'un monde de Rose : on revient sur la carte des planètes
+  if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   lastActiveTick=performance.now();setInterval(tickMissionClock,250);
   if('serviceWorker' in navigator && location.protocol!=='file:')navigator.serviceWorker.register('./sw.js').catch(()=>{});
   requestAnimationFrame((t)=>{lastTime=t;});
