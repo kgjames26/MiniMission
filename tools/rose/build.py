@@ -1,14 +1,14 @@
 from PIL import Image; import numpy as np, json, os
-S={'marche':.964,'stationnaire':.93,'vol_lent':.82,'vol_rapide':1.02}
-PL={'marche':(209,20),'stationnaire':(197,24),'vol_lent':(198,29),'vol_rapide':(321,25)}
-NAME={'marche':'rose_walk','stationnaire':'rose_hover','vol_lent':'rose_fly','vol_rapide':'rose_dash'}
+S={'victoire':.95,'marche':.964,'stationnaire':.93,'vol_lent':.82,'vol_rapide':1.02}
+PL={'victoire':(193,0),'marche':(202,20),'stationnaire':(197,24),'vol_lent':(198,29),'vol_rapide':(321,25)}
+NAME={'victoire':'rose_win','marche':'rose_walk','stationnaire':'rose_hover','vol_lent':'rose_fly','vol_rapide':'rose_dash'}
 FINAL=.70; FEET=424*.964; STEP=3
 frames={}; ims=[]
 for n,s in S.items():
     k=s*FINAL; px,py=PL[n]
     for j,i in enumerate(range(0,30,STEP)):
         im=Image.open(f'{n}_{i:02d}.png'); W,H=im.size; im=im.resize((round(W*k),round(H*k)),Image.LANCZOS)
-        ax=px*k; ay=(py+FEET/s)*k if n!='marche' else 444*k
+        ax=px*k; ay=(py+FEET/s)*k if n not in ('marche','victoire') else (442 if n=='marche' else 540)*k
         ims.append((f'{NAME[n]}{j}',im,ax,ay))
 for j,i in enumerate(range(0,30,STEP)):
     im=Image.open(f'choix_{i:02d}.png'); k=.6; im=im.resize((round(im.width*k),round(im.height*k)),Image.LANCZOS)
