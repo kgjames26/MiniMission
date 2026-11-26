@@ -884,3 +884,8 @@ body.peeking .fly-item{visibility:hidden}   /* les objets qui volent vers les co
 @media(max-height:460px){.pill-btn.home-books{min-height:44px;padding:6px 18px;font-size:18px}}
 @media (orientation:landscape){.home-heroes{--hh:clamp(84px,min(30vh,24vw),330px)}}
 @media (orientation:landscape) and (max-height:460px){.home-heroes{--hh:clamp(70px,27vh,200px)}}
+/* toucher un héros de l'accueil : petit saut joyeux */
+.home-heroes{pointer-events:auto}
+.home-hero{cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.home-hero.hop{animation:hero-hop .7s cubic-bezier(.3,.7,.4,1)}
+@keyframes hero-hop{0%{transform:translateY(0) scale(1)}15%{transform:translateY(4%) scale(1.06,.92)}45%{transform:translateY(-22%) scale(.96,1.05) rotate(-4deg)}75%{transform:translateY(0) scale(1.05,.94)}100%{transform:none}}

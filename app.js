@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '88', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '89', asset = (p) => `${p}?v=${ASSET_V}`;
   // la soucoupe des farceurs passe de temps en temps dans le ciel des villes (l'indice de l'histoire, chapitre 1)
   const ufoImg = new Image(); let UFO = null; ufoImg.src = asset('assets/aliens.webp'); fetch(asset('assets/aliens.json')).then(r => r.json()).then(j => { UFO = j.zap_f1; }).catch(() => {});
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
@@ -2642,6 +2642,12 @@
   $('#space-map').addEventListener('click',e=>{const p=e.target.closest('.planet');if(p)pickPlanet(Number(p.dataset.i));});
   $('#space-back').addEventListener('click',()=>{updateChapters();setScreen('chapter-screen');});
   const updateBooksBadge = () => { const b = $('#books-badge'), L = MM.STORY_ORDER || []; if (b && MM.book) b.textContent = `${L.filter(id => MM.book.seen(id)).length}/${L.length}`; };
+  // Toucher un héros sur l'accueil : il fait un petit saut et dit son nom
+  { const HN = { ja: { ziggy: 'ジギー', filou: 'フィルー', titan: 'タイタン', rose: 'ローズ' }, ko: { ziggy: '지기', filou: '필루', titan: '타이탄', rose: '로즈' } };
+    const nm = (h) => (HN[MM.i18n.lang] || {})[h] || h[0].toUpperCase() + h.slice(1);
+    document.querySelectorAll('.home-hero').forEach((el) => { const h = (el.className.match(/hh-(\w+)/) || [])[1]; if (!h) return;
+      el.addEventListener('pointerdown', () => { el.classList.remove('hop'); void el.offsetWidth; el.classList.add('hop'); sound('coin'); MM.haptic('good'); sayText(nm(h) + ' !', null, true); });
+      el.addEventListener('animationend', (e) => { if (e.animationName === 'hero-hop') el.classList.remove('hop'); }); }); }
   $('#library-open').addEventListener('click',()=>{cancelSpeech();if(MM.book)MM.book.library(MM.STORY_ORDER||[], updateBooksBadge);});
   updateBooksBadge(); addEventListener('pageshow', updateBooksBadge); MM.updateBooksBadge = updateBooksBadge;
   MM.say=(t)=>sayText(t); MM.hush=()=>cancelSpeech();
