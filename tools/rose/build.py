@@ -13,6 +13,13 @@ for n,s in S.items():
 for j,i in enumerate(range(0,30,STEP)):
     im=Image.open(f'choix_{i:02d}.png'); k=.6; im=im.resize((round(im.width*k),round(im.height*k)),Image.LANCZOS)
     ims.append((f'rose_pick{j}',im,im.width/2,im.height))
+# transitions : marche -> vol (décollage) et vol -> marche (atterrissage), calées sur le sol du GIF
+T={'decollage':('rose_up',.92,201,500,range(12,30,2)),'atterrissage':('rose_down',.91,190,511,range(10,30,2))}
+for n,(nm,s,px,gy,rg) in T.items():
+    k=s*FINAL
+    for j,i in enumerate(rg):
+        im=Image.open(f'{n}_{i:02d}.png'); im=im.resize((round(im.width*k),round(im.height*k)),Image.LANCZOS)
+        ims.append((f'{nm}{j}',im,px*k,gy*k))
 Wt=2048; x=y=rowh=0; place={}
 for nm,im,ax,ay in ims:
     if x+im.width+2>Wt: x=0; y+=rowh+2; rowh=0
