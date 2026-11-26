@@ -42,8 +42,11 @@
     try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = TTS; u.rate = .95; u.pitch = 1.08;
       const lp = TTS.slice(0, 2).toLowerCase(), vs = speechSynthesis.getVoices(), v = vs.find(v => v.lang && v.lang.replace('_', '-').toLowerCase() === TTS.toLowerCase()) || vs.find(v => v.lang && v.lang.toLowerCase().startsWith(lp)); if (v) u.voice = v; speechSynthesis.speak(u); speaking = performance.now() + 1200 + text.length * 70; } catch {}
   }
+  // les réglages du parent (sons, bruitages, musique) valent aussi dans les mondes de Rose
+  const SND = (() => { try { const s = JSON.parse(localStorage.getItem('mini-mission-v1') || '{}'); const on = s.audioEnabled !== false; return { fx: on && s.effectsEnabled !== false, music: on && s.musicEnabled !== false }; } catch (e) { return { fx: true, music: true }; } })();
   let AC = null;
-  function tone(f0, f1, dur, type = 'sine', vol = .08, at = 0) {
+  function tone(f0, f1, dur, type = 'sine', vol = .08, at = 0, isMusic = false) {
+    if (!(isMusic ? SND.music : SND.fx)) return;
     try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume();
       const t = AC.currentTime + at, o = AC.createOscillator(), g = AC.createGain(); o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur * .9);
       g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + .02); g.gain.exponentialRampToValueAtTime(.0001, t + dur); o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + dur + .05); } catch {}
@@ -460,15 +463,32 @@
   }
   // ----- Capitaine Farfouille (grand final) -----
   const BOSS_SAY = EN.boss;
+  // musique du combat contre Farfouille : une petite boucle sautillante, jouée seulement pendant le combat
+  const bossMusic = (() => {
+    const N = { C4: 262, D4: 294, E4: 330, F4: 349, G4: 392, A4: 440, B4: 494, C5: 523, D5: 587, E5: 659, G5: 784, C3: 131, F3: 175, G3: 196, A3: 220 };
+    const MEL = 'E5 . G5 E5 D5 . C5 . D5 E5 . G5 A4 . . . E5 . G5 E5 D5 . C5 . D5 . C5 . G4 . . . C5 . E5 G5 A4 . G5 . E5 . D5 C5 D5 . . . E5 . G5 E5 D5 . C5 . D5 E5 D5 B4 C5 . . .'.split(' ');
+    const BAS = ['C3', 'C3', 'F3', 'F3', 'G3', 'G3', 'C3', 'G3', 'A3', 'A3', 'F3', 'F3', 'G3', 'G3', 'C3', 'C3'];
+    const STEP = .115; let timer = 0, i = 0, next = 0, on = false;
+    function pump() { if (!AC) return; while (next < AC.currentTime + .25) { const at = next - AC.currentTime, m = MEL[i % MEL.length];
+        if (m !== '.') tone(N[m], N[m], STEP * 1.7, 'square', .022, at, true);
+        if (i % 4 === 0) { const b = N[BAS[(i / 4 | 0) % BAS.length]]; tone(b, b, STEP * 3, 'triangle', .07, at, true); }
+        if (i % 4 === 2) tone(1800, 900, .04, 'square', .008, at, true);     // petit « tchik »
+        i++; next += STEP; } }
+    return {
+      start() { if (on || !SND.music) return; on = true; tone(1, 1, .01, 'sine', .0001, 0, true); if (!AC) return; i = 0; next = AC.currentTime + .1; pump(); timer = setInterval(pump, 90); },
+      stop() { on = false; clearInterval(timer); timer = 0; }
+    };
+  })();
+  addEventListener('pagehide', () => bossMusic.stop());
   function hitBoss(x, y) {
     puffs.push({ x, y, t: 0, c: '#d9a8ff' });
     if (boss.hp > 1) { boss.hp--; boss.hitT = .8; sfx.bonk(); say(BOSS_SAY[Math.min(BOSS_SAY.length - 1, boss.hpMax - boss.hp)], false); return; }
-    boss.state = 'bubble'; boss.bt = 0; sfx.pop(); sfx.friend(); got.aliens++; bubbleChip(); say(EN.bossPop);
+    boss.state = 'bubble'; boss.bt = 0; bossMusic.stop(); sfx.pop(); sfx.friend(); got.aliens++; bubbleChip(); say(EN.bossPop);
     setTimeout(() => { if (!finished) finish(); }, 2600);
   }
   function updateBoss(dt, B) {
     if (!boss) return; boss.t += dt; boss.hitT -= dt;
-    if (boss.state === 'wait') { if (rose.x > boss.x0 - 1000) { boss.state = 'fight'; say(EN.bossStart); } return; }
+    if (boss.state === 'wait') { if (rose.x > boss.x0 - 1000) { boss.state = 'fight'; say(EN.bossStart); bossMusic.start(); } return; }
     if (boss.state === 'fight') {
       if (boss.hitT <= 0) { boss.x += boss.dir * 130 * dt; if (boss.x < boss.x0) boss.dir = 1; if (boss.x > boss.x1) boss.dir = -1; }
       boss.yy = boss.y + Math.sin(boss.t * 1.5) * 55;
