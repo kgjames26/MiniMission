@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#140f3a">
+<title>Mini Mission · Rose sur la Lune</title>
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #140f3a; touch-action: none; -webkit-user-select: none; user-select: none; font-family: "Baloo 2", system-ui, sans-serif; }
+  canvas { display: block; width: 100vw; height: 100dvh; }
+  .hud { position: fixed; top: max(8px, env(safe-area-inset-top)); left: max(10px, env(safe-area-inset-left)); right: max(10px, env(safe-area-inset-right)); display: flex; gap: 8px; align-items: center; pointer-events: none; }
+  .chip { background: rgba(255,255,255,.92); border-radius: 999px; padding: 4px 12px; font-weight: 900; font-size: clamp(15px, 3.6vmin, 22px); color: #3b2f7a; box-shadow: 0 3px 0 rgba(0,0,0,.18); }
+  .chip.pop { animation: pop .35s; }
+  @keyframes pop { 50% { transform: scale(1.25); } }
+  .close { pointer-events: auto; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255,255,255,.92); font-size: 22px; color: #3b2f7a; box-shadow: 0 3px 0 rgba(0,0,0,.18); }
+  .sp { flex: 1; }
+  .pad { position: fixed; bottom: max(16px, env(safe-area-inset-bottom)); display: flex; gap: 14px; align-items: flex-end; }
+  .pad.l { left: max(16px, env(safe-area-inset-left)); }
+  .pad.r { right: max(16px, env(safe-area-inset-right)); }
+  .b { width: clamp(64px, 17vmin, 100px); height: clamp(64px, 17vmin, 100px); border-radius: 50%; border: 0; font-size: clamp(28px, 8vmin, 44px); color: #fff;
+       background: linear-gradient(#69d36a, #2f9c3b); box-shadow: 0 6px 0 #1f6e2a, 0 10px 18px rgba(0,0,0,.35); -webkit-tap-highlight-color: transparent; }
+  .b.on { transform: translateY(4px); box-shadow: 0 2px 0 #1f6e2a; }
+  .b.fly { background: linear-gradient(#ffb04a, #f2702c); box-shadow: 0 6px 0 #b4471a, 0 10px 18px rgba(0,0,0,.35); width: clamp(84px, 23vmin, 130px); height: clamp(84px, 23vmin, 130px); }
+  .b.fly.on { box-shadow: 0 2px 0 #b4471a; }
+  .b.shoot { background: linear-gradient(#8fe3ff, #3aa6e8); box-shadow: 0 6px 0 #1f6fa8, 0 10px 18px rgba(0,0,0,.35); }
+  .b.shoot.on { box-shadow: 0 2px 0 #1f6fa8; }
+  .ov { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(15,10,50,.55); z-index: 10; }
+  .ov.show { display: flex; }
+  .card { background: #fff; border-radius: 28px; padding: clamp(14px, 3vmin, 26px); width: min(92vw, 720px); box-shadow: 0 12px 40px rgba(0,0,0,.4); text-align: center; animation: pop .3s; }
+  .q { font-size: clamp(17px, 4.2vmin, 26px); font-weight: 800; color: #3b2f7a; margin: 4px 8px 14px; line-height: 1.25; }
+  .opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(8px, 2vmin, 16px); }
+  .opt { border: 4px solid #d9d3ff; background: #f6f3ff; border-radius: 22px; padding: 10px 6px; font-size: clamp(14px, 3.4vmin, 20px); font-weight: 800; color: #3b2f7a; }
+  .opt i { display: block; font-style: normal; font-size: clamp(44px, 13vmin, 80px); line-height: 1.1; }
+  .opt.good { border-color: #4cc95a; background: #e7ffe9; }
+  .opt.no { animation: no .4s; }
+  @keyframes no { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+  .row { display: flex; gap: 12px; justify-content: center; margin-top: 14px; }
+  .big { border: 0; border-radius: 999px; padding: 12px 22px; font-size: clamp(18px, 4.4vmin, 26px); font-weight: 900; color: #fff; background: linear-gradient(#ffb04a, #f2702c); box-shadow: 0 5px 0 #b4471a; }
+  .big.alt { background: linear-gradient(#8f7bff, #5b47d6); box-shadow: 0 5px 0 #3b2c99; }
+  .say { border: 0; background: #ede9ff; border-radius: 50%; width: 52px; height: 52px; font-size: 24px; }
+  .stats { display: flex; gap: 12px; justify-content: center; font-size: clamp(20px, 5vmin, 30px); font-weight: 900; color: #3b2f7a; margin: 8px 0; flex-wrap: wrap; }
+  .title { font-size: clamp(26px, 7vmin, 44px); font-weight: 900; color: #f2702c; margin: 0; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud">
+  <button class="close" id="quit" aria-label="Retour">✕</button>
+  <span class="chip" id="cStars">⭐ 0</span>
+  <span class="chip" id="cLetters">🔤 0</span>
+  <span class="chip" id="cFriends">💛 0</span>
+  <span class="sp"></span>
+  <span class="chip">🌙 La Lune</span>
+</div>
+<div class="pad l"><button class="b" id="bl" aria-label="Gauche">◀</button><button class="b" id="br" aria-label="Droite">▶</button></div>
+<div class="pad r"><button class="b shoot" id="bs" aria-label="Bulles">🫧</button><button class="b fly" id="bf" aria-label="Voler">🚀</button></div>
+<div class="ov" id="quiz"><div class="card"><div class="row" style="margin:0 0 6px"><button class="say" id="qsay" aria-label="Écouter">🔊</button></div><div class="q" id="qtext"></div><div class="opts" id="qopts"></div></div></div>
+<div class="ov" id="end"><div class="card"><p class="title">Bravo, Rose !</p><div class="stats" id="estats"></div><div class="row"><button class="big alt" id="again">↻ Rejouer</button><button class="big" id="home">🏠</button></div></div></div>
+<script src="i18n.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = (s) => document.querySelector(s);
+  // ================= images =================
+  const V = '1';
+  const roseImg = new Image(); roseImg.src = 'assets/rose.webp?v=' + V;
+  const alienImg = new Image(); alienImg.src = 'assets/aliens.webp?v=' + V;
+  const monImg = new Image(); monImg.src = 'assets/monsters.webp?v=' + V;
+  let RF = null, AF = null;
+  fetch('assets/rose.json?v=' + V).then(r => r.json()).then(j => { RF = j; });
+  fetch('assets/aliens.json?v=' + V).then(r => r.json()).then(j => { AF = j; });
+
+  // ================= voix et sons =================
+  let voiceOn = 'speechSynthesis' in window, speaking = 0;
+  function say(text, important = true) {
+    if (!voiceOn) return;
+    if (!important && performance.now() < speaking) return;
+    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'fr-FR'; u.rate = .95; u.pitch = 1.08;
+      const v = speechSynthesis.getVoices().find(v => /^fr/i.test(v.lang)); if (v) u.voice = v; speechSynthesis.speak(u); speaking = performance.now() + 1200 + text.length * 70; } catch {}
+  }
+  let AC = null;
+  function tone(f0, f1, dur, type = 'sine', vol = .08, at = 0) {
+    try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume();
+      const t = AC.currentTime + at, o = AC.createOscillator(), g = AC.createGain(); o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur * .9);
+      g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + .02); g.gain.exponentialRampToValueAtTime(.0001, t + dur); o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + dur + .05); } catch {}
+  }
+  const sfx = {
+    star: () => { tone(1320, 1320, .12, 'sine', .06); tone(1760, 1760, .18, 'sine', .05, .07); },
+    letter: () => { tone(660, 990, .18, 'triangle', .07); },
+    bubble: () => { tone(500, 1100, .14, 'sine', .06); },
+    pop: () => { tone(900, 300, .12, 'triangle', .08); },
+    friend: () => { [523, 659, 784, 1047].forEach((f, i) => tone(f, f, .2, 'sine', .06, i * .07)); },
+    bonk: () => { tone(220, 160, .12, 'triangle', .06); },
+    good: () => { [784, 988, 1175].forEach((f, i) => tone(f, f, .25, 'sine', .07, i * .1)); },
+    no: () => { tone(330, 260, .2, 'triangle', .05); },
+  };
+
+  // ================= réglages de Rose (unités : pixels de sa planche, ~210 px du casque aux pieds) =================
+  const WALK = 172, WALK_ACC = 300, WALK_DEC = 700, STEP_PX = 13.2, WALK_START = 4;
+  const FLY = 360, DASH_AT = 290, FLY_ACC = 520, RISE = 260, SINK = 200;
+  const FADE = .13, STOP_FADE = .24, RW = 40, RH = 196;   // demi-largeur et hauteur de Rose pour les collisions
+  const A = { idle: { n: 10, fps: 6, loop: 'pp' }, hover: { n: 30, fps: 10, loop: 'loop' }, fly: { n: 27, fps: 10, loop: 'loop' }, dash: { n: 30, fps: 10, loop: 'pp' },
+              lift: { n: 20, fps: 14, loop: 'once' }, up: { n: 18, fps: 13, loop: 'once' }, down: { n: 20, fps: 13, loop: 'once' }, drop: { n: 20, fps: 14, loop: 'once', src: 'lift', rev: true },
+              win: { n: 30, fps: 10, loop: 'once' }, walk: { n: 30, loop: 'loop' } };
+  function sample(name, pos) {
+    const a = A[name], n = a.n, src = 'rose_' + (a.src || name); let q;
+    if (a.loop === 'loop') q = ((pos % n) + n) % n;
+    else if (a.loop === 'pp') { const P = 2 * n - 2, p = ((pos % P) + P) % P; q = p < n - 1 ? p : P - p; }
+    else q = Math.max(0, Math.min(n - 1, pos));
+    let i = Math.floor(q), j = a.loop === 'loop' ? (i + 1) % n : Math.min(n - 1, i + 1); const mix = q - i;
+    if (a.rev) { i = n - 1 - i; j = n - 1 - j; }
+    return { k: src + i, k2: src + j, mix };
+  }
+  const topOf = (k) => RF[k].top;
+
+  // ================= le niveau de la Lune =================
+  const L = 9200, CAVE0 = 4650, CAVE1 = 6450, CEIL = 640;
+  // solides : x, y (bas), w, h — y = hauteur au-dessus du sol
+  const solids = [
+    { x: 950, y: 0, w: 170, h: 300, kind: 'rock' },
+    { x: 2250, y: 250, w: 320, h: 40, kind: 'slab' },
+    { x: 3250, y: 0, w: 210, h: 380, kind: 'rock' },
+    { x: CAVE0, y: CEIL, w: CAVE1 - CAVE0, h: 3000, kind: 'ceil' },
+    { x: 4950, y: 0, w: 150, h: 280, kind: 'mite' },
+    { x: 5350, y: 310, w: 150, h: CEIL - 310, kind: 'tite' },
+    { x: 5750, y: 0, w: 160, h: 300, kind: 'mite' },
+    { x: 6150, y: 330, w: 150, h: CEIL - 330, kind: 'tite' },
+    { x: 7650, y: 260, w: 300, h: 40, kind: 'slab' },
+  ];
+  const overlaps = (s, x0, x1, y0, y1) => x1 > s.x && x0 < s.x + s.w && y1 > s.y && y0 < s.y + s.h;
+  function surfaceAt(x, y) {                 // le plus haut « sol » sous les pieds
+    let best = 0;
+    for (const s of solids) { const top = s.y + s.h; if (s.kind === 'ceil' || s.kind === 'tite') continue;
+      if (x + RW * .6 > s.x && x - RW * .6 < s.x + s.w && top <= y + 6 && top > best) best = top; }
+    return best;
+  }
+  // étoiles
+  const stars = [];
+  const arc = (x0, x1, y0, hgt, n) => { for (let i = 0; i < n; i++) { const t = n === 1 ? .5 : i / (n - 1); stars.push({ x: x0 + (x1 - x0) * t, y: y0 + Math.sin(t * Math.PI) * hgt, got: false }); } };
+  arc(300, 700, 60, 60, 5); arc(900, 1170, 360, 80, 5); arc(2270, 2550, 330, 30, 4); arc(3200, 3510, 440, 90, 5);
+  arc(4800, 5250, 380, 60, 5); arc(5500, 5900, 380, 40, 5); arc(6250, 6420, 150, 50, 3); arc(7000, 7400, 80, 120, 5); arc(7670, 7930, 340, 30, 4); arc(8400, 8700, 70, 60, 4);
+  // lettres (l'alphabet de la langue choisie)
+  const ABC = (MM.i18n && MM.i18n.alphabet ? MM.i18n.alphabet() : 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')).slice(0, 26);
+  const letters = ABC.map((l, i) => { const x = 450 + i * ((L - 900) / ABC.length); let y = 110 + ((i * 97) % 3) * 110;
+    for (const s of solids) if (s.kind !== 'ceil' && x > s.x - 40 && x < s.x + s.w + 40) y = Math.max(y, s.kind === 'tite' ? 120 : s.y + s.h + 90);
+    if (x > CAVE0 && x < CAVE1) y = Math.min(y, CEIL - 90);
+    return { l, x, y, got: false }; });
+  // extraterrestres farceurs
+  const aliens = [
+    { type: 'glouglou', x: 1500, x0: 1300, x1: 1750, y: 0 },
+    { type: 'boing', x: 2700, x0: 2620, x1: 2900, y: 0 },
+    { type: 'zap', x: 3900, y0: 330, y: 330 },
+    { type: 'glouglou', x: 7150, x0: 6950, x1: 7450, y: 0 },
+    { type: 'boing', x: 8050, x0: 7980, x1: 8250, y: 0 },
+    { type: 'zap', x: 8850, y0: 360, y: 360 },
+  ].map((a, i) => ({ ...a, id: i, dir: 1, t: Math.random() * 3, state: 'farceur', bt: 0, cool: 2 + i }));
+  // amis enfermés dans des petites prisons (nos monstres : case farceur → case ami de monsters.webp)
+  const cages = [ { x: 1950, f: 0, a: 5 }, { x: 4250, f: 10, a: 11 }, { x: 7300, f: 22, a: 23 }, { x: 8600, f: 24, a: 25 } ].map(c => ({ ...c, open: false, t: 0 }));
+  // caisses « ? » : une devinette sur l'espace
+  const boxes = [ { x: 2950, y: 260 }, { x: 6750, y: 240 }, { x: 8350, y: 300 } ].map(b => ({ ...b, done: false }));
+  const ROCKET = L - 280;
+  const friends = [];                       // ceux qui suivent Rose
+  const slime = [], bubbles = [], puffs = [];
+  const RIDDLES = [
+    { q: 'Comment s’appelle l’astre qui tourne autour de la Terre et brille la nuit ?', o: [['🌙', 'la Lune'], ['☀️', 'le Soleil'], ['🪐', 'Saturne']], a: 0, fact: 'Oui ! La Lune tourne autour de la Terre. C’est là que tu es, avec Rose !' },
+    { q: 'Qui a marché le premier sur la Lune ?', o: [['🧑‍🚀', 'un astronaute'], ['🐶', 'un chien'], ['🤖', 'un robot']], a: 0, fact: 'Bravo ! C’était l’astronaute Neil Armstrong, en 1969. Il a laissé ses traces de pas sur la Lune.' },
+    { q: 'Le premier homme dans l’espace s’appelait Youri Gagarine. Dans quoi est-il monté ?', o: [['🚀', 'une fusée'], ['🎈', 'un ballon'], ['🚲', 'un vélo']], a: 0, fact: 'Oui ! En 1961, Youri Gagarine a fait le tour de la Terre dans une fusée.' },
+    { q: 'Quel animal a fait le tour de la Terre dans l’espace, avant les astronautes ?', o: [['🐶', 'un chien'], ['🐘', 'un éléphant'], ['🐟', 'un poisson']], a: 0, fact: 'Oui ! Une petite chienne, Laïka, est allée dans l’espace en 1957.' },
+    { q: 'Quelle planète est rouge ?', o: [['🔴', 'Mars'], ['🔵', 'Neptune'], ['🌍', 'la Terre']], a: 0, fact: 'Bravo ! Mars est rouge, à cause de sa poussière rouge.' },
+    { q: 'Quelle planète a de grands anneaux ?', o: [['🪐', 'Saturne'], ['🌙', 'la Lune'], ['☀️', 'le Soleil']], a: 0, fact: 'Oui ! Saturne a de grands anneaux faits de glace et de cailloux.' },
+    { q: 'Qu’est-ce qui emmène les astronautes dans l’espace ?', o: [['🚀', 'une fusée'], ['🚗', 'une voiture'], ['⛵', 'un bateau']], a: 0, fact: 'Oui ! Il faut une très grande fusée pour aller dans l’espace.' },
+    { q: 'Où vivent les astronautes qui tournent autour de la Terre ?', o: [['🛰️', 'dans une station spatiale'], ['🏰', 'dans un château'], ['⛺', 'sous une tente']], a: 0, fact: 'Oui ! Dans la station spatiale, les astronautes flottent et dorment attachés à leur sac de couchage.' },
+    { q: 'Qu’est-ce qui roule sur Mars pour l’explorer ?', o: [['🤖', 'un robot'], ['🛹', 'un skate'], ['🐴', 'un cheval']], a: 0, fact: 'Bravo ! Des robots roulent sur Mars et prennent des photos pour les savants.' },
+    { q: 'Sur quelle planète vivons-nous ?', o: [['🌍', 'la Terre'], ['🔴', 'Mars'], ['🪐', 'Saturne']], a: 0, fact: 'Oui ! La Terre, notre maison, est la planète bleue.' },
+    { q: 'Sur la Lune, on est très léger. Comment peut-on sauter ?', o: [['🦘', 'très haut'], ['🐌', 'pas du tout'], ['🪨', 'comme un caillou']], a: 0, fact: 'Oui ! Sur la Lune, les astronautes faisaient de grands bonds.' },
+    { q: 'Quelle est la plus grosse planète ?', o: [['🟠', 'Jupiter'], ['⚪', 'Mercure'], ['🌙', 'la Lune']], a: 0, fact: 'Bravo ! Jupiter est la plus grosse planète. On pourrait y mettre plus de mille Terre !' },
+  ];
+  const quizPick = RIDDLES.map((r, i) => i).sort(() => Math.random() - .5).slice(0, 3);
+  // les caisses : la 1re parle toujours de la Lune ou de son premier explorateur
+  if (!quizPick.includes(1)) quizPick[0] = 1;
+
+  // ================= Rose =================
+  const rose = { x: 150, y: 0, vx: 0, vy: 0, face: 1, mode: 'ground', anim: null, walkDist: 0, t: 0, airPose: 'hover', airT: 0, walking: false, base: 0, cool: 0, bump: 0 };
+  let shownSet = null, shown = null, fadeFrom = null, fadeT = 9, fadeLen = FADE, fadeGy = 0, lastGy = 0, stopFade = false;
+  function play(name, then, opts = {}) { rose.anim = { name, t: 0, then, ...opts }; if (name !== 'win') rose.mode = 'trans'; }
+
+  // ================= commandes =================
+  const key = { l: false, r: false, fly: false, shoot: false };
+  let paused = false, finished = false;
+  const hold = (id, k) => { const b = document.getElementById(id);
+    const on = (e) => { e.preventDefault(); key[k] = true; b.classList.add('on'); if (k === 'shoot') shoot(); }, off = (e) => { e.preventDefault(); key[k] = false; b.classList.remove('on'); };
+    b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('pointerleave', off); };
+  hold('bl', 'l'); hold('br', 'r'); hold('bf', 'fly'); hold('bs', 'shoot');
+  addEventListener('keydown', (e) => { if (e.repeat) return; if (e.key === 'ArrowLeft') key.l = true; if (e.key === 'ArrowRight') key.r = true; if (e.key === ' ' || e.key === 'ArrowUp') key.fly = true; if (e.key === 'x' || e.key === 'Enter') shoot(); });
+  addEventListener('keyup', (e) => { if (e.key === 'ArrowLeft') key.l = false; if (e.key === 'ArrowRight') key.r = false; if (e.key === ' ' || e.key === 'ArrowUp') key.fly = false; });
+  $('#quit').onclick = () => { location.href = 'index.html'; };
+  $('#home').onclick = () => { location.href = 'index.html'; };
+  $('#again').onclick = () => { location.reload(); };
+
+  function shoot() {
+    if (paused || finished || rose.cool > 0 || !RF) return;
+    rose.cool = .35; sfx.bubble();
+    const h = rose.mode === 'air' ? rose.y : rose.base;
+    bubbles.push({ x: rose.x + rose.face * 60, y: h + 118, vx: rose.face * 560 + rose.vx * .5, vy: 20, life: 1.4, r: 28 });
+  }
+
+  // ================= mise à jour =================
+  function moveX(dx, air) {
+    const y0 = (rose.mode === 'air' ? rose.y : rose.base) + 6, y1 = y0 + RH - 6;
+    rose.x += dx;
+    for (const s of solids) {
+      if (!overlaps(s, rose.x - RW, rose.x + RW, y0, y1)) continue;
+      if (s.kind === 'slab' && y0 >= s.y + s.h - 12) continue;
+      rose.x = dx > 0 ? s.x - RW - .1 : s.x + s.w + RW + .1;
+      if (air) { rose.vx *= -.3; if (Math.abs(dx) > 1) bonk(); } else rose.vx = 0;
+    }
+    rose.x = Math.max(60, Math.min(L - 60, rose.x));
+  }
+  function bonk() { if (rose.bump > 0) return; rose.bump = .4; sfx.bonk(); puffs.push({ x: rose.x + rose.face * RW, y: (rose.mode === 'air' ? rose.y : rose.base) + 110, t: 0, c: '#fff' }); }
+
+  function update(dt) {
+    const dir = (key.r ? 1 : 0) - (key.l ? 1 : 0);
+    if (dir) rose.face = dir;
+    rose.t += dt; rose.airT += dt; rose.cool -= dt; rose.bump -= dt;
+    const a = rose.anim;
+    if (rose.mode === 'ground') {
+      const target = a ? 0 : dir * WALK;
+      const acc = Math.abs(target) > Math.abs(rose.vx) || Math.sign(target) !== Math.sign(rose.vx) ? WALK_ACC : WALK_DEC;
+      rose.vx += Math.max(-acc * dt, Math.min(acc * dt, target - rose.vx));
+      moveX(rose.vx * dt, false);
+      const was = rose.walking;
+      if (Math.abs(rose.vx) > 8 && !a) { if (!was) rose.walkDist = WALK_START * STEP_PX; rose.walking = true; rose.walkDist += Math.abs(rose.vx) * dt; }
+      else if (was) { rose.walking = false; stopFade = true; }
+      // plus rien sous les pieds (bord d'une dalle) : elle se met à flotter et redescend doucement
+      const sf = surfaceAt(rose.x, rose.base);
+      if (sf < rose.base - 2 && !a) { rose.mode = 'air'; rose.y = rose.base - (topOf('rose_hover0') - topOf('rose_idle0')); rose.vy = 0; rose.airPose = 'hover'; rose.airT = 0; rose.walking = false; }
+      else rose.base = sf;
+      if (key.fly && !a && rose.mode === 'ground') { if (Math.abs(rose.vx) > 40) play('up', 'air', { vx0: rose.vx }); else play('lift', 'air'); rose.walking = false; }
+    } else if (rose.mode === 'air') {
+      const ty = key.fly ? RISE : -SINK;
+      rose.vy += Math.max(-600 * dt, Math.min(600 * dt, ty - rose.vy));
+      const target = dir * FLY;
+      rose.vx += Math.max(-FLY_ACC * dt, Math.min(FLY_ACC * dt, target - rose.vx));
+      moveX(rose.vx * dt, true);
+      const ny = rose.y + rose.vy * dt;
+      let blocked = false;
+      for (const s of solids) {
+        if (!overlaps(s, rose.x - RW + 4, rose.x + RW - 4, ny + 4, ny + RH)) continue;
+        if (rose.vy > 0) { const hard = rose.vy > 150; rose.y = s.y - RH - .1; rose.vy = hard ? -30 : 0; blocked = true; if (hard) bonk(); }   // la tête touche : petit rebond tout doux
+      }
+      if (!blocked) rose.y = Math.min(470, ny);                 // plafond du ciel : Rose reste toujours à l'écran
+      if (rose.y >= 470 && rose.vy > 0) rose.vy = 0;
+      const sp = Math.abs(rose.vx), want = sp < 60 ? 'hover' : sp < DASH_AT ? 'fly' : 'dash';
+      if (want !== rose.airPose) { rose.airPose = want; rose.airT = 0; }
+      if (rose.vy < 0) {                                          // atterrissage : la jonction démarre pile à la bonne hauteur
+        const sf = surfaceAt(rose.x, rose.y + 40), moving = sp > 60;
+        const startTop = moving ? topOf('rose_down0') : topOf('rose_lift' + (A.lift.n - 1));
+        const hAt = startTop - topOf('rose_hover0');
+        if (rose.y - sf <= hAt) { rose.base = sf; rose.y = sf; rose.vy = 0; play(moving ? 'down' : 'drop', 'ground', { vx0: rose.vx }); }
+      }
+    } else if (a) {
+      const n = A[a.name].n, dur = (n - 1) / A[a.name].fps, k = Math.min(1, a.t / dur);
+      if (a.name === 'up') rose.vx = a.vx0 + (rose.face * FLY * .55 - a.vx0) * k * k;
+      else if (a.name === 'down') rose.vx = a.vx0 + (rose.face * WALK * (dir ? 1 : .3) - a.vx0) * k;
+      else rose.vx *= Math.pow(.02, dt);
+      moveX(rose.vx * dt, false);
+    }
+    if (a) {
+      a.t += dt;
+      if (a.t >= (A[a.name].n - 1) / A[a.name].fps) {
+        rose.anim = null;
+        if (a.then === 'air') { const last = 'rose_' + (A[a.name].src || a.name) + (A[a.name].n - 1);
+          rose.y = rose.base + topOf(last) - topOf('rose_hover0'); rose.vy = 120; rose.mode = 'air'; rose.airPose = Math.abs(rose.vx) < 60 ? 'hover' : 'fly'; rose.airT = 0; }
+        else { rose.mode = 'ground'; rose.y = rose.base; if (a.name === 'down') { rose.walkDist = WALK_START * STEP_PX; rose.walking = Math.abs(rose.vx) > 8; } else rose.walking = false; }
+      }
+    }
+    updateWorld(dt);
+  }
+
+  // ================= le reste du monde =================
+  const roseBox = () => { const h = rose.mode === 'air' ? rose.y : rose.base; return { x0: rose.x - RW, x1: rose.x + RW, y0: h, y1: h + RH }; };
+  const hitR = (b, x, y, r) => x + r > b.x0 && x - r < b.x1 && y + r > b.y0 && y - r < b.y1;
+  let got = { stars: 0, letters: 0, friends: 0 };
+  function chip(id, txt) { const c = $(id); c.textContent = txt; c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); }
+  function addFriend(img, cell, x, y) { friends.push({ img, cell, x, y, t: Math.random() * 6 }); got.friends++; chip('#cFriends', '💛 ' + got.friends); sfx.friend(); }
+  function updateWorld(dt) {
+    const B = roseBox();
+    for (const s of stars) if (!s.got && hitR(B, s.x, s.y, 26)) { s.got = true; got.stars++; chip('#cStars', '⭐ ' + got.stars); sfx.star(); puffs.push({ x: s.x, y: s.y, t: 0, c: '#ffe36e' }); }
+    for (const l of letters) if (!l.got && hitR(B, l.x, l.y, 30)) { l.got = true; got.letters++; chip('#cLetters', '🔤 ' + got.letters); sfx.letter();
+      puffs.push({ x: l.x, y: l.y, t: 0, c: '#a6e1ff' }); const p = MM.i18n && MM.i18n.letterPhrase ? MM.i18n.letterPhrase(l.l) : null; say(p ? p.say : l.l, false); }
+    for (const c of cages) if (!c.open && hitR(B, c.x, 70, 60)) openCage(c);
+    for (const b of boxes) if (!b.done && hitR(B, b.x, b.y, 50)) openQuiz(b);
+    // bulles de Rose
+    for (let i = bubbles.length - 1; i >= 0; i--) {
+      const u = bubbles[i]; u.life -= dt; u.x += u.vx * dt; u.y += u.vy * dt + Math.sin(u.life * 12) * .6; u.vx *= Math.pow(.6, dt);
+      let hit = u.life <= 0 || solids.some(s => s.kind !== 'slab' && u.x > s.x && u.x < s.x + s.w && u.y > s.y && u.y < s.y + s.h);
+      for (const a of aliens) if (!hit && a.state === 'farceur') { const ab = alienBox(a); if (u.x > ab.x0 - 14 && u.x < ab.x1 + 14 && u.y > ab.y0 - 14 && u.y < ab.y1 + 14) { a.state = 'bubble'; a.bt = 0; hit = true; sfx.pop(); } }
+      for (const c of cages) if (!hit && !c.open && Math.abs(u.x - c.x) < 70 && u.y < 160) { openCage(c); hit = true; }
+      if (hit) { bubbles.splice(i, 1); puffs.push({ x: u.x, y: u.y, t: 0, c: '#d9f6ff' }); }
+    }
+    // extraterrestres
+    for (const a of aliens) {
+      a.t += dt;
+      if (a.state === 'farceur') {
+        if (a.type === 'glouglou') { a.x += a.dir * 45 * dt; if (a.x > a.x1) a.dir = -1; if (a.x < a.x0) a.dir = 1; }
+        else if (a.type === 'boing') { a.y = Math.abs(Math.sin(a.t * 2.4)) * 130; a.x += a.dir * 30 * dt; if (a.x > a.x1) a.dir = -1; if (a.x < a.x0) a.dir = 1; }
+        else { a.y = a.y0 + Math.sin(a.t * 1.3) * 60; a.dir = rose.x < a.x ? -1 : 1; a.cool -= dt;
+          if (a.cool <= 0 && Math.abs(rose.x - a.x) < 750) { a.cool = 3.6; a.throwT = .45; const h = (rose.mode === 'air' ? rose.y : rose.base) + 100, dx = rose.x - a.x, dy = h - (a.y + 60), d = Math.hypot(dx, dy) || 1;
+            slime.push({ x: a.x + a.dir * 50, y: a.y + 70, vx: dx / d * 230, vy: dy / d * 230, life: 3.5 }); } a.throwT = (a.throwT || 0) - dt; }
+        const ab = alienBox(a);
+        if (B.x1 > ab.x0 && B.x0 < ab.x1 && B.y1 > ab.y0 && B.y0 < ab.y1 && rose.bump <= 0) { rose.vx = (rose.x < a.x ? -1 : 1) * 220; rose.bump = .6; sfx.bonk(); puffs.push({ x: (rose.x + a.x) / 2, y: B.y0 + 100, t: 0, c: '#fff' }); }
+      } else if (a.state === 'bubble') {
+        a.bt += dt; a.y += 70 * dt;
+        if (a.bt > .9) { a.state = 'ami'; sfx.pop(); puffs.push({ x: a.x, y: a.y + 60, t: 0, c: '#ffd1e8' }); addFriend('alien', a.type + '_ami', a.x, a.y); }
+      }
+    }
+    // boules de slime de Zap : rien de méchant, juste un « splotch »
+    for (let i = slime.length - 1; i >= 0; i--) { const s = slime[i]; s.life -= dt; s.x += s.vx * dt; s.y += s.vy * dt;
+      if (hitR(B, s.x, s.y, 14)) { slime.splice(i, 1); sfx.bonk(); puffs.push({ x: s.x, y: s.y, t: 0, c: '#8be36a' }); rose.vx *= .4; continue; }
+      if (s.life <= 0 || s.y < 0 || solids.some(q => s.x > q.x && s.x < q.x + q.w && s.y > q.y && s.y < q.y + q.h)) { slime.splice(i, 1); puffs.push({ x: s.x, y: Math.max(8, s.y), t: 0, c: '#8be36a' }); } }
+    // les amis suivent Rose en petite file
+    friends.forEach((f, i) => { f.t += dt; const tx = rose.x - rose.face * (150 + i * 95), ty = Math.max(0, (rose.mode === 'air' ? rose.y : rose.base) - 10 + Math.sin(f.t * 3 + i) * 10);
+      f.x += (tx - f.x) * Math.min(1, dt * 2.6); f.y += (ty - f.y) * Math.min(1, dt * 2.2); f.face = tx > f.x ? 1 : -1; });
+    for (let i = puffs.length - 1; i >= 0; i--) { puffs[i].t += dt; if (puffs[i].t > .6) puffs.splice(i, 1); }
+    cages.forEach(c => { if (c.open) c.t += dt; });
+    if (!finished && rose.x > ROCKET - 40 && rose.mode !== 'air') finish();
+  }
+  const ASCALE = 1;
+  function alienBox(a) { const f = AF && AF[a.type + '_f1']; const w = f ? f.w * ASCALE : 120, h = f ? f.h * ASCALE : 120; return { x0: a.x - w * .38, x1: a.x + w * .38, y0: a.y, y1: a.y + h * .9 }; }
+  function openCage(c) { c.open = true; c.t = 0; sfx.pop(); puffs.push({ x: c.x, y: 90, t: 0, c: '#ffe9a8' }); setTimeout(() => addFriend('mon', c.a, c.x, 0), 500); }
+
+  // ================= devinettes =================
+  let qIndex = 0, curBox = null;
+  function openQuiz(b) {
+    curBox = b; b.done = true; paused = true; key.l = key.r = key.fly = false; document.querySelectorAll('.b').forEach(x => x.classList.remove('on'));
+    const r = RIDDLES[quizPick[qIndex++ % quizPick.length]];
+    const order = [0, 1, 2].sort(() => Math.random() - .5);
+    $('#qtext').textContent = r.q;
+    $('#qopts').innerHTML = order.map(i => `<button class="opt" data-i="${i}"><i>${r.o[i][0]}</i>${r.o[i][1]}</button>`).join('');
+    const speakQ = () => say(r.q + ' ' + order.map(i => r.o[i][1]).join(', ') + ' ?');
+    $('#qsay').onclick = speakQ; speakQ();
+    $('#qopts').querySelectorAll('.opt').forEach(btn => btn.onclick = () => {
+      const i = +btn.dataset.i;
+      if (i === r.a) { btn.classList.add('good'); sfx.good(); say(r.fact); for (let k = 0; k < 6; k++) stars.push({ x: b.x - 100 + k * 40, y: b.y + 60 + Math.sin(k) * 30, got: false });
+        setTimeout(() => { $('#quiz').classList.remove('show'); paused = false; last = performance.now(); }, 2600); }
+      else { btn.classList.remove('no'); void btn.offsetWidth; btn.classList.add('no'); sfx.no(); say('Essaie encore !'); }
+    });
+    $('#quiz').classList.add('show');
+  }
+
+  function finish() {
+    finished = true; rose.vx = 0; rose.walking = false; play('win', 'ground'); rose.mode = 'ground'; sfx.good();
+    say('Bravo Rose ! Tu as libéré les amis de la Lune. Prochaine étape : Mars !');
+    setTimeout(() => {
+      $('#estats').innerHTML = `<span>⭐ ${got.stars}/${stars.length}</span><span>🔤 ${got.letters}/${letters.length}</span><span>💛 ${got.friends}/${aliens.length + cages.length}</span>`;
+      $('#end').classList.add('show');
+    }, 3200);
+  }
+
+  // ================= dessin =================
+  const cv = $('#c'), ctx = cv.getContext('2d');
+  let W = 0, H = 0, dpr = 1, zoom = 1, GY = 0, camX = 0, camY = 0;
+  function resize() { dpr = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; zoom = (H * .27) / 210; GY = H * .8; }
+  addEventListener('resize', resize); resize();
+  const SX = (x) => (x - camX) * zoom, SY = (y) => GY - (y - camY) * zoom;
+  const bgStars = Array.from({ length: 160 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() < .2 ? 2 : 1, tw: Math.random() * 6 }));
+  const craters = Array.from({ length: 60 }, (_, i) => ({ x: i * 160 + Math.random() * 120, r: 25 + Math.random() * 55 }));
+  const hills = Array.from({ length: 30 }, (_, i) => ({ x: i * 420, h: 80 + Math.random() * 140, w: 300 + Math.random() * 300 }));
+
+  function drawBg(time) {
+    const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#0d0930'); g.addColorStop(1, '#2d2575'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    for (const s of bgStars) { const x = ((s.x * W * 2 - camX * zoom * .05) % W + W) % W; ctx.globalAlpha = .5 + .5 * Math.sin(time * 2 + s.tw); ctx.fillStyle = '#fff6d8'; ctx.fillRect(x, s.y * GY * .95, s.r, s.r); }
+    ctx.globalAlpha = 1;
+    const er = Math.min(W, H) * .09, ex = W * .8 - camX * zoom * .02, ey = H * .18 + camY * zoom * .05;   // la Terre au loin
+    ctx.fillStyle = '#3b8be0'; ctx.beginPath(); ctx.arc(ex, ey, er, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#5fc46a'; ctx.beginPath(); ctx.ellipse(ex - er * .3, ey - er * .1, er * .35, er * .25, .5, 0, Math.PI * 2); ctx.ellipse(ex + er * .35, ey + er * .3, er * .25, er * .18, -.4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.beginPath(); ctx.ellipse(ex + er * .1, ey - er * .55, er * .4, er * .1, 0, 0, Math.PI * 2); ctx.fill();
+    // collines lointaines
+    ctx.fillStyle = '#4a467a';
+    for (const h of hills) { const x = (h.x - camX * .4) * zoom; if (x > W + 400 || x + h.w * zoom < -400) continue; const by = SY(0) + camY * zoom * .6;
+      ctx.beginPath(); ctx.moveTo(x - h.w * zoom * .5, by); ctx.quadraticCurveTo(x, by - h.h * zoom * 1.4, x + h.w * zoom * .5, by); ctx.fill(); }
+  }
+  function drawGround() {
+    const gy = SY(0);
+    ctx.fillStyle = '#b9bccd'; ctx.fillRect(0, gy, W, H - gy + 10);
+    ctx.fillStyle = '#d7d9e6'; ctx.fillRect(0, gy, W, 5 * zoom + 2);
+    for (const c of craters) { const sx = SX(c.x); if (sx < -200 || sx > W + 200) continue;
+      ctx.fillStyle = '#a2a5b9'; ctx.beginPath(); ctx.ellipse(sx, gy + (24 + c.r * .2) * zoom, c.r * zoom, c.r * .22 * zoom, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#c8cad8'; ctx.beginPath(); ctx.ellipse(sx, gy + (20 + c.r * .2) * zoom, c.r * .85 * zoom, c.r * .16 * zoom, 0, 0, Math.PI); ctx.fill(); }
+    // la grotte : intérieur sombre
+    const c0 = SX(CAVE0), c1 = SX(CAVE1);
+    if (c1 > 0 && c0 < W) {
+      const g = ctx.createLinearGradient(0, SY(CEIL), 0, gy); g.addColorStop(0, 'rgba(20,14,48,.85)'); g.addColorStop(1, 'rgba(40,30,80,.35)');
+      ctx.fillStyle = g; ctx.fillRect(c0, SY(CEIL), c1 - c0, gy - SY(CEIL));
+    }
+  }
+  function rockPath(x, y, w, h, seed) {             // rocher arrondi, un peu irrégulier
+    ctx.beginPath(); const n = 10;
+    for (let i = 0; i <= n; i++) { const t = i / n, a = Math.PI + t * Math.PI; const rx = w / 2 * (1 + Math.sin(seed + i * 1.7) * .06), ry = h * (1 + Math.cos(seed + i * 2.3) * .05);
+      const px = x + w / 2 + Math.cos(a) * rx, py = y - Math.sin(a) * -ry; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+    ctx.closePath();
+  }
+  function drawSolids(time) {
+    for (const s of solids) {
+      const x = SX(s.x), w = s.w * zoom; if (x > W + 50 || x + w < -50) continue;
+      const yb = SY(s.y), yt = SY(s.y + s.h);
+      if (s.kind === 'ceil') { const g = ctx.createLinearGradient(0, yt, 0, yb); g.addColorStop(0, '#2a2350'); g.addColorStop(1, '#5a5390'); ctx.fillStyle = g; ctx.fillRect(x, -10, w, yb + 10);
+        ctx.fillStyle = '#6f68a8'; for (let k = 0; k < s.w; k += 90) { const kx = SX(s.x + k); ctx.beginPath(); ctx.moveTo(kx, yb); ctx.lineTo(kx + 20 * zoom, yb + (18 + (k % 3) * 8) * zoom); ctx.lineTo(kx + 40 * zoom, yb); ctx.fill(); }
+        for (let k = 60; k < s.w; k += 330) { const kx = SX(s.x + k), ky = yb + 8 * zoom, gl = .5 + .5 * Math.sin(time * 2 + k); ctx.fillStyle = `rgba(140,230,255,${.5 + gl * .4})`; ctx.beginPath(); ctx.moveTo(kx, ky); ctx.lineTo(kx + 9 * zoom, ky + 26 * zoom); ctx.lineTo(kx + 18 * zoom, ky); ctx.fill(); }
+        continue; }
+      if (s.kind === 'slab') { ctx.fillStyle = '#8e8bb0'; ctx.beginPath(); ctx.roundRect(x, yt, w, yb - yt + 10 * zoom, 14 * zoom); ctx.fill(); ctx.fillStyle = '#c9c7e0'; ctx.beginPath(); ctx.roundRect(x, yt, w, 12 * zoom, 8 * zoom); ctx.fill(); continue; }
+      if (s.kind === 'tite') { ctx.fillStyle = '#4b447e'; ctx.beginPath(); ctx.moveTo(x - 8 * zoom, yt); ctx.lineTo(x + w + 8 * zoom, yt); ctx.lineTo(x + w * .78, yb + 10 * zoom); ctx.quadraticCurveTo(x + w / 2, yb + 30 * zoom, x + w * .22, yb + 10 * zoom); ctx.closePath(); ctx.fill(); continue; }
+      // rochers et stalagmites
+      ctx.fillStyle = s.kind === 'mite' ? '#5d568f' : '#9a98b4'; rockPath(x, yb, w, (yb - yt), s.x * .01); ctx.fill();
+      ctx.fillStyle = s.kind === 'mite' ? '#7a73ad' : '#b9b7cf'; ctx.beginPath(); ctx.ellipse(x + w * .35, yt + (yb - yt) * .35, w * .12, (yb - yt) * .06, 0, 0, Math.PI * 2); ctx.ellipse(x + w * .62, yt + (yb - yt) * .6, w * .09, (yb - yt) * .05, 0, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  function drawStar(x, y, r, time, bob) {
+    ctx.save(); ctx.translate(x, y + Math.sin(time * 3 + bob) * 4 * zoom); ctx.fillStyle = '#ffd84a'; ctx.strokeStyle = '#e09a16'; ctx.lineWidth = 3 * zoom;
+    ctx.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .45 : r; ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); } ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#7a4a10'; ctx.beginPath(); ctx.arc(-r * .2, -r * .05, r * .08, 0, 7); ctx.arc(r * .2, -r * .05, r * .08, 0, 7); ctx.fill(); ctx.restore();
+  }
+  const COLS = ['#ff6b8a', '#ffa94a', '#58c96b', '#4aa8ff', '#9a6bff'];
+  function drawItems(time) {
+    for (const s of stars) if (!s.got) { const x = SX(s.x); if (x > -40 && x < W + 40) drawStar(x, SY(s.y), 22 * zoom, time, s.x); }
+    letters.forEach((l, i) => { if (l.got) return; const x = SX(l.x); if (x < -60 || x > W + 60) return; const y = SY(l.y) + Math.sin(time * 2.5 + i) * 5 * zoom, s = 54 * zoom;
+      ctx.fillStyle = COLS[i % 5]; ctx.beginPath(); ctx.roundRect(x - s / 2, y - s / 2, s, s, 12 * zoom); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.roundRect(x - s / 2 + 4 * zoom, y - s / 2 + 4 * zoom, s - 8 * zoom, s * .35, 8 * zoom); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = `900 ${Math.round(36 * zoom)}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(l.l, x, y + 2 * zoom); });
+    for (const b of boxes) { const x = SX(b.x); if (x < -80 || x > W + 80) continue; const y = SY(b.y) + Math.sin(time * 2 + b.x) * 4 * zoom, s = 70 * zoom;
+      ctx.globalAlpha = b.done ? .35 : 1; ctx.fillStyle = '#ffb648'; ctx.beginPath(); ctx.roundRect(x - s / 2, y - s / 2, s, s, 14 * zoom); ctx.fill(); ctx.strokeStyle = '#b06a10'; ctx.lineWidth = 4 * zoom; ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.font = `900 ${Math.round(46 * zoom)}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(b.done ? '✓' : '?', x, y + 2 * zoom); ctx.globalAlpha = 1; }
+    // la fusée d'arrivée
+    { const x = SX(ROCKET), y = SY(0), s = zoom; if (x > -200 && x < W + 200) { ctx.save(); ctx.translate(x, y);
+      ctx.fillStyle = '#e9eef7'; ctx.beginPath(); ctx.moveTo(0, -330 * s); ctx.quadraticCurveTo(70 * s, -240 * s, 55 * s, -60 * s); ctx.lineTo(-55 * s, -60 * s); ctx.quadraticCurveTo(-70 * s, -240 * s, 0, -330 * s); ctx.fill();
+      ctx.fillStyle = '#ff5d5d'; ctx.beginPath(); ctx.moveTo(-55 * s, -60 * s); ctx.lineTo(-95 * s, 0); ctx.lineTo(-40 * s, -10 * s); ctx.fill(); ctx.beginPath(); ctx.moveTo(55 * s, -60 * s); ctx.lineTo(95 * s, 0); ctx.lineTo(40 * s, -10 * s); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0, -330 * s); ctx.quadraticCurveTo(40 * s, -290 * s, 48 * s, -250 * s); ctx.lineTo(-48 * s, -250 * s); ctx.quadraticCurveTo(-40 * s, -290 * s, 0, -330 * s); ctx.fill();
+      ctx.fillStyle = '#4aa8ff'; ctx.strokeStyle = '#2a5f9e'; ctx.lineWidth = 6 * s; ctx.beginPath(); ctx.arc(0, -180 * s, 26 * s, 0, 7); ctx.fill(); ctx.stroke(); ctx.restore(); } }
+  }
+  function drawCage(c, time) {
+    const x = SX(c.x), y = SY(0); if (x < -150 || x > W + 150) return; const s = zoom;
+    if (!c.open && monImg.complete) { const cw = 400, ch = 264, i = c.f, k = 110 / 254 * s, wob = Math.sin(time * 5 + c.x) * 2 * s;
+      ctx.drawImage(monImg, (i % 5) * cw, Math.floor(i / 5) * ch, cw, ch, x - cw * k / 2 + wob, y - (ch - 6) * k - 8 * s, cw * k, ch * k); }
+    const lift = c.open ? Math.min(1, c.t * 2) : 0;
+    if (lift < 1) { ctx.save(); ctx.globalAlpha = 1 - lift; ctx.translate(0, -lift * 120 * s);
+      ctx.fillStyle = '#7b7f99'; ctx.fillRect(x - 70 * s, y - 150 * s, 140 * s, 14 * s); ctx.fillRect(x - 70 * s, y - 10 * s, 140 * s, 10 * s);
+      ctx.strokeStyle = '#a7abc4'; ctx.lineWidth = 7 * s; for (let k = -55; k <= 55; k += 22) { ctx.beginPath(); ctx.moveTo(x + k * s, y - 138 * s); ctx.lineTo(x + k * s, y - 10 * s); ctx.stroke(); }
+      ctx.fillStyle = '#ffcf4a'; ctx.beginPath(); ctx.arc(x, y - 75 * s, 12 * s, 0, 7); ctx.fill(); ctx.restore(); }
+  }
+  function drawAlien(a, time) {
+    if (!AF || !alienImg.complete) return;
+    let name = a.type + '_f1';
+    if (a.state === 'farceur') { if (a.type === 'boing') name = a.y > 25 ? 'boing_f2' : 'boing_f1'; else if (a.type === 'zap') name = (a.throwT || 0) > 0 ? 'zap_f2' : 'zap_f1'; else name = Math.floor(a.t * 3.2) % 2 ? 'glouglou_f2' : 'glouglou_f1'; }
+    else if (a.state === 'ami') return;
+    const f = AF[name], x = SX(a.x), y = SY(a.y); if (x < -150 || x > W + 150) return;
+    const k = zoom * ASCALE, sq = a.type === 'boing' && a.y < 25 ? 1 + (25 - a.y) / 25 * .12 : 1;
+    ctx.save(); ctx.translate(x, y); ctx.scale((a.dir < 0 ? -1 : 1) * k * sq, k / sq);
+    if (a.type === 'glouglou' && a.state === 'farceur') ctx.rotate(Math.sin(a.t * 6.4) * .06);
+    ctx.drawImage(alienImg, f.x, f.y, f.w, f.h, -f.w / 2, -f.h, f.w, f.h); ctx.restore();
+    if (a.state === 'bubble') { const r = Math.max(f.w, f.h) * .62 * zoom, cy = y - f.h * zoom / 2; const g = ctx.createRadialGradient(x - r * .3, cy - r * .3, r * .1, x, cy, r);
+      g.addColorStop(0, 'rgba(255,255,255,.55)'); g.addColorStop(.7, 'rgba(170,230,255,.18)'); g.addColorStop(1, 'rgba(255,170,240,.55)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, cy, r, 0, 7); ctx.fill(); }
+  }
+  function drawFriend(f, time) {
+    const x = SX(f.x), y = SY(f.y) - Math.abs(Math.sin(f.t * 5)) * 6 * zoom; if (x < -150 || x > W + 150) return;
+    ctx.save(); ctx.translate(x, y);
+    if (f.img === 'alien' && AF) { const q = AF[f.cell], k = zoom * .8; ctx.scale((f.face || 1) * k, k); ctx.drawImage(alienImg, q.x, q.y, q.w, q.h, -q.w / 2, -q.h, q.w, q.h); }
+    else if (monImg.complete) { const cw = 400, ch = 264, i = f.cell, k = 90 / 254 * zoom; ctx.scale(f.face || 1, 1); ctx.drawImage(monImg, (i % 5) * cw, Math.floor(i / 5) * ch, cw, ch, -cw * k / 2, -(ch - 6) * k, cw * k, ch * k); }
+    ctx.restore();
+  }
+  function drawShots() {
+    for (const u of bubbles) { const x = SX(u.x), y = SY(u.y), r = u.r * zoom; const g = ctx.createRadialGradient(x - r * .3, y - r * .3, r * .1, x, y, r);
+      g.addColorStop(0, 'rgba(255,255,255,.95)'); g.addColorStop(.6, 'rgba(160,225,255,.45)'); g.addColorStop(1, 'rgba(255,160,240,.8)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); }
+    for (const s of slime) { const x = SX(s.x), y = SY(s.y); ctx.fillStyle = '#7fe060'; ctx.strokeStyle = '#3f9a2c'; ctx.lineWidth = 3 * zoom; ctx.beginPath(); ctx.arc(x, y, 14 * zoom, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.beginPath(); ctx.arc(x - 4 * zoom, y - 4 * zoom, 4 * zoom, 0, 7); ctx.fill(); }
+    for (const p of puffs) { const k = p.t / .6, x = SX(p.x), y = SY(p.y); ctx.globalAlpha = 1 - k; ctx.strokeStyle = p.c; ctx.lineWidth = 4 * zoom; ctx.beginPath(); ctx.arc(x, y, (14 + k * 40) * zoom, 0, 7); ctx.stroke();
+      ctx.fillStyle = p.c; for (let i = 0; i < 6; i++) { const an = i * Math.PI / 3 + p.x; ctx.beginPath(); ctx.arc(x + Math.cos(an) * (20 + k * 50) * zoom, y + Math.sin(an) * (20 + k * 50) * zoom, 4 * zoom * (1 - k), 0, 7); ctx.fill(); } ctx.globalAlpha = 1; }
+  }
+  function roseFrame() {
+    const a = rose.anim;
+    if (a) return { ...sample(a.name, a.t * A[a.name].fps), set: a.name, ground: true };
+    if (rose.mode === 'air') return { ...sample(rose.airPose, rose.airT * A[rose.airPose].fps), set: rose.airPose };
+    if (rose.walking) return { ...sample('walk', rose.walkDist / STEP_PX), set: 'walk', ground: true };
+    return { ...sample('idle', rose.t * A.idle.fps), set: 'idle', ground: true };
+  }
+  function drawRose() {
+    const f = roseFrame(); if (!RF[f.k]) return;
+    const gy = f.ground ? SY(rose.base) : SY(rose.y), px = SX(rose.x);
+    if (f.set !== shownSet) { if (shownSet) { fadeFrom = shown; fadeT = 0; fadeGy = lastGy; fadeLen = stopFade ? STOP_FADE : FADE; stopFade = false; } shownSet = f.set; }
+    shown = f.mix > .5 ? f.k2 : f.k;
+    const surf = SY(surfaceAt(rose.x, (rose.mode === 'air' ? rose.y : rose.base) + 2)), h = f.ground ? 0 : rose.y - surfaceAt(rose.x, rose.y + 2), sh = Math.max(.2, 1 - h / 500);
+    ctx.fillStyle = `rgba(30,25,70,${.3 * sh})`; ctx.beginPath(); ctx.ellipse(px, surf + 3, 52 * zoom * sh, 11 * zoom * sh, 0, 0, Math.PI * 2); ctx.fill();
+    const draw = (k, alpha, y) => { const q = RF[k]; ctx.save(); ctx.globalAlpha = alpha; ctx.translate(px, y); ctx.scale(rose.face * zoom, zoom); ctx.drawImage(roseImg, q.x, q.y, q.w, q.h, -q.ax, -q.ay, q.w, q.h); ctx.restore(); };
+    draw(f.k, 1, gy); if (f.mix > .01 && f.k2 !== f.k) draw(f.k2, f.mix, gy);
+    if (fadeFrom && fadeT < fadeLen) { const k = fadeT / fadeLen; draw(fadeFrom, 1 - k * k * (3 - 2 * k), fadeGy); } else fadeFrom = null;
+    lastGy = gy;
+  }
+
+  // ================= boucle =================
+  let last = performance.now(), started = false;
+  function loop(now) {
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (RF && AF && roseImg.complete && alienImg.complete) {
+      if (!started) { started = true; say('Bienvenue sur la Lune ! Rose doit libérer les amis enfermés par les petits extraterrestres farceurs. Envoie-leur des bulles !'); }
+      if (!paused) { update(dt); fadeT += dt; }
+      const look = rose.face * 120;
+      camX += ((rose.x + look - (W * .4) / zoom) - camX) * Math.min(1, dt * 3.5); camX = Math.max(0, Math.min(L - W / zoom, camX));
+      const hy = rose.mode === 'air' ? rose.y : rose.base, ty = Math.max(0, Math.min(CEIL - (GY / zoom) + 60, hy + 230 - GY / zoom * .82));
+      camY += (Math.max(0, ty) - camY) * Math.min(1, dt * 3);
+      const time = now / 1000;
+      drawBg(time); drawGround(); drawSolids(time); drawItems(time);
+      cages.forEach(c => drawCage(c, time)); aliens.forEach(a => drawAlien(a, time)); friends.forEach(f => drawFriend(f, time));
+      drawRose(); drawShots();
+    } else { ctx.fillStyle = '#140f3a'; ctx.fillRect(0, 0, W, H); }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+  $('#cStars').textContent = '⭐ 0'; $('#cLetters').textContent = '🔤 0'; $('#cFriends').textContent = '💛 0';
+  window.__rose = { rose, aliens, cages, boxes, stars, letters, friends, key, got, solids, get paused() { return paused; } };
+})();
+</script>
+</body>
+</html>
