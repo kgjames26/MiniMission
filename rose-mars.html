@@ -249,7 +249,7 @@
   const cageSpots = [];
   { const blocked = (x) => solids.some(s => s.y === 0 && x > s.x - 110 && x < s.x + s.w + 110) || Math.abs(x - (L - 280)) < 300;
     for (const s of solids) if (s.kind === 'slab' || s.kind === 'arch' || s.kind === 'mesa') cageSpots.push({ x: s.x + s.w / 2, y: s.y + s.h });
-    for (let x = 650; cageSpots.length < 20 && x < L - 400; x += 360) if (!blocked(x)) cageSpots.push({ x, y: 0 }); }
+    for (let x = 1050; cageSpots.length < 20 && x < L - 400; x += 320) if (!blocked(x)) cageSpots.push({ x, y: 0 }); }
   const cages = cageSpots.slice(0, 20).map((p, i) => ({ ...p, ...prisoners[i], open: false, t: 0 }));
   // caisses « ? » : une devinette sur l'espace
   const boxes = [ { x: 1070, y: 310 }, { x: 2220, y: 455 }, { x: 8050, y: 340 } ].map(b => ({ ...b, done: false }));
