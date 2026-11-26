@@ -61,7 +61,7 @@
           <span class="home-hero hh-filou"><span class="sprite" style="--col:2;--row:1"></span></span>
           <span class="home-hero hh-titan"><span class="sprite" style="--col:2;--row:2"></span></span>
         </div>
-        <div class="home-album-row"><button id="album-open" class="pill-btn" type="button" aria-label="Mon album d’autocollants" data-i18n-aria="aAlbum"><span aria-hidden="true" class="album-ico">📒</span><span data-i18n="myAlbums">Mes albums</span><b id="album-badge" class="album-badge">0</b></button></div>
+        <div class="home-album-row"><button id="library-open" class="pill-btn" type="button" aria-label="Mes livres"><span aria-hidden="true" class="album-ico">📚</span></button><button id="album-open" class="pill-btn" type="button" aria-label="Mon album d’autocollants" data-i18n-aria="aAlbum"><span aria-hidden="true" class="album-ico">📒</span><span data-i18n="myAlbums">Mes albums</span><b id="album-badge" class="album-badge">0</b></button></div>
         <p class="home-tagline" data-i18n="tagline">Remplis tes albums&nbsp;!</p>
         <button id="start-button" class="play-button" type="button"><span data-i18n="play">JOUER&nbsp;!</span> <span aria-hidden="true">▶</span></button>
         <span id="home-version" class="home-version" aria-hidden="true"></span>
@@ -300,6 +300,8 @@
       </section>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </main>
+    <script src="story.js" defer></script>
+    <script src="book.js" defer></script>
     <script src="i18n.js" defer></script>
     <script src="lang-en.js" defer></script>
     <script src="lang-es.js" defer></script>

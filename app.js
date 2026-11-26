@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '71', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '72', asset = (p) => `${p}?v=${ASSET_V}`;
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
   const monsterImg = new Image(); monsterImg.src = asset('assets/monsters.webp');
   const movesImg = new Image(); movesImg.src = asset('assets/hero-moves.webp');
@@ -263,6 +263,12 @@
       p.innerHTML = t ? `⭐ ${L.stars.length}/${t.s} · 👾 ${L.monsters.length}/${t.m}` : `<span class="lv-new">${T('newBadge')}</span>`;
     });
     setScreen('hero-select');
+    // une petite page pour chaque héros qui vient de finir son quartier, puis la conclusion quand les 3 ont fini
+    const pend = HEROES3.filter(h => readLevel(h, i).done).map(h => 'c' + i + h);
+    if (HEROES3.every(h => readLevel(h, i).done)) pend.push('c' + i + 'c');
+    if (MM.cities.every((_, k) => HEROES3.every(h => readLevel(h, k).done))) pend.push('ch1end');
+    const todo = pend.filter(id => MM.book && !MM.book.seen(id));
+    if (todo.length) { bookChain(todo, () => { if (!timerNoticePlaying && c) sayText(T('sayChooseHeroCity', { city: c.say || c.name }), null, true); }); return; }
     if (!timerNoticePlaying && c) sayText(T('sayChooseHeroCity', { city: c.say || c.name }), null, true);
   }
   function renderLevels() {
@@ -278,7 +284,7 @@
   function pickLevel(i) {
     const card = $(`#level-grid .level-card[data-i="${i}"]`);
     if (!cityUnlocked(i)) { if (card) { card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); } MM.haptic('oops'); showToast(T('lockedToast')); sayText(T('lockedSay')); return; }
-    openHeroes(i);
+    book('c' + i + 'a', () => openHeroes(i));
   }
   // position d'un drapeau : sur le sol, hors des trous, obstacles et immeubles
   function flagX(x) {
@@ -330,9 +336,12 @@
   }
   function chooseHero(heroId) { if (!heroes[heroId]) return; startLevel(heroId, levelCity); }
   // ----- chapitres -----
+  // le livre : une histoire avant (et après) chaque monde, lue une seule fois, puis rangée dans la bibliothèque
+  const book = (id, then) => { if (MM.book && MM.STORY && MM.STORY[id] && !MM.book.seen(id)) { cancelSpeech(); MM.book.open(id, { onDone: then }); } else if (then) then(); };
+  const bookChain = (ids, then) => { const next = () => { const id = ids.shift(); if (id) book(id, next); else if (then) then(); }; next(); };
   function chooseChapter(n) {
-    if (n === 1) { openCities(); return; }
-    if (n === 2) { openSpace(); return; }
+    if (n === 1) { book('prologue', openCities); return; }
+    if (n === 2) { book('ch1end', openSpace); return; }
     const card = $('.chap-card.c3'); card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); MM.haptic('oops'); sayText(T('finalSoonSay'));
   }
   // ----- chapitre 2 : les 10 mondes de Rose (chaque monde s'ouvre quand le précédent est fini) -----
@@ -2565,6 +2574,8 @@
   document.querySelectorAll('.chap-card').forEach(card=>card.addEventListener('click',()=>chooseChapter(Number(card.dataset.chap))));
   $('#space-map').addEventListener('click',e=>{const p=e.target.closest('.planet');if(p)pickPlanet(Number(p.dataset.i));});
   $('#space-back').addEventListener('click',()=>{setScreen('chapter-screen');});
+  $('#library-open').addEventListener('click',()=>{cancelSpeech();if(MM.book)MM.book.library(MM.STORY_ORDER||[]);});
+  MM.say=(t)=>sayText(t); MM.hush=()=>cancelSpeech();
   $('#hero-back').addEventListener('click',()=>{renderLevels();setScreen('level-screen');});
   $('#level-grid').addEventListener('click',e=>{const card=e.target.closest('.level-card');if(card)pickLevel(Number(card.dataset.i));});
   $('#album-grid').addEventListener('click',e=>{const slot=e.target.closest('.album-slot.got');if(slot)openStickerDetail(Number(slot.dataset.id));});

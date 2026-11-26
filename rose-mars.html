@@ -67,6 +67,8 @@
 <div class="pad r"><button class="b shoot big-shoot" id="bs" aria-label="Bulles">🫧</button></div>
 <div class="ov" id="quiz"><div class="card"><div class="row" style="margin:0 0 6px"><button class="say" id="qsay" aria-label="Écouter">🔊</button></div><div class="q" id="qtext"></div><div class="opts" id="qopts"></div></div></div>
 <div class="ov" id="end"><div class="card"><p class="title">Bravo, Rose !</p><div class="stats" id="estats"></div><div class="row"><button class="big alt" id="again">↻ Rejouer</button><button class="big" id="home">🏠</button><button class="big alt" id="next" aria-label="La Lune">🌙</button></div></div></div>
+<script src="story.js"></script>
+<script src="book.js"></script>
 <script src="i18n.js"></script>
 <script>
 (() => {
@@ -518,10 +520,11 @@
     try { const d = JSON.parse(localStorage.getItem('mm.rose.done') || '[]'); if (!d.includes('mars')) { d.push('mars'); localStorage.setItem('mm.rose.done', JSON.stringify(d)); } } catch (e) {}
     finished = true; rose.vx = 0; rose.walking = false; play('win', 'ground'); rose.mode = 'ground'; sfx.good();
     say(got.friends >= 20 ? 'Bravo Rose ! Tu as libéré les vingt amis de Mars ! Prochaine étape : Vénus !' : 'Bravo Rose ! Tu as libéré ' + got.friends + ' amis. Les autres attendent encore sur Mars !');
-    setTimeout(() => {
+    setTimeout(() => MM.book && !MM.book.seen('mars_c') ? MM.book.open('mars_c', { onDone: showEnd }) : showEnd(), 3200);
+    function showEnd() {
       $('#estats').innerHTML = `<span>⭐ ${got.stars}/${stars.length}</span><span>🔤 ${got.letters}/${letters.length}</span><span>💛 ${got.friends}/${cages.length}</span><span>🫧 ${got.aliens}</span>`;
       $('#end').classList.add('show');
-    }, 3200);
+    }
   }
 
   // ================= dessin =================
@@ -756,7 +759,9 @@
     const dt = Math.min(.05, (now - last) / 1000); last = now;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (RF && AF && roseImg.complete && alienImg.complete) {
-      if (!started) { started = true; say('Bienvenue sur Mars, la planète rouge ! Les farceurs ont encore enfermé les amis. Les tourbillons de poussière peuvent t’aider à monter !'); }
+      if (!started) { started = true; paused = true; MM.say = (t) => say(t, true); MM.hush = () => { try { speechSynthesis.cancel(); } catch (e) {} };
+        const go = () => { paused = false; last = performance.now(); say('Bienvenue sur Mars, la planète rouge ! Les farceurs ont encore enfermé les amis. Les tourbillons de poussière peuvent t’aider à monter !'); };
+        if (MM.book && !MM.book.seen('mars_a')) MM.book.open('mars_a', { onDone: go }); else go(); }
       if (!paused) { update(dt); fadeT += dt; }
       const look = rose.face * 120;
       camX += ((rose.x + look - (W * .4) / zoom) - camX) * Math.min(1, dt * 3.5); camX = Math.max(0, Math.min(L - W / zoom, camX));
