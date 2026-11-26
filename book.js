@@ -266,7 +266,7 @@
     style();
     const seen = seenList(), root = document.createElement('div'); root.className = 'mmb-lib';
     const items = order.filter(id => MM.STORY[id]);
-    root.innerHTML = `<button class="mmb-skip" aria-label="Fermer">✕</button><h2>📚</h2><div class="mmb-shelf">${items.map(id => { const b = MM.STORY[id], [b1, b2] = BG[b.bg] || BG.city, ok = seen.includes(id);
+    root.innerHTML = `<button class="mmb-skip" aria-label="Fermer">✕</button><h2>📚</h2><div class="mmb-shelf">${items.map(id => { const b = MM.STORY[id], [b1, b2] = BG[b.bg] || BG.city, ok = seen.includes(id) || (() => { try { return localStorage.getItem('mm.dev') === '1'; } catch (e) { return false; } })();
       return `<button class="mmb-cover ${ok ? '' : 'lock'}" data-id="${id}">${ok ? `<img alt="" data-src="${id}">` : '<span>🔒</span>'}<em>${ok ? esc(ttext(id, b.title || '')) : ''}</em></button>`; }).join('')}</div>`;
     document.body.appendChild(root);
     root.querySelectorAll('img[data-src]').forEach(im => picture(im.dataset.src, 0).then(s => { im.src = s; }));

@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '89', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '90', asset = (p) => `${p}?v=${ASSET_V}`;
   // la soucoupe des farceurs passe de temps en temps dans le ciel des villes (l'indice de l'histoire, chapitre 1)
   const ufoImg = new Image(); let UFO = null; ufoImg.src = asset('assets/aliens.webp'); fetch(asset('assets/aliens.json')).then(r => r.json()).then(j => { UFO = j.zap_f1; }).catch(() => {});
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
@@ -252,7 +252,8 @@
   const HEROES3 = ['ziggy', 'filou', 'titan'];
   let levelCity = 0;
   const cityDone = i => HEROES3.some(h => readLevel(h, i).done);
-  const cityUnlocked = i => i === 0 || cityDone(i - 1);
+  const DEV = () => { try { return localStorage.getItem('mm.dev') === '1'; } catch (e) { return false; } };   // mode développeur : tout est ouvert
+  const cityUnlocked = i => i === 0 || DEV() || cityDone(i - 1);
   const heroMini = h => `<span class="sprite" style="--col:${h === 'ziggy' ? 0 : 2};--row:${HERO_ROW[h] ?? 0}"></span>`;
   function openCities() { renderLevels(); setScreen('level-screen'); if (!timerNoticePlaying) sayText(TN('sayChooseCity'), null, true); }
   function openLevels() { openHeroes(levelCity); }
@@ -345,10 +346,10 @@
     if (n === 1) { book('prologue', openCities); return; }
     if (n === 2) { book('ch1end', openSpace); return; }
     // chapitre 3 : le grand final, ouvert quand Rose a fini le Soleil
-    if (roseDone().includes('soleil')) { location.href = 'rose-world.html?w=final'; return; }
+    if (DEV() || roseDone().includes('soleil')) { location.href = 'rose-world.html?w=final'; return; }
     const card = $('.chap-card.c3'); card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); MM.haptic('oops'); sayText(T('finalLockedSay'));
   }
-  function updateChapters() { const c3 = $('.chap-card.c3'); if (c3) c3.classList.toggle('locked', !roseDone().includes('soleil')); }
+  function updateChapters() { const c3 = $('.chap-card.c3'); if (c3) c3.classList.toggle('locked', !(DEV() || roseDone().includes('soleil'))); }
   // ----- chapitre 2 : les 10 mondes de Rose (chaque monde s'ouvre quand le précédent est fini) -----
   const PLANETS = [
     { id: 'lune', k: 'pLune', file: 'rose-world.html?w=lune', s: .62, c: ['#f4f4fa', '#a6a4c0'] },
@@ -366,14 +367,14 @@
   function openSpace() {
     const done = roseDone();
     $('#space-map').innerHTML = PLANETS.map((p, i) => {
-      const open = i === 0 || done.includes(PLANETS[i - 1].id), ready = !!p.file;
+      const open = i === 0 || DEV() || done.includes(PLANETS[i - 1].id), ready = !!p.file;
       return `<button type="button" role="listitem" class="planet ${open ? '' : 'locked'} ${ready ? '' : 'soon'} ${done.includes(p.id) ? 'done' : ''}" data-i="${i}" style="--s:${p.s};--c1:${p.c[0]};--c2:${p.c[1]};--y:${(i % 2 ? 1 : -1) * 18}%"><span class="pl-ball ${p.band ? 'band' : ''} ${p.earth ? 'earth' : ''} ${p.sun ? 'sun' : ''}">${p.ring ? `<i class="pl-ring r${p.ring}"></i>` : ''}</span><b class="pl-name">${escapeHtml(T(p.k))}</b>${!open ? '<span class="pl-badge">🔒</span>' : !ready ? `<span class="pl-badge soon">${escapeHtml(T('soon'))}</span>` : ''}</button>`;
     }).join('');
     setScreen('space-screen');
     if (!timerNoticePlaying) sayText(T('sayChoosePlanet'), null, true);
   }
   function pickPlanet(i) {
-    const p = PLANETS[i], done = roseDone(), open = i === 0 || done.includes(PLANETS[i - 1].id), btn = $(`#space-map .planet[data-i="${i}"]`);
+    const p = PLANETS[i], done = roseDone(), open = i === 0 || DEV() || done.includes(PLANETS[i - 1].id), btn = $(`#space-map .planet[data-i="${i}"]`);
     const shake = () => { if (btn) { btn.classList.remove('shake'); void btn.offsetWidth; btn.classList.add('shake'); } MM.haptic('oops'); };
     if (!open) { shake(); sayText(T('lockedPlanetSay')); return; }
     if (!p.file) { shake(); sayText(T(p.k) + '. ' + T('soonSay')); return; }
@@ -2813,6 +2814,17 @@
   $('#name-skip').addEventListener('click', () => closeNameScreen(false));
   ['#child-name', '#child-name-say'].forEach(sel => $(sel).addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); closeNameScreen(true); } }));
   $('#name-edit').addEventListener('click', () => openNameScreen('settings-screen'));
+  // mode développeur (pour l'adulte) : un code ouvre toutes les villes, planètes, le grand final et tous les livres
+  { const row = $('#dev-row'), inp = $('#dev-code'), btn = $('#dev-btn');
+    const paint = () => { const on = DEV(); row.classList.toggle('on', on); inp.hidden = on; inp.value = ''; btn.textContent = on ? T('devOff') : 'OK'; $('#dev-state').textContent = on ? ' ✅' : ''; };
+    const go = () => {
+      if (DEV()) { try { localStorage.removeItem('mm.dev'); } catch (e) {} }
+      else if (inp.value.trim().toLowerCase() === 'ludogo') { try { localStorage.setItem('mm.dev', '1'); } catch (e) {} MM.haptic('gold'); sound('sticker'); }
+      else { inp.classList.remove('shake'); void inp.offsetWidth; inp.classList.add('shake'); MM.haptic('oops'); inp.select(); return; }
+      paint(); updateChapters(); updateBooksBadge && updateBooksBadge();
+    };
+    btn.addEventListener('click', go); inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+    MM.i18n.onChange ? MM.i18n.onChange(paint) : 0; paint(); }
   $('#lang-grid').addEventListener('click', e => {
     const b = e.target.closest('.lang-btn'); if (!b) return;
     MM.haptic('good'); MM.i18n.setLang(b.dataset.lang);

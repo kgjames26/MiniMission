@@ -889,3 +889,10 @@ body.peeking .fly-item{visibility:hidden}   /* les objets qui volent vers les co
 .home-hero{cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .home-hero.hop{animation:hero-hop .7s cubic-bezier(.3,.7,.4,1)}
 @keyframes hero-hop{0%{transform:translateY(0) scale(1)}15%{transform:translateY(4%) scale(1.06,.92)}45%{transform:translateY(-22%) scale(.96,1.05) rotate(-4deg)}75%{transform:translateY(0) scale(1.05,.94)}100%{transform:none}}
+/* mode développeur (réglages adulte) */
+.dev-row .dev-ctl{display:flex;gap:8px;align-items:center}
+.dev-row input{width:min(140px,32vw);font:inherit;font-size:16px;padding:8px 12px;border-radius:12px;border:2px solid #b9d3ec;background:#fff}
+.dev-row input.shake{animation:dev-shake .4s}
+.dev-row .pill-btn{padding:8px 16px;min-height:0;font-size:16px}
+.dev-row.on{background:linear-gradient(90deg,#e7fbe9,#fff)}
+@keyframes dev-shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
