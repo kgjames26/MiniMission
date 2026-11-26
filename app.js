@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '97', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '98', asset = (p) => `${p}?v=${ASSET_V}`;
   // la soucoupe des farceurs passe de temps en temps dans le ciel des villes (l'indice de l'histoire, chapitre 1)
   const ufoImg = new Image(); let UFO = null; ufoImg.src = asset('assets/aliens.webp'); fetch(asset('assets/aliens.json')).then(r => r.json()).then(j => { UFO = j.zap_f1; }).catch(() => {});
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
@@ -668,10 +668,18 @@
     drawWorld(time); drawPlayer(time); drawShots(time); FX.draw(ctx, world.camera);
     ctx.restore(); drawAmbient(time);
   }
-  function drawSky(time){const W=view.w,p=mission?.palette||[],extra=Math.max(0,-viewTop0());const g=ctx.createLinearGradient(0,0,0,WORLD_H);g.addColorStop(0,p[0]||'#70d0f4');g.addColorStop(.67,p[2]||'#c8f1fa');g.addColorStop(1,'#e8f9e9');ctx.fillStyle=g;ctx.fillRect(0,-extra-2,W,extra+WORLD_H+4);for(let i=0;i<Math.ceil(W/260)+2;i++){const x=((i*260-world.camera*.16+time*3)%(W+260))-130,y=55+(i%3)*48;cloud(x,y,1+(i%2)*.18);}if(extra>40)for(let i=0;i<Math.ceil(W/300)+2;i++){const x=((i*300-world.camera*.1+time*2)%(W+300))-150,y=-extra*(.2+(i%3)*.25);cloud(x,y,1.1+(i%2)*.25);}drawUfo(time);}
+  // la silhouette peinte de la ville, tout au loin (assets/bg/city<N>.webp), posée sur l'horizon et qui défile très lentement
+  const SKYLINE = {};
+  function skyline() { const i = (mission && mission.city) || 0; if (!(i in SKYLINE)) { const im = new Image(); im.src = asset(`assets/bg/city${i}.webp`); SKYLINE[i] = im; } const im = SKYLINE[i]; return im.complete && im.naturalWidth ? im : null; }
+  function drawSkyline() {
+    const im = skyline(); if (!im) return; const W = view.w, hy = world.floor - 426 + (world.camY || 0) * .4 + 366, th = 250, tw = im.naturalWidth * th / im.naturalHeight, top = hy - th;
+    let x0 = -((world.camera * .07) % (tw * 2)); if (x0 > 0) x0 -= tw * 2;
+    for (let i = 0, x = x0; x < W; i++, x += tw) { ctx.save(); if (i % 2) { ctx.translate(x + tw, top); ctx.scale(-1, 1); } else ctx.translate(x, top); ctx.drawImage(im, 0, 0, tw + (i % 2 ? 0 : 1), th); ctx.restore(); }
+  }
+  function drawSky(time){const W=view.w,p=mission?.palette||[],extra=Math.max(0,-viewTop0());const g=ctx.createLinearGradient(0,0,0,WORLD_H);g.addColorStop(0,p[0]||'#70d0f4');g.addColorStop(.67,p[2]||'#c8f1fa');g.addColorStop(1,'#e8f9e9');ctx.fillStyle=g;ctx.fillRect(0,-extra-2,W,extra+WORLD_H+4);drawSkyline();for(let i=0;i<Math.ceil(W/260)+2;i++){const x=((i*260-world.camera*.16+time*3)%(W+260))-130,y=55+(i%3)*48;cloud(x,y,1+(i%2)*.18);}if(extra>40)for(let i=0;i<Math.ceil(W/300)+2;i++){const x=((i*300-world.camera*.1+time*2)%(W+300))-150,y=-extra*(.2+(i%3)*.25);cloud(x,y,1.1+(i%2)*.25);}drawUfo(time);}
   function drawUfo(time){if(!UFO||!ufoImg.complete)return;const W=view.w,per=22,ph=(time%per)/per;if(ph>.5)return;const k=ph/.42,x=-120+(W+240)*k,y=250+Math.sin(time*2.2)*14+Math.sin(k*Math.PI)*-20,s=.6;ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(time*3)*.08);ctx.globalAlpha=.95;ctx.drawImage(ufoImg,UFO.x,UFO.y,UFO.w,UFO.h,-UFO.w*s/2,-UFO.h*s/2,UFO.w*s,UFO.h*s);ctx.restore();ctx.fillStyle='rgba(190,120,255,.55)';for(let i=0;i<5;i++){const a=time*5+i*1.3,d=(i*17+time*40)%60;ctx.beginPath();ctx.arc(x-UFO.w*s*.3-d,y+12+Math.sin(a)*6,2.5,0,7);ctx.fill();}}
   function cloud(x,y,s=1){ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.fillStyle='rgba(255,255,255,.78)';ctx.beginPath();ctx.ellipse(0,12,49,18,0,0,Math.PI*2);ctx.ellipse(-23,2,24,20,0,0,Math.PI*2);ctx.ellipse(0,-5,28,27,0,0,Math.PI*2);ctx.ellipse(26,4,24,19,0,0,Math.PI*2);ctx.fill();ctx.restore();}
-  function drawHills(){const W=view.w,TH=theme();if(TH.far)MM.farDraw[TH.far](ctx,W,372,world.camera,TH.far==='fuji'?'#a9a4d0':TH.far==='dunes'?TH.dirt:TH.hill[1]);ctx.fillStyle=TH.hill[0];ctx.beginPath();ctx.moveTo(0,355);for(let x=0;x<=W;x+=5){ctx.lineTo(x,350+28*Math.sin((x+world.camera*.18)/160)+16*Math.sin(x/63));}ctx.lineTo(W,540);ctx.lineTo(0,540);ctx.fill();ctx.fillStyle=TH.hill[1];ctx.beginPath();ctx.moveTo(0,395);for(let x=0;x<=W;x+=5)ctx.lineTo(x,390+22*Math.sin((x+world.camera*.31)/125));ctx.lineTo(W,540);ctx.lineTo(0,540);ctx.fill();}
+  function drawHills(){const W=view.w,TH=theme();if(TH.far&&!skyline())MM.farDraw[TH.far](ctx,W,372,world.camera,TH.far==='fuji'?'#a9a4d0':TH.far==='dunes'?TH.dirt:TH.hill[1]);ctx.fillStyle=TH.hill[0];ctx.beginPath();ctx.moveTo(0,355);for(let x=0;x<=W;x+=5){ctx.lineTo(x,350+28*Math.sin((x+world.camera*.18)/160)+16*Math.sin(x/63));}ctx.lineTo(W,540);ctx.lineTo(0,540);ctx.fill();ctx.fillStyle=TH.hill[1];ctx.beginPath();ctx.moveTo(0,395);for(let x=0;x<=W;x+=5)ctx.lineTo(x,390+22*Math.sin((x+world.camera*.31)/125));ctx.lineTo(W,540);ctx.lineTo(0,540);ctx.fill();}
   function drawTown(time) {
     const W = view.w, cam = world.camera;
     if (activeHero === 'filou') {
