@@ -534,7 +534,9 @@
       const { A1, B1, t, rotA, rotB, extra } = f.air;
       const tilt = (k, alpha, deg) => { if (alpha <= .01) return; const q = RF[k]; ctx.save(); ctx.globalAlpha = alpha; ctx.translate(px, gy - PIVOT * zoom); ctx.rotate(rose.face * (deg + extra) * Math.PI / 180);
         ctx.translate(0, PIVOT * zoom); ctx.scale(rose.face * zoom, zoom); ctx.drawImage(roseImg, q.x, q.y, q.w, q.h, -q.ax, -q.ay, q.w, q.h); ctx.restore(); };
-      const aA = Math.min(1, 2 * (1 - t)), aB = Math.min(1, 2 * t);
+      // l'inclinaison suit toute la plage de vitesse, mais le changement d'animation se fait d'un coup bref au milieu,
+      // là où les deux sont penchées pareil : on ne voit presque jamais deux Rose superposées
+      const sw = Math.max(0, Math.min(1, (t - .42) / .16)), aB = sw, aA = 1 - sw * sw;
       const pair = (S, a, deg) => { tilt(S.k, a, deg); if (S.mix > .01 && S.k2 !== S.k) tilt(S.k2, a * S.mix, deg); };
       if (t < .5) { pair(B1, aB, rotB); pair(A1, aA, rotA); } else { pair(A1, aA, rotA); pair(B1, aB, rotB); }
     } else { draw(f.k, 1, gy); if (f.mix > .01 && f.k2 !== f.k) draw(f.k2, f.mix, gy); }

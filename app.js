@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '63', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '64', asset = (p) => `${p}?v=${ASSET_V}`;
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
   const monsterImg = new Image(); monsterImg.src = asset('assets/monsters.webp');
   const movesImg = new Image(); movesImg.src = asset('assets/hero-moves.webp');
