@@ -611,7 +611,17 @@
   const hills = Array.from({ length: 30 }, (_, i) => ({ x: i * 420, h: 80 + Math.random() * 140, w: 300 + Math.random() * 300 }));
 
   const api = () => ({ ctx, W, H, GY, zoom, camX, camY, SX, SY, L, CAVE0, CAVE1, CEIL, bgStars, craters, pebbles, hills });
-  function drawBg(time) { WD.drawBg(api(), time); }
+  // décor peint (assets/bg/<monde>.webp) : un panorama lointain qui défile lentement ; sinon le décor dessiné du monde
+  const BGI = new Image(); let bgOk = false; BGI.onload = () => { bgOk = true; }; BGI.src = 'assets/bg/' + WID + '.webp?v=' + V;
+  function drawBg(time) {
+    if (!bgOk) { WD.drawBg(api(), time); return; }
+    const hy = SY(0) + camY * zoom * .55, sc = Math.max(hy / BGI.height, (H * .5) / BGI.height), tw = BGI.width * sc, th = BGI.height * sc, top = hy - th;
+    if (top > 0) { ctx.fillStyle = WD.skyTop || WD.theme; ctx.fillRect(0, 0, W, top + 2); }
+    let x0 = -((camX * zoom * .18) % (tw * 2)); if (x0 > 0) x0 -= tw * 2;
+    for (let i = 0, x = x0; x < W; i++, x += tw) { ctx.save(); if (i % 2) { ctx.translate(x + tw, top); ctx.scale(-1, 1); } else ctx.translate(x, top); ctx.drawImage(BGI, 0, 0, tw + (i % 2 ? 0 : 1), th); ctx.restore(); }   // une image sur deux en miroir : pas de couture visible
+    ctx.fillStyle = 'rgba(255,255,255,.14)'; ctx.fillRect(0, Math.max(0, top), W, hy - Math.max(0, top));   // un léger voile : le décor reste au loin, les personnages ressortent
+    if (WD.bgOver) WD.bgOver(api(), time);
+  }
   function drawGround(time) {
     WD.drawGround(api(), time);
     const c0 = SX(CAVE0), c1 = SX(CAVE1), gy = SY(0);                   // l'intérieur du passage couvert, plus sombre
