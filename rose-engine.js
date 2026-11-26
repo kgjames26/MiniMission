@@ -205,7 +205,7 @@
   // grand final : Capitaine Farfouille dans sa soucoupe (il faut 3 bulles), tout au bout de la ville
   const boss = WD.boss ? { ...WD.boss, hpMax: WD.boss.hp, state: 'wait', t: 0, dir: -1, hitT: 0, cool: 2.5, bt: 0, yy: WD.boss.y } : null;
   const bossBox = () => ({ x0: boss.x - 95, x1: boss.x + 95, y0: boss.yy + 10, y1: boss.yy + 235 });
-  const slime = [], bubbles = [], puffs = [];
+  const slime = [], bubbles = [], puffs = [], sparks = [];   // sparks : paillettes de poudre ronchon, cœurs, notes de musique
   const RIDDLES = WD.riddles;
   const quizPick = RIDDLES.map((r, i) => i).sort(() => Math.random() - .5).slice(0, 3);
   if (!quizPick.includes(WD.pin || 0)) quizPick[0] = WD.pin || 0;   // la 1re caisse parle toujours de ce monde-ci
@@ -390,7 +390,7 @@
       let hit = u.life <= 0 || solidPoint(u.x, u.y, false);
       for (const a of aliens) if (!hit && a.state === 'farceur') { const ab = alienBox(a); if (u.x + u.r * .6 > ab.x0 && u.x - u.r * .6 < ab.x1 && u.y + u.r * .6 > ab.y0 && u.y - u.r * .6 < ab.y1) {
         if (a.hp > 1) { a.hp--; a.hitT = .55; hit = true; sfx.bonk(); puffs.push({ x: u.x, y: u.y, t: 0, c: '#ffd08a' }); continue; }   // 1re bulle : il boude, il en faut une 2e
-        a.state = 'bubble'; a.bt = 0; a.vy = 40; a.vx = (Math.random() - .5) * 60; hit = 'keep'; sfx.pop(); got.aliens++; if (WD.noCages) bubbleChip(); } }
+        a.state = 'bubble'; a.bt = 0; a.vy = 40; a.vx = (Math.random() - .5) * 60; hit = 'keep'; sfx.pop(); powderBurst((ab.x0 + ab.x1) / 2, (ab.y0 + ab.y1) / 2); got.aliens++; if (WD.noCages) bubbleChip(); } }
       if (!hit && boss && boss.state === 'fight') { const bb = bossBox(); if (u.x + u.r * .6 > bb.x0 && u.x - u.r * .6 < bb.x1 && u.y + u.r * .6 > bb.y0 && u.y - u.r * .6 < bb.y1) { hit = true; hitBoss(u.x, u.y); } }
       for (const c of cages) if (!hit && !c.open && Math.abs(u.x - c.x) < 70 + u.r * .4 && u.y > c.y && u.y < c.y + 160) { openCage(c); hit = true; }
       if (hit) { bubbles.splice(i, 1); if (hit !== 'keep') puffs.push({ x: u.x, y: u.y, t: 0, c: '#d9f6ff' }); }
@@ -414,6 +414,7 @@
         if (B.x1 > ab.x0 && B.x0 < ab.x1 && B.y1 > ab.y0 && B.y0 < ab.y1 && rose.bump <= 0) { rose.vx = (rose.x < a.x ? -1 : 1) * 220; rose.bump = .6; sfx.bonk(); puffs.push({ x: (rose.x + a.x) / 2, y: B.y0 + 100, t: 0, c: '#fff' }); }
       } else if (a.state === 'bubble') {
         a.bt += dt; a.vy += 140 * dt; a.y += a.vy * dt; a.x += (a.vx + Math.sin(a.bt * 3) * 40) * dt;     // il s'envole dans sa bulle
+        a.nt = (a.nt || .2) - dt; if (a.nt <= 0 && a.y < 900) { a.nt = .45; sparks.push({ x: a.x + (Math.random() - .5) * 80, y: a.y + 140, vx: (Math.random() - .5) * 40, vy: 70, t: 0, life: 1.4, kind: Math.random() < .5 ? 'heart' : 'note' }); }
         if (a.y > 1400) a.state = 'gone';
       }
     }
@@ -426,6 +427,7 @@
     friends.filter(f => !f.home).forEach((f, i) => { f.t += dt; const tx = rose.x - rose.face * (150 + i * 95), ty = Math.max(0, (rose.mode === 'air' ? rose.y : rose.base) - 10 + Math.sin(f.t * 3 + i) * 10);
       f.x += (tx - f.x) * Math.min(1, dt * 2.6); f.y += (ty - f.y) * Math.min(1, dt * 2.2); f.face = tx > f.x ? 1 : -1; });
     for (let i = puffs.length - 1; i >= 0; i--) { puffs[i].t += dt; if (puffs[i].t > .6) puffs.splice(i, 1); }
+    for (let i = sparks.length - 1; i >= 0; i--) { const q = sparks[i]; q.t += dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vy -= (q.g || 0) * dt; if (q.t > q.life) sparks.splice(i, 1); }
     cages.forEach(c => { if (c.open) c.t += dt; });
     if (!finished && !WD.boss && rose.x > ROCKET - 40 && rose.mode !== 'air') finish();
     updateHelpers(dt); updateBoss(dt, B);
@@ -515,7 +517,7 @@
   // ================= dessin =================
   const cv = $('#c'), ctx = cv.getContext('2d');
   let W = 0, H = 0, dpr = 1, zoom = 1, GY = 0, camX = 0, camY = 0;
-  function resize() { dpr = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; zoom = (H * .27) / 210; GY = H * .8; }
+  function resize() { dpr = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; zoom = Math.min(H * .27, W * .24) / 210; GY = H * (H > W * 1.2 ? .74 : .8); }   // en portrait, on dézoome pour voir assez loin devant Rose
   addEventListener('resize', resize); resize();
   const SX = (x) => (x - camX) * zoom, SY = (y) => GY - (y - camY) * zoom;
   const bgStars = Array.from({ length: 160 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() < .2 ? 2 : 1, tw: Math.random() * 6 }));
@@ -641,8 +643,11 @@
     const lift = c.open ? Math.min(1, c.t * 2) : 0;
     if (lift < 1) { ctx.save(); ctx.globalAlpha = 1 - lift; ctx.translate(0, -lift * 120 * s);
       ctx.fillStyle = '#7b7f99'; ctx.fillRect(x - 70 * s, y - 150 * s, 140 * s, 14 * s); ctx.fillRect(x - 70 * s, y - 10 * s, 140 * s, 10 * s);
-      ctx.strokeStyle = '#a7abc4'; ctx.lineWidth = 7 * s; for (let k = -55; k <= 55; k += 22) { ctx.beginPath(); ctx.moveTo(x + k * s, y - 138 * s); ctx.lineTo(x + k * s, y - 10 * s); ctx.stroke(); }
+      ctx.strokeStyle = '#a7abc4'; ctx.lineWidth = 4.5 * s; for (let k = -55; k <= 55; k += 22) { ctx.beginPath(); ctx.moveTo(x + k * s, y - 138 * s); ctx.lineTo(x + k * s, y - 10 * s); ctx.stroke(); }
       ctx.fillStyle = '#ffcf4a'; ctx.beginPath(); ctx.arc(x, y - 75 * s, 12 * s, 0, 7); ctx.fill(); ctx.restore(); }
+    if (!c.open) { const pu = 1 + Math.sin(time * 4 + c.x) * .1, hy = y - 190 * s + Math.sin(time * 2 + c.x) * 5 * s, br = 26 * s * pu;   // « aide-moi ! » : une bulle avec un cœur au-dessus de chaque ami en cage
+      ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.beginPath(); ctx.arc(x, hy, br, 0, 7); ctx.fill(); ctx.beginPath(); ctx.moveTo(x - 7 * s, hy + br * .85); ctx.lineTo(x, hy + br + 10 * s); ctx.lineTo(x + 7 * s, hy + br * .85); ctx.fill();
+      ctx.fillStyle = '#ff5c93'; heartPath(x, hy + 2 * s, 13 * s * pu); ctx.fill(); }
   }
   function drawAlien(a, time) {
     if (!AF || !alienImg.complete) return;
@@ -652,9 +657,11 @@
       else if (a.type === 'bidou') name = a.hitT > 0 ? 'bidou_f1' : Math.floor(a.t * 2.2) % 2 ? 'bidou_f2' : 'bidou_f1'; else name = Math.floor(a.t * 3.2) % 2 ? 'glouglou_f2' : 'glouglou_f1'; }
     else if (a.state === 'gone') return;
     const f = AF[name], x = SX(a.x), y = SY(a.y); if (x < -150 || x > W + 150) return;
+    const pts = TSCALE[a.type] || 1, phh = f.h * ASCALE * pts * zoom, pr = Math.max(phh, f.w * ASCALE * pts * zoom) * .72; if (a.state === 'farceur') drawPowderGlow(x, y - phh / 2, pr);
     const k = zoom * ASCALE * (TSCALE[a.type] || 1), sq = a.type === 'boing' && a.y < 25 ? 1 + (25 - a.y) / 25 * .12 : 1;
     ctx.save(); ctx.translate(x, y); ctx.scale((a.dir < 0 ? -1 : 1) * k * sq, k / sq);
     if (a.type === 'glouglou' && a.state === 'farceur') ctx.rotate(Math.sin(a.t * 6.4) * .06);
+    if (a.state === 'bubble') { ctx.translate(0, -f.h / 2); ctx.rotate(Math.sin(a.bt * 7) * .18); const d = 1 + Math.sin(a.bt * 14) * .05; ctx.scale(d, 2 - d); ctx.translate(0, f.h / 2); }   // content d'être libéré : il danse dans sa bulle
     if (WD.sideways && a.state === 'farceur') { ctx.translate(0, -f.h * .3); ctx.rotate(-Math.PI / 2 * .92); ctx.translate(0, f.h * .3); }   // Uranus : ils se couchent sur le côté « pour se déguiser »
     if (a.type === 'bidou' && a.hitT > 0) { const w = Math.sin(a.hitT * 40) * .08; ctx.scale(1 + w, 1 - w); }        // il boude en tremblotant
     if (a.type === 'zigzag' && a.state === 'farceur') ctx.translate(0, -Math.abs(Math.sin(a.t * 4)) * 8);
@@ -663,8 +670,25 @@
       ctx.beginPath(); ctx.ellipse(ex - r * 1.05, ey, r, r * .72, 0, 0, 7); ctx.ellipse(ex + r * 1.05, ey, r, r * .72, 0, 0, 7); ctx.fill(); ctx.fillRect(ex - r * .3, ey - r * .25, r * .6, r * .22);
       ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.arc(ex - r * 1.3, ey - r * .25, r * .22, 0, 7); ctx.arc(ex + r * .8, ey - r * .25, r * .22, 0, 7); ctx.fill(); }
     ctx.restore();
+    if (a.state === 'farceur') drawPowder(x, y - phh / 2, pr, time, a.x * .01);
     if (a.state === 'bubble') { const ts = TSCALE[a.type] || 1, r = Math.max(BUBBLE_R, Math.max(f.w, f.h) * .62 * ts) * zoom, cy = y - f.h * ts * zoom / 2; const g = ctx.createRadialGradient(x - r * .3, cy - r * .3, r * .1, x, cy, r);
       g.addColorStop(0, 'rgba(255,255,255,.55)'); g.addColorStop(.7, 'rgba(170,230,255,.18)'); g.addColorStop(1, 'rgba(255,170,240,.55)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, cy, r, 0, 7); ctx.fill(); }
+  }
+  function powderBurst(x, y) { for (let i = 0; i < 16; i++) { const an = Math.random() * 6.28, v = 90 + Math.random() * 160; sparks.push({ x, y, vx: Math.cos(an) * v, vy: Math.sin(an) * v + 60, g: 60, t: 0, life: .9 + Math.random() * .5, kind: 'glit' }); } }
+  function heartPath(x, y, r) { ctx.beginPath(); ctx.moveTo(x, y + r * .9); ctx.bezierCurveTo(x - r * 1.6, y - r * .1, x - r * .7, y - r * 1.3, x, y - r * .45); ctx.bezierCurveTo(x + r * .7, y - r * 1.3, x + r * 1.6, y - r * .1, x, y + r * .9); ctx.closePath(); }
+  function drawSparks() {
+    for (const q of sparks) { const x = SX(q.x), y = SY(q.y), k = q.t / q.life; ctx.globalAlpha = Math.max(0, 1 - k * k);
+      if (q.kind === 'glit') { const r = (5 + 3 * Math.sin(q.t * 20)) * zoom; ctx.fillStyle = '#b678ff'; ctx.beginPath(); ctx.moveTo(x, y - r * 1.6); ctx.lineTo(x + r * .45, y); ctx.lineTo(x, y + r * 1.6); ctx.lineTo(x - r * .45, y); ctx.closePath(); ctx.fill(); }
+      else if (q.kind === 'heart') { ctx.fillStyle = '#ff6fa8'; heartPath(x, y, 11 * zoom); ctx.fill(); }
+      else { ctx.fillStyle = '#5b6bff'; ctx.font = `900 ${28 * zoom}px system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.fillText('♪', x, y); } }
+    ctx.globalAlpha = 1;
+  }
+  // la poudre ronchon de Farfouille : un petit nuage violet qui scintille autour des farceurs (les amis, eux, n'en ont pas)
+  function drawPowderGlow(cx, cy, r) { const g = ctx.createRadialGradient(cx, cy, r * .25, cx, cy, r); g.addColorStop(0, 'rgba(160,80,255,.30)'); g.addColorStop(.7, 'rgba(160,80,255,.22)'); g.addColorStop(1, 'rgba(160,80,255,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill(); }
+  function drawPowder(cx, cy, r, time, seed) {
+    for (let i = 0; i < 10; i++) { const an = time * (1.1 + (i % 3) * .25) * (i % 2 ? 1 : -1) + i * .63 + seed, rr = r * (.78 + .1 * Math.sin(time * 2 + i)), px = cx + Math.cos(an) * rr, py = cy + Math.sin(an) * rr * .8, tw = .5 + .5 * Math.sin(time * 6 + i * 2 + seed), s = (5 + tw * 6) * zoom;
+      ctx.globalAlpha = .45 + tw * .55; ctx.fillStyle = i % 2 ? '#c99bff' : '#9d5cff'; ctx.beginPath(); ctx.moveTo(px, py - s * 1.7); ctx.lineTo(px + s * .5, py); ctx.lineTo(px, py + s * 1.7); ctx.lineTo(px - s * .5, py); ctx.closePath(); ctx.fill(); }
+    ctx.globalAlpha = 1;
   }
   function drawFriend(f, time) {
     const x = SX(f.x), y = SY(f.y) - Math.abs(Math.sin(f.t * 5)) * 6 * zoom; if (x < -150 || x > W + 150) return;
@@ -672,6 +696,7 @@
     if (f.img === 'flame' && flameImg.complete) { const hh = 74 * zoom, ww = hh * .78; if (f.cell) ctx.filter = `hue-rotate(${f.cell}deg)`; ctx.scale(f.face || 1, 1); ctx.drawImage(flameImg, -ww / 2, -hh, ww, hh); ctx.filter = 'none'; }
     else if (monImg.complete) { const cw = 400, ch = 264, i = f.cell, k = 90 / 254 * zoom; ctx.scale(f.face || 1, 1); ctx.drawImage(monImg, (i % 5) * cw, Math.floor(i / 5) * ch, cw, ch, -cw * k / 2, -(ch - 6) * k, cw * k, ch * k); }
     ctx.restore();
+    ctx.fillStyle = '#ff6fa8'; ctx.globalAlpha = .9; heartPath(x, y - 108 * zoom + Math.sin(f.t * 3) * 3 * zoom, 8 * zoom); ctx.fill(); ctx.globalAlpha = 1;   // un ami : petit cœur au-dessus de la tête
   }
   function drawShots() {
     for (const u of bubbles) { const x = SX(u.x), y = SY(u.y), r = u.r * zoom; const g = ctx.createRadialGradient(x - r * .3, y - r * .3, r * .1, x, y, r);
@@ -765,7 +790,7 @@
       camY += (Math.max(0, ty) - camY) * Math.min(1, dt * 3);
       const time = now / 1000;
       drawBg(time); drawGround(time); drawDevils(time); drawRover(time); drawSolids(time); drawItems(time);
-      cages.forEach(c => drawCage(c, time)); aliens.forEach(a => drawAlien(a, time)); friends.forEach(f => drawFriend(f, time));
+      cages.forEach(c => drawCage(c, time)); aliens.forEach(a => drawAlien(a, time)); friends.forEach(f => drawFriend(f, time)); drawSparks();
       drawHelpers(); drawBoss(time); drawRose(); drawHeli(time); drawShots();
     } else { ctx.fillStyle = WD.theme; ctx.fillRect(0, 0, W, H); }
     requestAnimationFrame(loop);
