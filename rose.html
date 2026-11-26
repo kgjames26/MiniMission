@@ -35,6 +35,8 @@
   const WALK = 172;            // marche avec l'exosquelette : lente et posée
   const WALK_ACC = 300, WALK_DEC = 520;
   const STEP_PX = 13.2;        // distance parcourue par image de marche (pieds qui ne glissent pas)
+  // départ et arrêt de la marche sur les images les plus proches de la pose debout (bras le long du corps, pieds rapprochés)
+  const WALK_START = 4, WALK_STOPS = [4, 12, 19, 26];
   const FLY = 360, DASH_AT = 290, FLY_ACC = 520;
   const RISE = 260, SINK = 200;
   const ceil = () => Math.max(120, (GROUND - H * .1) / zoom - 250);   // Rose reste toujours visible en haut de l'écran
@@ -89,7 +91,16 @@
       const target = a ? 0 : dir * WALK;
       const acc = Math.abs(target) > Math.abs(rose.vx) || Math.sign(target) !== Math.sign(rose.vx) ? WALK_ACC : WALK_DEC;
       rose.vx += Math.max(-acc * dt, Math.min(acc * dt, target - rose.vx));
-      rose.walkDist += Math.abs(rose.vx) * dt;
+      const was = rose.walking;
+      if (Math.abs(rose.vx) > 8 && !a) {
+        if (!was) rose.walkDist = WALK_START * STEP_PX;                // on démarre sur un pas qui ressemble à l'arrêt
+        rose.walking = true; rose.walkDist += Math.abs(rose.vx) * dt;
+      } else if (was) {                                                 // on finit le pas en cours jusqu'à une pose proche de l'arrêt
+        const pos = rose.walkDist / STEP_PX, cyc = Math.floor(pos / 30) * 30, inC = pos - cyc;
+        const target = cyc + (WALK_STOPS.find(f => f >= inC - .05) ?? 30 + WALK_STOPS[0]);
+        rose.walkDist += Math.max(Math.abs(rose.vx), 120) * dt;
+        if (rose.walkDist / STEP_PX >= target) { rose.walkDist = target * STEP_PX; rose.walking = false; }
+      }
       if (key.fly && !a) {                                       // décollage : depuis la marche ou depuis l'arrêt
         if (Math.abs(rose.vx) > 40) play('up', 'air', { vx0: rose.vx }); else play('lift', 'air');
       }
@@ -122,7 +133,7 @@
         if (a.then === 'air') {                                   // on reprend le vol exactement à la hauteur où l'animation s'arrête
           const last = 'rose_' + (A[a.name].src || a.name) + (n - 1);
           rose.y = topOf(last) - topOf('rose_hover0'); rose.vy = 120; rose.mode = 'air'; rose.airPose = Math.abs(rose.vx) < 60 ? 'hover' : 'fly'; rose.airT = 0;
-        } else { rose.mode = 'ground'; rose.y = 0; if (a.name === 'down') rose.walkDist = 0; }
+        } else { rose.mode = 'ground'; rose.y = 0; if (a.name === 'down') { rose.walkDist = 0; rose.walking = Math.abs(rose.vx) > 8; } else rose.walking = false; }
       }
     }
     rose.x += rose.vx * dt;
@@ -133,7 +144,7 @@
     const a = rose.anim;
     if (a) return { ...sample(a.name, a.t * FPS[a.name]), set: a.name, ground: true };
     if (rose.mode === 'air') return { ...sample(rose.airPose, rose.airT * FPS[rose.airPose]), set: rose.airPose };
-    if (Math.abs(rose.vx) > 8) return { ...sample('walk', rose.walkDist / STEP_PX), set: 'walk', ground: true };
+    if (rose.walking) return { ...sample('walk', rose.walkDist / STEP_PX), set: 'walk', ground: true };
     return { ...sample('idle', rose.t * FPS.idle), set: 'idle', ground: true };
   }
 
