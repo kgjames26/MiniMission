@@ -310,7 +310,7 @@
   }
   function hash(value) { let h = 2166136261; for (let i=0;i<value.length;i++) { h ^= value.charCodeAt(i); h = Math.imul(h,16777619); } return h >>> 0; }
   function seeded(seed) { let s = seed || 1; return () => { s += 0x6D2B79F5; let t = s; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-  function setScreen(id) { if(hudPeek){hudPeek=null;$('#hud-peek')?.classList.add('hidden');document.body.classList.remove('peeking');} if(id!=='puzzle-screen')cancelSpeech(); if(id!=='game-screen'){$('#toast')?.classList.remove('show');$('#award-banner')?.classList.remove('show');} if (id === 'pause-screen') renderPauseCollect(); screens.forEach(s => s.classList.toggle('active', s.id === id)); scene = id; if (id !== 'game-screen') releaseControls(); if (!['game-screen','puzzle-screen'].includes(id)) lastActiveTick=performance.now(); if (id === 'game-screen') resizeCanvas(); updateMusic(); }
+  function setScreen(id) { if (id === 'home' && MM.updateBooksBadge) MM.updateBooksBadge(); if(hudPeek){hudPeek=null;$('#hud-peek')?.classList.add('hidden');document.body.classList.remove('peeking');} if(id!=='puzzle-screen')cancelSpeech(); if(id!=='game-screen'){$('#toast')?.classList.remove('show');$('#award-banner')?.classList.remove('show');} if (id === 'pause-screen') renderPauseCollect(); screens.forEach(s => s.classList.toggle('active', s.id === id)); scene = id; if (id !== 'game-screen') releaseControls(); if (!['game-screen','puzzle-screen'].includes(id)) lastActiveTick=performance.now(); if (id === 'game-screen') resizeCanvas(); updateMusic(); }
   // la musique accompagne la partie ; elle se met en pause avec le jeu
   function updateMusic() {
     const should = audioEnabled && musicEnabled && !document.hidden && !idleMuted && (scene === 'game-screen' || scene === 'puzzle-screen');
@@ -2641,7 +2641,9 @@
   document.querySelectorAll('.chap-card').forEach(card=>card.addEventListener('click',()=>chooseChapter(Number(card.dataset.chap))));
   $('#space-map').addEventListener('click',e=>{const p=e.target.closest('.planet');if(p)pickPlanet(Number(p.dataset.i));});
   $('#space-back').addEventListener('click',()=>{updateChapters();setScreen('chapter-screen');});
-  $('#library-open').addEventListener('click',()=>{cancelSpeech();if(MM.book)MM.book.library(MM.STORY_ORDER||[]);});
+  const updateBooksBadge = () => { const b = $('#books-badge'), L = MM.STORY_ORDER || []; if (b && MM.book) b.textContent = `${L.filter(id => MM.book.seen(id)).length}/${L.length}`; };
+  $('#library-open').addEventListener('click',()=>{cancelSpeech();if(MM.book)MM.book.library(MM.STORY_ORDER||[], updateBooksBadge);});
+  updateBooksBadge(); addEventListener('pageshow', updateBooksBadge); MM.updateBooksBadge = updateBooksBadge;
   MM.say=(t)=>sayText(t); MM.hush=()=>cancelSpeech();
   $('#hero-back').addEventListener('click',()=>{renderLevels();setScreen('level-screen');});
   $('#level-grid').addEventListener('click',e=>{const card=e.target.closest('.level-card');if(card)pickLevel(Number(card.dataset.i));});
