@@ -129,5 +129,5 @@ Filou reste accroché à sa toile tant qu'on ne saute pas (le bouton SAUT cligno
 - Nuage d'aide (v0.59) : après 2 chutes dans le même trou (`cloudHelp`), un petit nuage souriant attend dedans ; s'il rattrape le héros, il le fait rebondir jusqu'à l'autre bord (`cloudBounce`, trajectoire calculée). Un enfant qui réussit ne le voit jamais. Remis à zéro à chaque mission.
 
 ## Rose (en préparation)
-- `assets/rose.webp` + `rose.json` : animations tirées des GIF (`tools/rose/`), toutes à la même échelle et calées sur le sol ; `top` = hauteur du casque au-dessus du sol, pour raccorder les animations.
+- `assets/rose.webp` + `rose.json` : TOUTES les images des GIF (`tools/rose/`), à la même échelle et calées sur le sol ; le jeu fond chaque image dans la suivante (60 images/s) ; `top` = hauteur du casque au-dessus du sol, pour raccorder les animations.
 - `rose.html` : page d'essai des mouvements (pas encore dans le jeu). Marche lente d'exosquelette, pieds qui ne glissent pas ; décollage depuis l'arrêt ou depuis la marche, vol stationnaire / lent / rapide selon la vitesse, atterrissage vers l'arrêt ou vers la marche, victoire. Chaque changement passe par son animation de jonction, sinon par un fondu court.
