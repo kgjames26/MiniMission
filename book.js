@@ -8,45 +8,58 @@
   const markSeen = (id) => { try { const s = seenList(); if (!s.includes(id)) { s.push(id); localStorage.setItem(KEY, JSON.stringify(s)); } } catch (e) {} };
   const BG = { space: ['#1c1460', '#4a3aa8'], city: ['#8fdcff', '#ffe9b0'], night: ['#1b2550', '#6a4aa8'] };
   const css = `
-  .mmb{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:radial-gradient(circle at 50% 30%,#fff6e0,#f2d8a8);padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));font-family:"Baloo 2",system-ui,sans-serif;touch-action:pan-y;user-select:none;-webkit-user-select:none}
-  .mmb-book{position:relative;flex:1;min-height:0;width:min(1100px,100%);display:flex;gap:0;border-radius:18px;background:#fffdf6;box-shadow:0 14px 40px rgba(80,50,10,.35),0 0 0 6px #b97a3a,0 0 0 10px #8a5424}
-  .mmb-book::after{content:'';position:absolute;left:50%;top:0;bottom:0;width:26px;margin-left:-13px;background:linear-gradient(90deg,rgba(0,0,0,0),rgba(0,0,0,.12),rgba(0,0,0,0));pointer-events:none}
-  .mmb.single .mmb-book::after{display:none}
-  .mmb-page{flex:1;min-width:0;display:flex;flex-direction:column;padding:clamp(8px,1.6vmin,16px);gap:clamp(6px,1.4vmin,12px);animation:mmbIn .35s ease}
-  @keyframes mmbIn{from{opacity:0;transform:translateY(8px)}}
-  .mmb-pic{position:relative;flex:1;min-height:0;border-radius:14px;overflow:hidden;background:linear-gradient(160deg,var(--b1),var(--b2));display:grid;place-items:center}
-  .mmb-pic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-  .mmb-emo{font-size:clamp(34px,11vmin,96px);line-height:1;letter-spacing:.08em;filter:drop-shadow(0 4px 4px rgba(0,0,0,.25));text-align:center;padding:0 6px}
-  .mmb-txt{flex:none;font-size:clamp(15px,3.1vmin,25px);line-height:1.3;font-weight:700;color:#3b2f22;max-height:42%;overflow:auto}
-  .mmb-bar{flex:none;display:flex;gap:12px;align-items:center;justify-content:center}
-  .mmb-btn{border:0;border-radius:999px;min-width:58px;height:58px;padding:0 16px;font-size:28px;font-weight:900;color:#fff;background:linear-gradient(#ffb04a,#f2702c);box-shadow:0 5px 0 #b4471a;font-family:inherit}
-  .mmb-btn:active{transform:translateY(3px);box-shadow:0 2px 0 #b4471a}
-  .mmb-btn.alt{background:linear-gradient(#8fd0ff,#3a96e8);box-shadow:0 5px 0 #1f6fa8}
-  .mmb-btn.go{background:linear-gradient(#69d36a,#2f9c3b);box-shadow:0 5px 0 #1f6e2a;font-size:24px}
-  .mmb-btn[hidden]{display:none}
-  .mmb-dots{display:flex;gap:6px}
-  .mmb-dots i{width:10px;height:10px;border-radius:50%;background:#d8c09a}.mmb-dots i.on{background:#f2702c}
-  .mmb-skip{position:absolute;top:max(10px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));border:0;border-radius:999px;background:rgba(255,255,255,.9);font-size:20px;font-weight:900;padding:6px 14px;color:#8a5424;box-shadow:0 3px 0 rgba(0,0,0,.15);z-index:2}
-  .mmb-lib{position:fixed;inset:0;z-index:59;display:flex;flex-direction:column;gap:10px;background:radial-gradient(circle at 50% 20%,#fff6e0,#f2d8a8);padding:max(12px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}
-  .mmb-lib h2{margin:0;text-align:center;font-size:clamp(24px,5vmin,40px);color:#8a5424}
-  .mmb-shelf{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;align-content:start}
-  .mmb-cover{position:relative;aspect-ratio:3/4;border:0;border-radius:8px 14px 14px 8px;background:linear-gradient(160deg,var(--b1),var(--b2));box-shadow:inset 8px 0 0 rgba(0,0,0,.18),0 5px 0 rgba(0,0,0,.2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#fff;font:inherit;font-weight:900;font-size:clamp(13px,2.4vmin,17px);padding:8px;text-shadow:0 2px 0 rgba(0,0,0,.3)}
-  .mmb-cover span{font-size:clamp(30px,7vmin,48px)}
-  .mmb-cover.lock{filter:grayscale(1) opacity(.5)}
-  .mmb-book{margin-top:10px}
-  .mmb.single .mmb-page{justify-content:center}
-  .mmb.single .mmb-pic{flex:none;width:100%;aspect-ratio:4/3;max-height:62%}
-  .mmb.single .mmb-txt{max-height:none;font-size:clamp(17px,4.8vw,26px)}
-  .mmb.single .mmb-book{flex:0 1 auto}
-  .mmb-wide{flex:1 1 auto;min-height:60px;margin:clamp(8px,1.6vmin,16px) clamp(8px,1.6vmin,16px) 0;border-radius:14px;overflow:hidden;background:#e8e0cc}
-  .mmb-wide img{width:100%;height:100%;object-fit:cover;display:block}
-  .mmb-cols{flex:none;display:flex}
-  .mmb-book.spread .mmb-txt{max-height:none;font-size:clamp(13px,2.7vmin,22px)}
-  .mmb-book.spread .mmb-page{padding-top:8px}
-  .mmb.single .mmb-wide{display:none}
-  .mmb-half{position:relative;flex:none;width:100%;aspect-ratio:4/3;max-height:62%;border-radius:14px;overflow:hidden;background:#e8e0cc}
-  .mmb-half img{width:100%;height:100%;object-fit:cover;display:block}
-  .mmb-book.spread{flex-direction:column}`;
+  .mmb{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;font-family:var(--font,"Baloo 2",system-ui,sans-serif);user-select:none;-webkit-user-select:none;touch-action:none;
+    background:radial-gradient(ellipse at 50% 40%,rgba(255,220,160,.25),rgba(0,0,0,.45) 75%),repeating-linear-gradient(90deg,#7a4a26 0 22px,#6d3f1f 22px 40px,#84522b 40px 64px),#6d3f1f;
+    padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
+  .mmb-book{position:relative;width:100%;height:100%;padding:clamp(6px,1.4vmin,14px);border-radius:clamp(10px,2vmin,20px);background:linear-gradient(135deg,#a0522d,#7b3415 60%,#5e260e);
+    box-shadow:0 18px 40px rgba(0,0,0,.55),inset 0 0 0 2px rgba(255,210,150,.35)}
+  .mmb-pages{position:relative;width:100%;height:100%;perspective:2600px;
+    box-shadow:3px 0 0 #efe4cc,6px 0 0 #e2d4b5,9px 0 0 #d6c6a3,-3px 0 0 #efe4cc,-6px 0 0 #e2d4b5,-9px 0 0 #d6c6a3}
+  .mmb-slot{position:absolute;top:0;bottom:0;overflow:hidden}
+  .mmb.two .mmb-slot.l{left:0;width:50%}.mmb.two .mmb-slot.r{left:50%;width:50%}
+  .mmb.one .mmb-slot.l{display:none}.mmb.one .mmb-slot.r{left:0;width:100%}
+  .mmb-pg{position:absolute;inset:0;display:flex;flex-direction:column;background:#fffaf0;overflow:hidden}
+  .mmb-pg.l{background:linear-gradient(90deg,#fffaf0 80%,#efe2c6)}.mmb-pg.r{background:linear-gradient(90deg,#efe2c6,#fffaf0 20%)}
+  .mmb.one .mmb-pg.r,.mmb.one .mmb-pg.l{background:linear-gradient(90deg,#efe2c6,#fffaf0 8%)}
+  .mmb-pic{position:relative;flex:0 0 72%;overflow:hidden;background:#e9dcc0}
+  .mmb.one .mmb-pic{flex-basis:56%}
+  .mmb-pic img{pointer-events:none;-webkit-user-drag:none;position:absolute;top:0;height:100%;width:200%;object-fit:cover;opacity:0;transition:opacity .25s}
+  .mmb-pic img.on{opacity:1}
+  .mmb-pg.l .mmb-pic img{left:0}.mmb-pg.r .mmb-pic img{left:-100%}
+  .mmb-pg.solo .mmb-pic img{left:0;width:100%}
+  .mmb-pic::after{content:'';position:absolute;left:0;right:0;bottom:0;height:18px;background:linear-gradient(transparent,#fffaf0)}
+  .mmb-tx{flex:1;min-height:0;display:flex;align-items:center;padding:clamp(4px,1.2vmin,12px) clamp(12px,3.2vmin,34px);font-weight:700;color:#3b2a1a;line-height:1.28;font-size:clamp(13px,2.75vmin,24px);overflow:hidden}
+  .mmb.one .mmb-tx{font-size:clamp(16px,4.6vw,26px);align-items:flex-start;padding-top:12px}
+  .mmb-pg.l .mmb-tx{padding-right:clamp(16px,4vmin,40px)}.mmb-pg.r .mmb-tx{padding-left:clamp(16px,4vmin,40px)}
+  .mmb-num{position:absolute;bottom:6px;left:50% !important;right:auto !important;transform:translateX(-50%);font-size:13px;font-weight:800;color:#b49a72}.mmb-pg.l .mmb-num{left:12px}.mmb-pg.r .mmb-num{right:12px}
+  .mmb-end{flex:1;display:grid;place-items:center;align-content:center;gap:14px;background:radial-gradient(circle,#fff6dc,#f6e6c4)}
+  .mmb-end b{font-size:clamp(40px,12vmin,110px)}
+  .mmb-spine{position:absolute;left:50%;top:0;bottom:0;width:60px;margin-left:-30px;pointer-events:none;z-index:3;background:linear-gradient(90deg,transparent,rgba(60,30,0,.18) 45%,rgba(60,30,0,.28) 50%,rgba(60,30,0,.18) 55%,transparent)}
+  .mmb.one .mmb-spine{left:0;margin-left:-20px;width:40px;opacity:.7}
+  .mmb-leaf{position:absolute;top:0;bottom:0;z-index:5;transform-style:preserve-3d;will-change:transform}
+  .mmb-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden}
+  .mmb-face.back{transform:rotateY(180deg)}
+  .mmb-shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.25),transparent 40%);opacity:0}
+  .mmb-curl{position:absolute;right:0;bottom:0;width:clamp(34px,7vmin,64px);height:clamp(34px,7vmin,64px);z-index:4;pointer-events:none;
+    background:linear-gradient(135deg,transparent 50%,#e4d3ad 50%,#fff6e0 70%,#d9c49a);border-top-left-radius:8px;box-shadow:-3px -3px 6px rgba(0,0,0,.18);animation:mmbCurl 2.4s ease-in-out infinite}
+  @keyframes mmbCurl{0%,70%,100%{transform:scale(1)}80%{transform:scale(1.35)}}
+  .mmb-hand{position:absolute;right:12%;bottom:18%;z-index:6;font-size:clamp(40px,9vmin,70px);pointer-events:none;animation:mmbHand 1.8s ease-in-out 3;opacity:0;filter:drop-shadow(0 4px 4px rgba(0,0,0,.35))}
+  @keyframes mmbHand{0%{opacity:0;transform:translateX(0)}15%{opacity:1}70%{opacity:1;transform:translateX(-160%)}100%{opacity:0;transform:translateX(-170%)}}
+  .mmb-ui{position:absolute;z-index:8;display:flex;gap:10px}
+  .mmb-ui.tl{top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left))}.mmb-ui.tr{top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right))}
+  .mmb-rb{border:0;width:clamp(44px,8vmin,58px);height:clamp(44px,8vmin,58px);border-radius:50%;font-size:clamp(20px,4vmin,28px);background:rgba(255,250,235,.95);color:#7b3415;box-shadow:0 4px 0 rgba(0,0,0,.25);font-family:inherit;font-weight:900}
+  .mmb-rb:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(0,0,0,.25)}
+  .mmb-go.small{position:absolute;right:clamp(10px,2vmin,18px);bottom:clamp(10px,2vmin,18px);padding:8px 22px;font-size:clamp(22px,4.5vmin,32px);z-index:4}
+  .mmb-go{border:0;border-radius:999px;padding:14px 34px;font-size:clamp(26px,6vmin,40px);font-weight:900;color:#fff;background:linear-gradient(#69d36a,#2f9c3b);box-shadow:0 6px 0 #1f6e2a;font-family:inherit}
+  .mmb-lib{position:fixed;inset:0;z-index:999;display:flex;flex-direction:column;gap:10px;background:radial-gradient(ellipse at 50% 30%,rgba(255,220,160,.25),rgba(0,0,0,.4) 80%),repeating-linear-gradient(90deg,#7a4a26 0 22px,#6d3f1f 22px 40px,#84522b 40px 64px);padding:max(12px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}
+  .mmb-lib h2{margin:0;text-align:center;font-size:clamp(28px,6vmin,44px)}
+  .mmb-shelf{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:16px;grid-auto-rows:max-content;align-content:start;padding:6px}
+  .mmb-cover{position:relative;aspect-ratio:3/4;border:0;border-radius:6px 14px 14px 6px;overflow:hidden;background:linear-gradient(160deg,#a0522d,#5e260e);box-shadow:inset 9px 0 0 rgba(0,0,0,.25),0 6px 0 rgba(0,0,0,.3);display:flex;flex-direction:column;justify-content:flex-end;color:#fff;font:inherit;font-weight:900;font-size:clamp(13px,2.4vmin,17px);padding:0;text-shadow:0 2px 0 rgba(0,0,0,.45)}
+  .mmb-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .mmb-cover em{position:relative;font-style:normal;padding:8px 8px 10px 14px;background:linear-gradient(transparent,rgba(0,0,0,.6))}
+  .mmb-cover span{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(30px,7vmin,48px)}
+  .mmb-cover.lock{filter:grayscale(1) brightness(.6)}
+  .mmb-skip{position:absolute;top:max(10px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));border:0;border-radius:50%;width:52px;height:52px;background:rgba(255,250,235,.95);font-size:22px;font-weight:900;color:#7b3415;box-shadow:0 4px 0 rgba(0,0,0,.25);z-index:2}`;
   // ---------- images : une grande image par double page (assets/book/<livre>-w<n>.webp) ; sinon une scène dessinée par le jeu ----------
   const IMG = {}, load = (src) => IMG[src] || (IMG[src] = new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; }));
   const J = {}, json = (src) => J[src] || (J[src] = fetch(src).then(r => r.json()).catch(() => null));
@@ -110,35 +123,89 @@
     const book = MM.STORY && MM.STORY[id];
     if (!book || (!opts.force && seenList().includes(id))) { if (opts.onDone) opts.onDone(); return false; }
     style(); markSeen(id);
-    const [b1, b2] = BG[book.bg] || BG.city;
-    const root = document.createElement('div'); root.className = 'mmb'; root.setAttribute('role', 'dialog');
-    root.innerHTML = `<button class="mmb-skip" aria-label="Passer">⏭</button><div class="mmb-book" style="--b1:${b1};--b2:${b2}"></div>
-      <div class="mmb-bar"><button class="mmb-btn alt" data-a="prev" aria-label="Page d’avant">◀</button><button class="mmb-btn alt" data-a="say" aria-label="Écouter">🔊</button><div class="mmb-dots"></div><button class="mmb-btn" data-a="next" aria-label="Page suivante">▶</button><button class="mmb-btn go" data-a="done" aria-label="C’est parti" hidden>▶▶</button></div>`;
+    const pages = book.pages, root = document.createElement('div'); root.className = 'mmb'; root.setAttribute('role', 'dialog');
+    root.innerHTML = `<div class="mmb-book"><div class="mmb-pages"><div class="mmb-slot l"></div><div class="mmb-slot r"></div><div class="mmb-spine"></div></div></div>
+      <div class="mmb-ui tl"><button class="mmb-rb" data-a="say" aria-label="Écouter">🔊</button></div><div class="mmb-ui tr"><button class="mmb-rb" data-a="close" aria-label="Fermer">✕</button></div>`;
     document.body.appendChild(root);
-    const pages = book.pages, el = root.querySelector('.mmb-book'), dots = root.querySelector('.mmb-dots');
-    let per = 2, at = 0, closed = false, sayNow = false;
+    const area = root.querySelector('.mmb-pages'), L = root.querySelector('.mmb-slot.l'), R = root.querySelector('.mmb-slot.r');
+    let two = true, at = 0, closed = false, busy = false, hinted = false;
+    // en paysage, on ajoute une page « fin » si le nombre de pages est impair ; en portrait, elle vient après la dernière page
+    const count = () => two ? pages.length + (pages.length % 2) : pages.length;
+    const solo = pages.length === 1;
+    // une page du livre : la moitié de la grande image de la double page + son texte (ou la page de fin)
+    const page = (i) => {
+      const d = document.createElement('div');
+      if (i < 0 || i >= count()) { d.className = 'mmb-pg'; return d; }
+      const side = i % 2 ? 'r' : 'l'; d.className = 'mmb-pg ' + side + (solo ? ' solo' : '');
+      if (i >= pages.length) { d.innerHTML = `<div class="mmb-end"><b>⭐</b><button class="mmb-go" data-a="close" aria-label="C’est parti">▶▶</button></div>`; return d; }
+      d.innerHTML = `<div class="mmb-pic"><img alt="" draggable="false"></div><div class="mmb-tx">${esc(pages[i].t)}</div><div class="mmb-num">${i + 1}</div>${i === pages.length - 1 ? '<button class="mmb-go small" data-a="close" aria-label="C’est parti">▶▶</button>' : ''}`;
+      const img = d.querySelector('img'); picture(id, Math.floor(i / 2)).then(src => { img.onload = () => img.classList.add('on'); img.src = src; });
+      return d;
+    };
+    const fill = (slot, i) => { slot.innerHTML = ''; slot.appendChild(page(i)); };
     const render = () => {
-      per = innerWidth > innerHeight && pages.length > 1 ? 2 : 1; root.classList.toggle('single', per === 1);
-      at = Math.floor(at / per) * per;
-      const view = pages.slice(at, at + per), di = Math.floor(at / 2), side = at % 2 ? '100%' : '0%';
-      // paysage : la grande image de la double page en haut, les deux textes dessous ; portrait : la moitié de l'image qui va avec la page
-      if (per === 2) el.innerHTML = `<div class="mmb-wide"><img alt=""></div><div class="mmb-cols">${view.map(p => `<div class="mmb-page"><div class="mmb-txt">${esc(p.t)}</div></div>`).join('')}</div>`;
-      else el.innerHTML = `<div class="mmb-page"><div class="mmb-half"><img alt="" style="object-position:${pages.length > 1 ? side : '50%'} 50%"></div><div class="mmb-txt">${esc(view[0].t)}</div></div>`;
-      el.classList.toggle('spread', per === 2);
-      const img = el.querySelector('img'), myAt = at; picture(id, di).then(src => { if (at === myAt && img.isConnected) img.src = src; });
-      const spreads = Math.ceil(pages.length / per), cur = Math.floor(at / per);
-      dots.innerHTML = Array.from({ length: spreads }, (_, i) => `<i class="${i === cur ? 'on' : ''}"></i>`).join('');
-      root.querySelector('[data-a="prev"]').style.visibility = at > 0 ? 'visible' : 'hidden';
-      const last = at + per >= pages.length; root.querySelector('[data-a="next"]').hidden = last; root.querySelector('[data-a="done"]').hidden = !last;
-      if (sayNow) speak(view.map(p => p.s || p.t).join(' '));   // la voix ne lit que si on appuie sur 🔊 (la synthèse vocale n'est pas toujours belle)
-      sayNow = false;
+      two = innerWidth > innerHeight; root.classList.toggle('two', two); root.classList.toggle('one', !two);
+      if (two) at -= at % 2;
+      if (two) { fill(L, at); fill(R, at + 1); } else fill(R, at);
+      root.querySelectorAll('.mmb-curl').forEach(c => c.remove());
+      if (at + (two ? 2 : 1) < count()) { const c = document.createElement('div'); c.className = 'mmb-curl'; R.appendChild(c); }
+      if (!hinted) { hinted = true; const h = document.createElement('div'); h.className = 'mmb-hand'; h.textContent = '👆'; R.appendChild(h); }
     };
     const close = () => { if (closed) return; closed = true; hush(); removeEventListener('resize', render); root.remove(); if (opts.onDone) opts.onDone(); };
-    const go = (d) => { const n = at + d * per; if (n < 0) return; if (n >= pages.length) { close(); return; } at = n; hush(); render(); };
-    root.addEventListener('click', (e) => { const a = e.target.closest('[data-a]'); if (!a) return; const k = a.dataset.a;
-      if (k === 'prev') go(-1); else if (k === 'next') go(1); else if (k === 'done') close(); else if (k === 'say') { sayNow = true; render(); } });
-    root.querySelector('.mmb-skip').onclick = close;
-    let sx = null; root.addEventListener('pointerdown', e => { sx = e.clientX; }); root.addEventListener('pointerup', e => { if (sx === null) return; const dx = e.clientX - sx; sx = null; if (Math.abs(dx) > 60 && !e.target.closest('button')) go(dx < 0 ? 1 : -1); });
+    const step = () => two ? 2 : 1;
+
+    // ---- la feuille qui tourne : dir = 1 (page suivante) ou -1 (page d'avant) ----
+    let leaf = null, dir = 0, angle = 0, ending = false;
+    const startFlip = (d) => {
+      const n = at + d * step(); if (n < 0) return false; ending = n >= count();
+      dir = d; hush(); leaf = document.createElement('div'); leaf.className = 'mmb-leaf';
+      const front = document.createElement('div'), back = document.createElement('div'), shade = document.createElement('div');
+      front.className = 'mmb-face front'; back.className = 'mmb-face back'; shade.className = 'mmb-shade';
+      if (two) {
+        if (d > 0) { leaf.style.cssText = 'left:50%;width:50%;transform-origin:0 50%'; front.appendChild(page(at + 1)); back.appendChild(page(at + 2)); fill(R, at + 3); }
+        else { leaf.style.cssText = 'left:0;width:50%;transform-origin:100% 50%'; front.appendChild(page(at)); back.appendChild(page(at - 1)); fill(L, at - 2); }
+      } else {
+        leaf.style.cssText = 'left:0;width:100%;transform-origin:0 50%';
+        if (d > 0) { front.appendChild(page(at)); back.appendChild(page(-1)); fill(R, at + 1); }
+        else { front.appendChild(page(at - 1)); back.appendChild(page(-1)); }
+      }
+      front.appendChild(shade); leaf.append(front, back); area.appendChild(leaf);
+      angle = (!two && d < 0) ? -180 : 0; setAngle(angle); return true;
+    };
+    const setAngle = (a) => { angle = a; leaf.style.transform = `rotateY(${a}deg)`; const s = leaf.querySelector('.mmb-shade'); if (s) s.style.opacity = Math.min(1, Math.abs(a) / 90);
+      leaf.style.boxShadow = `0 0 ${20 * Math.sin(Math.abs(a) * Math.PI / 180)}px rgba(0,0,0,.35)`; };
+    const target = () => two ? (dir > 0 ? -180 : 180) : (dir > 0 ? -180 : 0);
+    const origin = () => (!two && dir < 0) ? -180 : 0;
+    const finish = (done) => new Promise(res => {
+      busy = true; const from = angle, to = done ? target() : origin(), t0 = performance.now(), dur = 380 * Math.max(.35, Math.abs(to - from) / 180);
+      const tick = (t) => { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3); setAngle(from + (to - from) * e);
+        if (k < 1) return requestAnimationFrame(tick);
+        leaf.remove(); leaf = null; busy = false; if (done && ending) { close(); return res(); } if (done) at += dir * step(); render(); res(); };
+      requestAnimationFrame(tick);
+    });
+    const turn = (d) => { if (busy || leaf) return; if (startFlip(d)) finish(true); };
+
+    // ---- le doigt : on attrape la page et on la tourne ----
+    let px = null, py = null, moved = false, w = 1;
+    area.addEventListener('dragstart', e => e.preventDefault());
+    area.addEventListener('pointerdown', e => { if (busy || e.target.closest('button')) return; px = e.clientX; py = e.clientY; moved = false; w = area.clientWidth / (two ? 2 : 1); area.setPointerCapture(e.pointerId); });
+    area.addEventListener('pointermove', e => {
+      if (px === null) return; const dx = e.clientX - px;
+      if (!leaf) { if (Math.abs(dx) < 10) return; moved = true; if (!startFlip(dx < 0 ? 1 : -1)) { px = null; return; } }
+      const k = Math.max(0, Math.min(1, (dir > 0 ? -dx : dx) / (w * 1.1)));
+      setAngle(two ? (dir > 0 ? -180 * k : 180 * k) : (dir > 0 ? -180 * k : -180 + 180 * k));
+    });
+    const up = (e) => {
+      if (px === null) return; const dx = e.clientX - px; px = null;
+      if (leaf) { finish(Math.abs(angle - origin()) > 60 || (e.type === 'pointerup' && Math.abs(dx) > w * .35)); return; }
+      if (!moved && !e.target.closest('button')) { const r = area.getBoundingClientRect(), x = (e.clientX - r.left) / r.width; if (x > .66) turn(1); else if (x < .34) turn(-1); }
+    };
+    area.addEventListener('pointerup', up); area.addEventListener('pointercancel', up);
+    root.addEventListener('click', e => { const a = e.target.closest('[data-a]'); if (!a) return;
+      if (a.dataset.a === 'close') close();
+      else if (a.dataset.a === 'say') speak((two ? pages.slice(at, at + 2) : pages.slice(at, at + 1)).map(p => p.s || p.t).join(' '));   // la voix ne lit que si on appuie sur 🔊
+    });
+    addEventListener('keydown', function kd(e) { if (closed) return removeEventListener('keydown', kd); if (e.key === 'ArrowRight') turn(1); else if (e.key === 'ArrowLeft') turn(-1); else if (e.key === 'Escape') close(); });
     addEventListener('resize', render);
     render();
     return true;
@@ -150,8 +217,9 @@
     const seen = seenList(), root = document.createElement('div'); root.className = 'mmb-lib';
     const items = order.filter(id => MM.STORY[id]);
     root.innerHTML = `<button class="mmb-skip" aria-label="Fermer">✕</button><h2>📚</h2><div class="mmb-shelf">${items.map(id => { const b = MM.STORY[id], [b1, b2] = BG[b.bg] || BG.city, ok = seen.includes(id);
-      return `<button class="mmb-cover ${ok ? '' : 'lock'}" data-id="${id}" style="--b1:${b1};--b2:${b2}"><span>${ok ? esc((b.pages[0].e || '📖').slice(0, 4)) : '🔒'}</span>${ok ? esc(b.title || '') : ''}</button>`; }).join('')}</div>`;
+      return `<button class="mmb-cover ${ok ? '' : 'lock'}" data-id="${id}">${ok ? `<img alt="" data-src="${id}">` : '<span>🔒</span>'}<em>${ok ? esc(b.title || '') : ''}</em></button>`; }).join('')}</div>`;
     document.body.appendChild(root);
+    root.querySelectorAll('img[data-src]').forEach(im => picture(im.dataset.src, 0).then(s => { im.src = s; }));
     root.querySelector('.mmb-skip').onclick = () => { root.remove(); if (onClose) onClose(); };
     root.querySelector('.mmb-shelf').addEventListener('click', e => { const c = e.target.closest('.mmb-cover'); if (!c || c.classList.contains('lock')) return; open(c.dataset.id, { force: true }); });
   }
