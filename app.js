@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '72', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '73', asset = (p) => `${p}?v=${ASSET_V}`;
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
   const monsterImg = new Image(); monsterImg.src = asset('assets/monsters.webp');
   const movesImg = new Image(); movesImg.src = asset('assets/hero-moves.webp');
@@ -346,9 +346,9 @@
   }
   // ----- chapitre 2 : les 10 mondes de Rose (chaque monde s'ouvre quand le précédent est fini) -----
   const PLANETS = [
-    { id: 'lune', k: 'pLune', file: 'rose-lune.html', s: .62, c: ['#f4f4fa', '#a6a4c0'] },
-    { id: 'mars', k: 'pMars', file: 'rose-mars.html', s: .58, c: ['#ffb08a', '#c4502a'] },
-    { id: 'venus', k: 'pVenus', s: .72, c: ['#fff1c4', '#e0a84a'] },
+    { id: 'lune', k: 'pLune', file: 'rose-world.html?w=lune', s: .62, c: ['#f4f4fa', '#a6a4c0'] },
+    { id: 'mars', k: 'pMars', file: 'rose-world.html?w=mars', s: .58, c: ['#ffb08a', '#c4502a'] },
+    { id: 'venus', k: 'pVenus', file: 'rose-world.html?w=venus', s: .72, c: ['#fff1c4', '#e0a84a'] },
     { id: 'mercure', k: 'pMercure', s: .5, c: ['#e2d6cc', '#8f7f74'] },
     { id: 'jupiter', k: 'pJupiter', s: 1, c: ['#ffe2b8', '#c98a52'], band: 1 },
     { id: 'saturne', k: 'pSaturne', s: .86, c: ['#fff0c0', '#d8b46a'], ring: 1 },
