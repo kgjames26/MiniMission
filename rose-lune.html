@@ -66,7 +66,7 @@
 <div id="stick" class="stick idle"><div class="ring"></div><div class="arrow" id="sarrow"></div><div class="knob" id="sknob">🚀</div></div>
 <div class="pad r"><button class="b shoot big-shoot" id="bs" aria-label="Bulles">🫧</button></div>
 <div class="ov" id="quiz"><div class="card"><div class="row" style="margin:0 0 6px"><button class="say" id="qsay" aria-label="Écouter">🔊</button></div><div class="q" id="qtext"></div><div class="opts" id="qopts"></div></div></div>
-<div class="ov" id="end"><div class="card"><p class="title">Bravo, Rose !</p><div class="stats" id="estats"></div><div class="row"><button class="big alt" id="again">↻ Rejouer</button><button class="big" id="home">🏠</button></div></div></div>
+<div class="ov" id="end"><div class="card"><p class="title">Bravo, Rose !</p><div class="stats" id="estats"></div><div class="row"><button class="big alt" id="again">↻ Rejouer</button><button class="big" id="home">🏠</button><button class="big" id="next" aria-label="Mars">🔴 ➜</button></div></div></div>
 <script src="i18n.js"></script>
 <script>
 (() => {
@@ -228,7 +228,7 @@
   const cageSpots = [];
   { const blocked = (x) => solids.some(s => s.y === 0 && x > s.x - 110 && x < s.x + s.w + 110) || Math.abs(x - (L - 280)) < 300;
     for (const s of solids) if (s.kind === 'slab') cageSpots.push({ x: s.x + s.w / 2, y: s.y + s.h });
-    for (let x = 650; cageSpots.length < 20 && x < L - 400; x += 360) if (!blocked(x)) cageSpots.push({ x, y: 0 }); }
+    for (let x = 1050; cageSpots.length < 20 && x < L - 400; x += 320) if (!blocked(x)) cageSpots.push({ x, y: 0 }); }
   const cages = cageSpots.slice(0, 20).map((p, i) => ({ ...p, ...prisoners[i], open: false, t: 0 }));
   // caisses « ? » : une devinette sur l'espace
   const boxes = [ { x: 2950, y: 260 }, { x: 6750, y: 240 }, { x: 8350, y: 300 } ].map(b => ({ ...b, done: false }));
@@ -292,6 +292,7 @@
   addEventListener('keyup', (e) => { if (e.key === 'ArrowDown') key.down = false; if (e.key === 'ArrowLeft') key.l = false; if (e.key === 'ArrowRight') key.r = false; if (e.key === ' ' || e.key === 'ArrowUp') key.fly = false; });
   $('#quit').onclick = () => { location.href = 'index.html'; };
   $('#home').onclick = () => { location.href = 'index.html'; };
+  $('#next').onclick = () => { location.href = 'rose-mars.html'; };
   $('#again').onclick = () => { location.reload(); };
 
   function shoot() {
@@ -468,6 +469,7 @@
   }
 
   function finish() {
+    try { if (!localStorage.getItem('mm.rose.world')) localStorage.setItem('mm.rose.world', 'rose-mars.html'); } catch (e) {}   // Mars est ouvert : la carte de Rose y mène désormais
     finished = true; rose.vx = 0; rose.walking = false; play('win', 'ground'); rose.mode = 'ground'; sfx.good();
     say(got.friends >= 20 ? 'Bravo Rose ! Tu as libéré les vingt amis de la Lune ! Prochaine étape : Mars !' : 'Bravo Rose ! Tu as libéré ' + got.friends + ' amis. Les autres attendent encore sur la Lune !');
     setTimeout(() => {
