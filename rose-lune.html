@@ -77,8 +77,10 @@
   const roseImg = new Image(); roseImg.src = 'assets/rose.webp?v=' + V;
   const alienImg = new Image(); alienImg.src = 'assets/aliens.webp?v=' + V;
   const monImg = new Image(); monImg.src = 'assets/monsters.webp?v=' + V;
+  const s2Img = new Image(); s2Img.src = 'assets/sprites2.webp?v=' + V; let S2 = null; fetch('assets/sprites2.json?v=' + V).then(r => r.json()).then(j => { S2 = j; });
+  const flameImg = new Image(); flameImg.src = 'assets/friend-flame.webp?v=' + V;
   let RF = null, AF = null;
-  fetch('assets/rose.json?v=' + V).then(r => r.json()).then(j => { RF = j; });
+  fetch('assets/rose.json?v=' + V + 'b').then(r => r.json()).then(j => { RF = j; });
   fetch('assets/aliens.json?v=' + V).then(r => r.json()).then(j => { AF = j; });
 
   // ================= voix et sons =================
@@ -109,7 +111,7 @@
   // ================= réglages de Rose (unités : pixels de sa planche, ~210 px du casque aux pieds) =================
   const WALK = 205, WALK_ACC = 900, WALK_DEC = 1400, STEP_PX = 13.2, WALK_START = 4;
   const FLY = 400, DASH_AT = 300, FLY_ACC = 1000, RISE = 330, SINK = 270;
-  const FADE = .07, STOP_FADE = .11, RW = 40, RH = 196;   // demi-largeur et hauteur de Rose pour les collisions
+  const FADE = .15, STOP_FADE = .16, RW = 40, RH = 196;   // demi-largeur et hauteur de Rose pour les collisions
   const A = { idle: { n: 10, fps: 6, loop: 'pp' }, hover: { n: 30, fps: 13, loop: 'loop' }, fly: { n: 27, fps: 14, loop: 'loop' }, dash: { n: 30, fps: 15, loop: 'pp' },
               lift: { n: 20, fps: 26, loop: 'once' }, up: { n: 18, fps: 24, loop: 'once' }, down: { n: 20, fps: 26, loop: 'once' }, drop: { n: 20, fps: 28, loop: 'once', src: 'lift', rev: true },
               win: { n: 30, fps: 13, loop: 'once' }, walk: { n: 30, loop: 'loop' } };
@@ -125,7 +127,9 @@
   const topOf = (k) => RF[k].top;
   // En vol, les trois animations se mélangent selon la vitesse ; chacune s'incline vers l'angle de la suivante
   // (inclinaison mesurée dans les GIF : stationnaire ≈ 8°, vol lent ≈ 11°, vol rapide ≈ 32° vers l'avant), avec un léger penché en plus quand ça va vite.
-  const AIR = ['hover', 'fly', 'dash'], AIR_V = [0, 170, 370], AIR_A = [-8, -11, -32], PIVOT = 105;
+  const AIR = ['hover', 'fly', 'dash'], AIR_V = [0, 170, 370], AIR_A = [-7, -10, -30], PIVOT = 105;
+  // angle mesuré (négatif = penchée en avant) → rotation à l'écran : pencher plus en avant = tourner dans le sens de la marche
+  const rot = (dAng) => -dAng * rose.face * Math.PI / 180;
 
   // ================= le niveau de la Lune =================
   const L = 9200, CAVE0 = 4650, CAVE1 = 6450, CEIL = 640;
@@ -164,12 +168,22 @@
     { type: 'glouglou', x: 1500, x0: 1300, x1: 1750, y: 0 },
     { type: 'boing', x: 2700, x0: 2620, x1: 2900, y: 0 },
     { type: 'zap', x: 3900, y0: 330, y: 330 },
+    { type: 'boing', x: 4300, x0: 4200, x1: 4500, y: 0 },
+    { type: 'glouglou', x: 6750, x0: 6550, x1: 6950, y: 0 },
     { type: 'glouglou', x: 7150, x0: 6950, x1: 7450, y: 0 },
     { type: 'boing', x: 8050, x0: 7980, x1: 8250, y: 0 },
     { type: 'zap', x: 8850, y0: 360, y: 360 },
   ].map((a, i) => ({ ...a, id: i, dir: 1, t: Math.random() * 3, state: 'farceur', bt: 0, cool: 2 + i }));
   // amis enfermés dans des petites prisons (nos monstres : case farceur → case ami de monsters.webp)
-  const cages = [ { x: 1950, f: 0, a: 5 }, { x: 4250, f: 10, a: 11 }, { x: 7300, f: 22, a: 23 }, { x: 8600, f: 24, a: 25 } ].map(c => ({ ...c, open: false, t: 0 }));
+  // les 20 amis des autres héros, enfermés par les extraterrestres : les 15 petits monstres + les 5 flammes de couleur
+  const CALM = [[0, 5], [1, 6], [2, 7], [3, 8], [10, 11], [12, 13], [14, 15], [16, 17], [18, 19], [20, 21], [22, 23], [24, 25], [26, 27], [28, 29], [30, 31]];
+  const HUES = [0, 190, 95, 250, 305];
+  const prisoners = [...CALM.map(([f, a]) => ({ kind: 'mon', f, a })), ...HUES.map(h => ({ kind: 'flame', hue: h }))].sort(() => Math.random() - .5);
+  const cageSpots = [];
+  { const blocked = (x) => solids.some(s => s.y === 0 && x > s.x - 110 && x < s.x + s.w + 110) || Math.abs(x - (L - 280)) < 300;
+    for (const s of solids) if (s.kind === 'slab') cageSpots.push({ x: s.x + s.w / 2, y: s.y + s.h });
+    for (let x = 650; cageSpots.length < 20 && x < L - 400; x += 360) if (!blocked(x)) cageSpots.push({ x, y: 0 }); }
+  const cages = cageSpots.slice(0, 20).map((p, i) => ({ ...p, ...prisoners[i], open: false, t: 0 }));
   // caisses « ? » : une devinette sur l'espace
   const boxes = [ { x: 2950, y: 260 }, { x: 6750, y: 240 }, { x: 8350, y: 300 } ].map(b => ({ ...b, done: false }));
   const ROCKET = L - 280;
@@ -195,7 +209,7 @@
 
   // ================= Rose =================
   const rose = { x: 420, y: 0, vx: 0, vy: 0, vs: 0, face: 1, mode: 'ground', anim: null, walkDist: 0, t: 0, airPose: 'hover', airT: 0, walking: false, base: 0, cool: 0, bump: 0 };
-  let shownSet = null, shown = null, fadeFrom = null, fadeT = 9, fadeLen = FADE, fadeGy = 0, lastGy = 0, stopFade = false;
+  let shownSet = null, shown = null, fadeFrom = null, fadeT = 9, fadeLen = FADE, fadeGy = 0, lastGy = 0, stopFade = false, fadeAng = 0, fadePivot = 0, lastGround = true;
   function play(name, then, opts = {}) { rose.anim = { name, t: 0, then, ...opts }; if (name !== 'win') rose.mode = 'trans'; }
 
   // ================= commandes =================
@@ -236,9 +250,10 @@
 
   function shoot() {
     if (paused || finished || rose.cool > 0 || !RF) return;
-    rose.cool = .35; sfx.bubble();
-    const h = rose.mode === 'air' ? rose.y : rose.base;
-    bubbles.push({ x: rose.x + rose.face * 60, y: h + 118, vx: rose.face * 560 + rose.vx * .5, vy: 20, life: 1.4, r: 28 });
+    rose.cool = .32; sfx.bubble();
+    const h = rose.mode === 'air' ? rose.y : rose.base, dash = rose.mode === 'air' && rose.vs > 300;
+    const cx = rose.x + rose.face * (dash ? -14 : 6), cy = h + (dash ? 118 : 121);      // le petit triangle blanc sur la poitrine
+    bubbles.push({ x: cx, y: cy, vx: rose.face * 1150 + rose.vx, vy: 0, age: 0, life: 2.4, r: 5 });
   }
 
   // ================= mise à jour =================
@@ -317,23 +332,36 @@
   // ================= le reste du monde =================
   const roseBox = () => { const h = rose.mode === 'air' ? rose.y : rose.base; return { x0: rose.x - RW, x1: rose.x + RW, y0: h, y1: h + RH }; };
   const hitR = (b, x, y, r) => x + r > b.x0 && x - r < b.x1 && y + r > b.y0 && y - r < b.y1;
-  let got = { stars: 0, letters: 0, friends: 0 };
+  let got = { stars: 0, letters: 0, friends: 0, aliens: 0 };
   function chip(id, txt) { const c = $(id); c.textContent = txt; c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); }
-  function addFriend(img, cell, x, y) { friends.push({ img, cell, x, y, t: Math.random() * 6 }); got.friends++; chip('#cFriends', '💛 ' + got.friends); sfx.friend(); }
+  function addFriend(img, cell, x, y) {
+    friends.push({ img, cell, x, y, t: Math.random() * 6 }); got.friends++; chip('#cFriends', '💛 ' + got.friends + '/20'); sfx.friend();
+    const followers = friends.filter(f => !f.home); if (followers.length > 5) { followers[0].home = true; followers[0].hv = 0; }   // au plus 5 suivent Rose
+    say(['Libéré !', 'Merci Rose !', 'Youpi !', 'Un ami de plus !'][got.friends % 4], false);
+  }
   function updateWorld(dt) {
     const B = roseBox();
     for (const s of stars) if (!s.got && hitR(B, s.x, s.y, 26)) { s.got = true; got.stars++; chip('#cStars', '⭐ ' + got.stars); sfx.star(); puffs.push({ x: s.x, y: s.y, t: 0, c: '#ffe36e' }); }
     for (const l of letters) if (!l.got && hitR(B, l.x, l.y, 30)) { l.got = true; got.letters++; chip('#cLetters', '🔤 ' + got.letters); sfx.letter();
       puffs.push({ x: l.x, y: l.y, t: 0, c: '#a6e1ff' }); const p = MM.i18n && MM.i18n.letterPhrase ? MM.i18n.letterPhrase(l.l) : null; say(p ? p.say : l.l, false); }
-    for (const c of cages) if (!c.open && hitR(B, c.x, 70, 60)) openCage(c);
+    for (const c of cages) if (!c.open && hitR(B, c.x, c.y + 70, 60)) openCage(c);
     for (const b of boxes) if (!b.done && hitR(B, b.x, b.y, 50)) openQuiz(b);
     // bulles de Rose
     for (let i = bubbles.length - 1; i >= 0; i--) {
-      const u = bubbles[i]; u.life -= dt; u.x += u.vx * dt; u.y += u.vy * dt + Math.sin(u.life * 12) * .6; u.vx *= Math.pow(.6, dt);
+      const u = bubbles[i]; u.life -= dt; u.age += dt;
+      const g = 1 - Math.exp(-u.age * 5.5); u.r = 5 + (BUBBLE_R - 5) * g;                 // elle grossit…
+      const sp = Math.hypot(u.vx, u.vy), nsp = Math.max(150, sp * Math.pow(.05, dt));      // …en ralentissant
+      let tgt = null, bd = 1100;                                                          // et file un peu vers le farceur le plus proche, devant elle
+      for (const a of aliens) if (a.state === 'farceur') { const ab = alienBox(a), ax = (ab.x0 + ab.x1) / 2, ay = (ab.y0 + ab.y1) / 2, dx = ax - u.x, d = Math.hypot(dx, ay - u.y); if (dx * Math.sign(u.vx || 1) > -20 && d < bd) { bd = d; tgt = [ax, ay]; } }
+      let ang = Math.atan2(u.vy, u.vx);
+      if (tgt) { const want = Math.atan2(tgt[1] - u.y, tgt[0] - u.x); let da = want - ang; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI; ang += Math.max(-2.4 * dt, Math.min(2.4 * dt, da)); }
+      u.vx = Math.cos(ang) * nsp; u.vy = Math.sin(ang) * nsp;
+      u.x += u.vx * dt; u.y += u.vy * dt + Math.sin(u.age * 9) * .4;
       let hit = u.life <= 0 || solids.some(s => s.kind !== 'slab' && u.x > s.x && u.x < s.x + s.w && u.y > s.y && u.y < s.y + s.h);
-      for (const a of aliens) if (!hit && a.state === 'farceur') { const ab = alienBox(a); if (u.x > ab.x0 - 14 && u.x < ab.x1 + 14 && u.y > ab.y0 - 14 && u.y < ab.y1 + 14) { a.state = 'bubble'; a.bt = 0; hit = true; sfx.pop(); } }
-      for (const c of cages) if (!hit && !c.open && Math.abs(u.x - c.x) < 70 && u.y < 160) { openCage(c); hit = true; }
-      if (hit) { bubbles.splice(i, 1); puffs.push({ x: u.x, y: u.y, t: 0, c: '#d9f6ff' }); }
+      for (const a of aliens) if (!hit && a.state === 'farceur') { const ab = alienBox(a); if (u.x + u.r * .6 > ab.x0 && u.x - u.r * .6 < ab.x1 && u.y + u.r * .6 > ab.y0 && u.y - u.r * .6 < ab.y1) {
+        a.state = 'bubble'; a.bt = 0; a.vy = 40; a.vx = (Math.random() - .5) * 60; hit = 'keep'; sfx.pop(); got.aliens++; } }
+      for (const c of cages) if (!hit && !c.open && Math.abs(u.x - c.x) < 70 + u.r * .4 && u.y > c.y && u.y < c.y + 160) { openCage(c); hit = true; }
+      if (hit) { bubbles.splice(i, 1); if (hit !== 'keep') puffs.push({ x: u.x, y: u.y, t: 0, c: '#d9f6ff' }); }
     }
     // extraterrestres
     for (const a of aliens) {
@@ -347,8 +375,8 @@
         const ab = alienBox(a);
         if (B.x1 > ab.x0 && B.x0 < ab.x1 && B.y1 > ab.y0 && B.y0 < ab.y1 && rose.bump <= 0) { rose.vx = (rose.x < a.x ? -1 : 1) * 220; rose.bump = .6; sfx.bonk(); puffs.push({ x: (rose.x + a.x) / 2, y: B.y0 + 100, t: 0, c: '#fff' }); }
       } else if (a.state === 'bubble') {
-        a.bt += dt; a.y += 70 * dt;
-        if (a.bt > .9) { a.state = 'ami'; sfx.pop(); puffs.push({ x: a.x, y: a.y + 60, t: 0, c: '#ffd1e8' }); addFriend('alien', a.type + '_ami', a.x, a.y); }
+        a.bt += dt; a.vy += 140 * dt; a.y += a.vy * dt; a.x += (a.vx + Math.sin(a.bt * 3) * 40) * dt;     // il s'envole dans sa bulle
+        if (a.y > 1400) a.state = 'gone';
       }
     }
     // boules de slime de Zap : rien de méchant, juste un « splotch »
@@ -356,15 +384,17 @@
       if (hitR(B, s.x, s.y, 14)) { slime.splice(i, 1); sfx.bonk(); puffs.push({ x: s.x, y: s.y, t: 0, c: '#8be36a' }); rose.vx *= .4; continue; }
       if (s.life <= 0 || s.y < 0 || solids.some(q => s.x > q.x && s.x < q.x + q.w && s.y > q.y && s.y < q.y + q.h)) { slime.splice(i, 1); puffs.push({ x: s.x, y: Math.max(8, s.y), t: 0, c: '#8be36a' }); } }
     // les amis suivent Rose en petite file
-    friends.forEach((f, i) => { f.t += dt; const tx = rose.x - rose.face * (150 + i * 95), ty = Math.max(0, (rose.mode === 'air' ? rose.y : rose.base) - 10 + Math.sin(f.t * 3 + i) * 10);
+    friends.filter(f => f.home).forEach(f => { f.t += dt; f.hv += 260 * dt; f.x += 420 * dt; f.y += f.hv * dt * .8; f.face = 1; });   // les plus anciens rentrent à la fusée
+    friends.filter(f => !f.home).forEach((f, i) => { f.t += dt; const tx = rose.x - rose.face * (150 + i * 95), ty = Math.max(0, (rose.mode === 'air' ? rose.y : rose.base) - 10 + Math.sin(f.t * 3 + i) * 10);
       f.x += (tx - f.x) * Math.min(1, dt * 2.6); f.y += (ty - f.y) * Math.min(1, dt * 2.2); f.face = tx > f.x ? 1 : -1; });
     for (let i = puffs.length - 1; i >= 0; i--) { puffs[i].t += dt; if (puffs[i].t > .6) puffs.splice(i, 1); }
     cages.forEach(c => { if (c.open) c.t += dt; });
     if (!finished && rose.x > ROCKET - 40 && rose.mode !== 'air') finish();
   }
   const ASCALE = 1;
+  const BUBBLE_R = 92;   // un peu plus grand que le plus grand extraterrestre (≈ 150 de haut)
   function alienBox(a) { const f = AF && AF[a.type + '_f1']; const w = f ? f.w * ASCALE : 120, h = f ? f.h * ASCALE : 120; return { x0: a.x - w * .38, x1: a.x + w * .38, y0: a.y, y1: a.y + h * .9 }; }
-  function openCage(c) { c.open = true; c.t = 0; sfx.pop(); puffs.push({ x: c.x, y: 90, t: 0, c: '#ffe9a8' }); setTimeout(() => addFriend('mon', c.a, c.x, 0), 500); }
+  function openCage(c) { c.open = true; c.t = 0; sfx.pop(); puffs.push({ x: c.x, y: c.y + 90, t: 0, c: '#ffe9a8' }); setTimeout(() => addFriend(c.kind, c.kind === 'mon' ? c.a : c.hue, c.x, c.y), 450); }
 
   // ================= devinettes =================
   let qIndex = 0, curBox = null;
@@ -387,9 +417,9 @@
 
   function finish() {
     finished = true; rose.vx = 0; rose.walking = false; play('win', 'ground'); rose.mode = 'ground'; sfx.good();
-    say('Bravo Rose ! Tu as libéré les amis de la Lune. Prochaine étape : Mars !');
+    say(got.friends >= 20 ? 'Bravo Rose ! Tu as libéré les vingt amis de la Lune ! Prochaine étape : Mars !' : 'Bravo Rose ! Tu as libéré ' + got.friends + ' amis. Les autres attendent encore sur la Lune !');
     setTimeout(() => {
-      $('#estats').innerHTML = `<span>⭐ ${got.stars}/${stars.length}</span><span>🔤 ${got.letters}/${letters.length}</span><span>💛 ${got.friends}/${aliens.length + cages.length}</span>`;
+      $('#estats').innerHTML = `<span>⭐ ${got.stars}/${stars.length}</span><span>🔤 ${got.letters}/${letters.length}</span><span>💛 ${got.friends}/${cages.length}</span><span>🫧 ${got.aliens}</span>`;
       $('#end').classList.add('show');
     }, 3200);
   }
@@ -474,9 +504,11 @@
       ctx.fillStyle = '#4aa8ff'; ctx.strokeStyle = '#2a5f9e'; ctx.lineWidth = 6 * s; ctx.beginPath(); ctx.arc(0, -180 * s, 26 * s, 0, 7); ctx.fill(); ctx.stroke(); ctx.restore(); } }
   }
   function drawCage(c, time) {
-    const x = SX(c.x), y = SY(0); if (x < -150 || x > W + 150) return; const s = zoom;
-    if (!c.open && monImg.complete) { const cw = 400, ch = 264, i = c.f, k = 110 / 254 * s, wob = Math.sin(time * 5 + c.x) * 2 * s;
+    const x = SX(c.x), y = SY(c.y); if (x < -150 || x > W + 150) return; const s = zoom, wob = Math.sin(time * 5 + c.x) * 2 * s;
+    if (!c.open && c.kind === 'mon' && monImg.complete) { const cw = 400, ch = 264, i = c.f, k = 110 / 254 * s;
       ctx.drawImage(monImg, (i % 5) * cw, Math.floor(i / 5) * ch, cw, ch, x - cw * k / 2 + wob, y - (ch - 6) * k - 8 * s, cw * k, ch * k); }
+    if (!c.open && c.kind === 'flame' && S2 && s2Img.complete) { const q = S2.imp_w0, k = 120 / q.h * s; if (c.hue) ctx.filter = `hue-rotate(${c.hue}deg)`;
+      ctx.drawImage(s2Img, q.x, q.y, q.w, q.h, x - q.ax * k + wob, y - q.ay * k - 8 * s, q.w * k, q.h * k); ctx.filter = 'none'; }
     const lift = c.open ? Math.min(1, c.t * 2) : 0;
     if (lift < 1) { ctx.save(); ctx.globalAlpha = 1 - lift; ctx.translate(0, -lift * 120 * s);
       ctx.fillStyle = '#7b7f99'; ctx.fillRect(x - 70 * s, y - 150 * s, 140 * s, 14 * s); ctx.fillRect(x - 70 * s, y - 10 * s, 140 * s, 10 * s);
@@ -487,19 +519,19 @@
     if (!AF || !alienImg.complete) return;
     let name = a.type + '_f1';
     if (a.state === 'farceur') { if (a.type === 'boing') name = a.y > 25 ? 'boing_f2' : 'boing_f1'; else if (a.type === 'zap') name = (a.throwT || 0) > 0 ? 'zap_f2' : 'zap_f1'; else name = Math.floor(a.t * 3.2) % 2 ? 'glouglou_f2' : 'glouglou_f1'; }
-    else if (a.state === 'ami') return;
+    else if (a.state === 'gone') return;
     const f = AF[name], x = SX(a.x), y = SY(a.y); if (x < -150 || x > W + 150) return;
     const k = zoom * ASCALE, sq = a.type === 'boing' && a.y < 25 ? 1 + (25 - a.y) / 25 * .12 : 1;
     ctx.save(); ctx.translate(x, y); ctx.scale((a.dir < 0 ? -1 : 1) * k * sq, k / sq);
     if (a.type === 'glouglou' && a.state === 'farceur') ctx.rotate(Math.sin(a.t * 6.4) * .06);
     ctx.drawImage(alienImg, f.x, f.y, f.w, f.h, -f.w / 2, -f.h, f.w, f.h); ctx.restore();
-    if (a.state === 'bubble') { const r = Math.max(f.w, f.h) * .62 * zoom, cy = y - f.h * zoom / 2; const g = ctx.createRadialGradient(x - r * .3, cy - r * .3, r * .1, x, cy, r);
+    if (a.state === 'bubble') { const r = Math.max(BUBBLE_R, Math.max(f.w, f.h) * .62) * zoom, cy = y - f.h * zoom / 2; const g = ctx.createRadialGradient(x - r * .3, cy - r * .3, r * .1, x, cy, r);
       g.addColorStop(0, 'rgba(255,255,255,.55)'); g.addColorStop(.7, 'rgba(170,230,255,.18)'); g.addColorStop(1, 'rgba(255,170,240,.55)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, cy, r, 0, 7); ctx.fill(); }
   }
   function drawFriend(f, time) {
     const x = SX(f.x), y = SY(f.y) - Math.abs(Math.sin(f.t * 5)) * 6 * zoom; if (x < -150 || x > W + 150) return;
     ctx.save(); ctx.translate(x, y);
-    if (f.img === 'alien' && AF) { const q = AF[f.cell], k = zoom * .8; ctx.scale((f.face || 1) * k, k); ctx.drawImage(alienImg, q.x, q.y, q.w, q.h, -q.w / 2, -q.h, q.w, q.h); }
+    if (f.img === 'flame' && flameImg.complete) { const hh = 74 * zoom, ww = hh * .78; if (f.cell) ctx.filter = `hue-rotate(${f.cell}deg)`; ctx.scale(f.face || 1, 1); ctx.drawImage(flameImg, -ww / 2, -hh, ww, hh); ctx.filter = 'none'; }
     else if (monImg.complete) { const cw = 400, ch = 264, i = f.cell, k = 90 / 254 * zoom; ctx.scale(f.face || 1, 1); ctx.drawImage(monImg, (i % 5) * cw, Math.floor(i / 5) * ch, cw, ch, -cw * k / 2, -(ch - 6) * k, cw * k, ch * k); }
     ctx.restore();
   }
@@ -525,23 +557,33 @@
   function drawRose() {
     const f = roseFrame(); if (!RF[f.k]) return;
     const gy = f.ground ? SY(rose.base) : SY(rose.y), px = SX(rose.x);
-    if (f.set !== shownSet) { if (shownSet) { fadeFrom = shown; fadeT = 0; fadeGy = lastGy; fadeLen = stopFade ? STOP_FADE : FADE; stopFade = false; } shownSet = f.set; }
+    if (f.set !== shownSet) { if (shownSet) { fadeFrom = shown; fadeT = 0; fadeGy = lastGy; fadeLen = stopFade ? STOP_FADE : FADE; stopFade = false;
+        fadeAng = (RF[fadeFrom] && RF[fadeFrom].ang) || 0; fadePivot = (lastGround && f.ground) ? 0 : PIVOT; } shownSet = f.set; }
     shown = f.mix > .5 ? f.k2 : f.k;
     const surf = SY(surfaceAt(rose.x, (rose.mode === 'air' ? rose.y : rose.base) + 2)), h = f.ground ? 0 : rose.y - surfaceAt(rose.x, rose.y + 2), sh = Math.max(.2, 1 - h / 500);
     ctx.fillStyle = `rgba(30,25,70,${.3 * sh})`; ctx.beginPath(); ctx.ellipse(px, surf + 3, 52 * zoom * sh, 11 * zoom * sh, 0, 0, Math.PI * 2); ctx.fill();
     const draw = (k, alpha, y) => { const q = RF[k]; ctx.save(); ctx.globalAlpha = alpha; ctx.translate(px, y); ctx.scale(rose.face * zoom, zoom); ctx.drawImage(roseImg, q.x, q.y, q.w, q.h, -q.ax, -q.ay, q.w, q.h); ctx.restore(); };
     if (f.air) {                                                        // vol : deux animations, chacune penchée vers l'autre, en fondu selon la vitesse
       const { A1, B1, t, rotA, rotB, extra } = f.air;
-      const tilt = (k, alpha, deg) => { if (alpha <= .01) return; const q = RF[k]; ctx.save(); ctx.globalAlpha = alpha; ctx.translate(px, gy - PIVOT * zoom); ctx.rotate(rose.face * (deg + extra) * Math.PI / 180);
+      const tilt = (k, alpha, deg) => { if (alpha <= .01) return; const q = RF[k]; ctx.save(); ctx.globalAlpha = alpha; ctx.translate(px, gy - PIVOT * zoom); ctx.rotate(rot(deg + extra));
         ctx.translate(0, PIVOT * zoom); ctx.scale(rose.face * zoom, zoom); ctx.drawImage(roseImg, q.x, q.y, q.w, q.h, -q.ax, -q.ay, q.w, q.h); ctx.restore(); };
       // l'inclinaison suit toute la plage de vitesse, mais le changement d'animation se fait d'un coup bref au milieu,
       // là où les deux sont penchées pareil : on ne voit presque jamais deux Rose superposées
       const sw = Math.max(0, Math.min(1, (t - .42) / .16)), aB = sw, aA = 1 - sw * sw;
       const pair = (S, a, deg) => { tilt(S.k, a, deg); if (S.mix > .01 && S.k2 !== S.k) tilt(S.k2, a * S.mix, deg); };
       if (t < .5) { pair(B1, aB, rotB); pair(A1, aA, rotA); } else { pair(A1, aA, rotA); pair(B1, aB, rotB); }
-    } else { draw(f.k, 1, gy); if (f.mix > .01 && f.k2 !== f.k) draw(f.k2, f.mix, gy); }
-    if (fadeFrom && fadeT < fadeLen) { const k = fadeT / fadeLen; draw(fadeFrom, 1 - k * k * (3 - 2 * k), fadeGy); } else fadeFrom = null;
-    lastGy = gy;
+    } else {
+      let r0 = 0, pv = 0;
+      if (fadeFrom && fadeT < fadeLen) { const k0 = fadeT / fadeLen, k = k0 * k0 * (3 - 2 * k0), inAng = (RF[f.k] && RF[f.k].ang) || 0; r0 = rot((fadeAng - inAng) * (1 - k)); pv = fadePivot; }
+      const drawR = (k, alpha) => { const q = RF[k]; ctx.save(); ctx.globalAlpha = alpha; ctx.translate(px, gy - pv * zoom); ctx.rotate(r0); ctx.translate(0, pv * zoom); ctx.scale(rose.face * zoom, zoom); ctx.drawImage(roseImg, q.x, q.y, q.w, q.h, -q.ax, -q.ay, q.w, q.h); ctx.restore(); };
+      drawR(f.k, 1); if (f.mix > .01 && f.k2 !== f.k) drawR(f.k2, f.mix);
+    }
+    lastGy = gy; lastGround = !!f.ground;
+    if (fadeFrom && fadeT < fadeLen) {
+      // l'ancienne pose bascule vers l'inclinaison de la nouvelle (autour des pieds au sol, du milieu du corps en vol), puis s'efface vite
+      const k0 = fadeT / fadeLen, k = k0 * k0 * (3 - 2 * k0), inAng = (RF[f.k] && RF[f.k].ang) || 0, d = inAng - fadeAng, a = 1 - Math.min(1, k0 * 1.6);
+      if (a > .01) { const q = RF[fadeFrom]; ctx.save(); ctx.globalAlpha = a; ctx.translate(px, fadeGy - fadePivot * zoom); ctx.rotate(rot(d * k)); ctx.translate(0, fadePivot * zoom); ctx.scale(rose.face * zoom, zoom); ctx.drawImage(roseImg, q.x, q.y, q.w, q.h, -q.ax, -q.ay, q.w, q.h); ctx.restore(); }
+    } else fadeFrom = null;
   }
 
   // ================= boucle =================
@@ -550,7 +592,7 @@
     const dt = Math.min(.05, (now - last) / 1000); last = now;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (RF && AF && roseImg.complete && alienImg.complete) {
-      if (!started) { started = true; say('Bienvenue sur la Lune ! Rose doit libérer les amis enfermés par les petits extraterrestres farceurs. Envoie-leur des bulles !'); }
+      if (!started) { started = true; say('Bienvenue sur la Lune ! Les petits extraterrestres farceurs ont enfermé les amis dans des cages. Libère-les, et envoie des bulles aux farceurs !'); }
       if (!paused) { update(dt); fadeT += dt; }
       const look = rose.face * 120;
       camX += ((rose.x + look - (W * .4) / zoom) - camX) * Math.min(1, dt * 3.5); camX = Math.max(0, Math.min(L - W / zoom, camX));
@@ -564,7 +606,7 @@
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
-  $('#cStars').textContent = '⭐ 0'; $('#cLetters').textContent = '🔤 0'; $('#cFriends').textContent = '💛 0';
+  $('#cStars').textContent = '⭐ 0'; $('#cLetters').textContent = '🔤 0'; $('#cFriends').textContent = '💛 0/20';
   window.__rose = { rose, aliens, cages, boxes, stars, letters, friends, key, got, solids, get paused() { return paused; } };
 })();
 </script>
