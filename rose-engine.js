@@ -592,8 +592,8 @@
     let d = document.getElementById('diploma'); if (d) { d.classList.add('show'); return; }
     d = document.createElement('div'); d.id = 'diploma'; d.className = 'show';
     const loc = LANG === 'fr' ? 'fr-BE' : LANG, date = new Date().toLocaleDateString(loc, { day: 'numeric', month: 'long', year: 'numeric' });
-    d.innerHTML = `<div class="dcard"><div class="dstar">🏅</div><h1>${EN.dipTitle}</h1>${KID ? `<p class="dname">${KID.replace(/[<>&]/g, '')}</p><p class="dline">${EN.dipLine}</p>` : `<p class="dline">${EN.dipLineAnon}</p>`}
-      <div class="dheroes" aria-hidden="true"><span>🦸</span><span>🧑‍🚀</span><span>💛</span><span>🫧</span><span>🛸</span></div><p class="ddate">${date}</p>
+    d.innerHTML = `<div class="dcard"><h1>${EN.dipTitle}</h1>${KID ? `<p class="dname">${KID.replace(/[<>&]/g, '')}</p><p class="dline">${EN.dipLine}</p>` : `<p class="dline">${EN.dipLineAnon}</p>`}
+      <img class="dpic" src="assets/diploma.webp?v=${V}" alt="" aria-hidden="true"><p class="ddate">${date}</p>
       <div class="dbar"><button class="pbtn" data-a="print" aria-label="🖨️">🖨️</button><button class="pbtn alt" data-a="close" aria-label="✕">✕</button></div></div>`;
     document.body.appendChild(d); say(EN.dipSay); sfx.good();
     d.querySelector('.dbar').addEventListener('click', (e) => { const b = e.target.closest('.pbtn'); if (!b) return; if (b.dataset.a === 'print') { try { window.print(); } catch (er) {} } else d.classList.remove('show'); });
