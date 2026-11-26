@@ -145,13 +145,59 @@
     { x: 6150, y: 330, w: 150, h: CEIL - 330, kind: 'tite' },
     { x: 7650, y: 260, w: 300, h: 40, kind: 'slab' },
   ];
-  const overlaps = (s, x0, x1, y0, y1) => x1 > s.x && x0 < s.x + s.w && y1 > s.y && y0 < s.y + s.h;
-  function surfaceAt(x, y) {                 // le plus haut « sol » sous les pieds
+  // ---- formes : chaque solide a un vrai contour (polygone, y vers le haut) qui sert À LA FOIS au dessin et aux collisions.
+  // Rose ne peut donc jamais se tenir sur un bout de rocher qui n'est pas dessiné ; les futurs mondes pourront avoir
+  // des arches, des surplombs, des pentes… (on lit le contour colonne par colonne).
+  const FOOT = 12, STEP = 10;
+  function shapeOf(s) {
+    const P = [], x0 = s.x, x1 = s.x + s.w, top = s.y + s.h;
+    if (s.kind === 'rock' || s.kind === 'mite') {          // dôme un peu irrégulier
+      const N = 28, seed = s.x * .01, cx = x0 + s.w / 2;
+      for (let i = 0; i <= N; i++) { const t = i / N, a = Math.PI + t * Math.PI, j = Math.sin(seed + t * 9) * .05;
+        P.push([cx + Math.cos(a) * s.w / 2 * (1 + j * Math.sin(t * Math.PI)), s.y - Math.sin(a) * s.h * (1 + Math.cos(seed + t * 7) * .04)]); }
+      P.push([x1, s.y - 30], [x0, s.y - 30]);
+    } else if (s.kind === 'tite') {                         // stalactite : large en haut, pointe arrondie en bas
+      P.push([x0 - 8, CEIL + 40], [x1 + 8, CEIL + 40], [x0 + s.w * .78, s.y - 10]);
+      for (let i = 1; i < 10; i++) { const t = i / 10, a = [x0 + s.w * .78, s.y - 10], c = [x0 + s.w * .5, s.y - 30], b = [x0 + s.w * .22, s.y - 10];
+        P.push([(1 - t) * (1 - t) * a[0] + 2 * t * (1 - t) * c[0] + t * t * b[0], (1 - t) * (1 - t) * a[1] + 2 * t * (1 - t) * c[1] + t * t * b[1]]); }
+      P.push([x0 + s.w * .22, s.y - 10]);
+    } else if (s.kind === 'slab') {                         // dalle aux coins arrondis
+      const r = 14, b = s.y - 10, arc = (cx, cy, a0) => { for (let i = 0; i <= 4; i++) { const a = a0 + i / 4 * Math.PI / 2; P.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]); } };
+      arc(x1 - r, top - r, 0); arc(x0 + r, top - r, Math.PI / 2); arc(x0 + r, b + r, Math.PI); arc(x1 - r, b + r, Math.PI * 1.5);
+    } else if (s.kind === 'ceil') {                         // plafond de la grotte, avec ses petites dents
+      P.push([x0, top]);
+      for (let k = 0; k < s.w; k += 90) P.push([x0 + k, s.y], [x0 + k + 20, s.y - (18 + (k % 3) * 8)], [x0 + k + 40, s.y]);
+      P.push([x1, s.y], [x1, top]);
+    }
+    return P;
+  }
+  for (const q of solids) { q.poly = shapeOf(q); q.minX = Math.min(...q.poly.map(p => p[0])); q.maxX = Math.max(...q.poly.map(p => p[0])); }
+  function spansAt(q, x) {                   // les morceaux de matière sur la verticale x : [[bas, haut], …]
+    if (x < q.minX || x > q.maxX) return null;
+    const ys = [], P = q.poly;
+    for (let i = 0, n = P.length; i < n; i++) { const a = P[i], b = P[(i + 1) % n];
+      if ((a[0] <= x) !== (b[0] <= x)) ys.push(a[1] + (x - a[0]) / (b[0] - a[0]) * (b[1] - a[1])); }
+    if (ys.length < 2) return null; ys.sort((m, n) => m - n);
+    const out = []; for (let i = 0; i + 1 < ys.length; i += 2) out.push([ys[i], ys[i + 1]]); return out;
+  }
+  function supportAt(x, yMax) {              // le plus haut sol sous les pieds (seulement là où le pied touche vraiment)
     let best = 0;
-    for (const s of solids) { const top = s.y + s.h; if (s.kind === 'ceil' || s.kind === 'tite') continue;
-      if (x + RW * .6 > s.x && x - RW * .6 < s.x + s.w && top <= y + 6 && top > best) best = top; }
+    for (const cx of [x - FOOT, x, x + FOOT]) for (const q of solids) { const sp = spansAt(q, cx); if (sp) for (const [, hi] of sp) if (hi <= yMax && hi > best) best = hi; }
     return best;
   }
+  function colTop(cx, yMax) { let best = 0; for (const q of solids) { const sp = spansAt(q, cx); if (sp) for (const [, hi] of sp) if (hi <= yMax && hi > best) best = hi; } return best; }
+  const steepAt = (x, y) => { const l = colTop(x - FOOT, y + STEP), r = colTop(x + FOOT, y + STEP); return Math.abs(r - l) > FOOT * 2 * 1.25 ? Math.sign(l - r) : 0; };   // pente trop raide → -1/1 = côté où ça descend
+  function blockedIn(cx, y0, y1) {           // de la matière (hors dalles, qu'on traverse par en dessous) entre y0 et y1 ?
+    for (const q of solids) { if (q.kind === 'slab') continue; const sp = spansAt(q, cx); if (sp) for (const [lo, hi] of sp) if (lo < y1 && hi > y0) return true; }
+    return false;
+  }
+  function bodyHit(x, h, air) {              // jambes étroites, buste et casque un peu plus larges
+    const yLeg = h + (air ? 4 : STEP), yTop = h + RH - 4;
+    for (const cx of [x - FOOT, x, x + FOOT]) if (blockedIn(cx, yLeg, yTop)) return true;
+    for (const cx of [x - RW + 6, x + RW - 6]) if (blockedIn(cx, h + 70, yTop)) return true;
+    return false;
+  }
+  const solidPoint = (x, y, slabs) => solids.some(q => (slabs || q.kind !== 'slab') && (spansAt(q, x) || []).some(([lo, hi]) => y > lo && y < hi));
   // étoiles
   const stars = [];
   const arc = (x0, x1, y0, hgt, n) => { for (let i = 0; i < n; i++) { const t = n === 1 ? .5 : i / (n - 1); stars.push({ x: x0 + (x1 - x0) * t, y: y0 + Math.sin(t * Math.PI) * hgt, got: false }); } };
@@ -258,15 +304,22 @@
 
   // ================= mise à jour =================
   function moveX(dx, air) {
-    const y0 = (rose.mode === 'air' ? rose.y : rose.base) + 6, y1 = y0 + RH - 6;
-    rose.x += dx;
-    for (const s of solids) {
-      if (!overlaps(s, rose.x - RW, rose.x + RW, y0, y1)) continue;
-      if (s.kind === 'slab' && y0 >= s.y + s.h - 12) continue;
-      rose.x = dx > 0 ? s.x - RW - .1 : s.x + s.w + RW + .1;
-      if (air) { rose.vx *= -.3; if (Math.abs(dx) > 1) bonk(); } else rose.vx = 0;
+    const n = Math.max(1, Math.ceil(Math.abs(dx) / 6)), sx = dx / n;
+    for (let i = 0; i < n; i++) {
+      const nx = Math.max(60, Math.min(L - 60, rose.x + sx));
+      let h = air ? rose.y : rose.base;
+      if (!air) { const sf = supportAt(nx, h + STEP); if (sf > h) h = sf; }          // une pente douce : elle la monte
+      if (bodyHit(nx, h, air)) { if (air) { rose.vx *= -.3; if (Math.abs(dx) > 1) bonk(); } else rose.vx = 0; break; }
+      rose.x = nx; if (!air) rose.base = h;
     }
-    rose.x = Math.max(60, Math.min(L - 60, rose.x));
+  }
+  // au sol (ou pendant une jonction qui finit au sol) : suit la pente qui descend ; si plus rien sous les pieds
+  // ou si c'est trop raide, elle se met à flotter et redescend doucement (jamais debout sur du vide)
+  function followGround(dt) {
+    const sf = supportAt(rose.x, rose.base + 2), down = 6 + Math.abs(rose.vx) * dt * 1.3;
+    if (sf >= rose.base - 1 && !steepAt(rose.x, rose.base)) { rose.base = sf; return; }
+    if (sf < rose.base - 1 && rose.base - sf <= down && !steepAt(rose.x, sf)) { rose.base = sf; return; }
+    rose.anim = null; rose.mode = 'air'; rose.y = rose.base - (topOf('rose_hover0') - topOf('rose_idle0')) + 4; rose.vy = 0; rose.airPose = Math.abs(rose.vx) < 60 ? 'hover' : 'fly'; rose.airT = 0; rose.walking = false;
   }
   function bonk() { if (rose.bump > 0) return; rose.bump = .4; sfx.bonk(); puffs.push({ x: rose.x + rose.face * RW, y: (rose.mode === 'air' ? rose.y : rose.base) + 110, t: 0, c: '#fff' }); }
 
@@ -284,9 +337,7 @@
       if (Math.abs(rose.vx) > 8 && !a) { if (!was) rose.walkDist = WALK_START * STEP_PX; rose.walking = true; rose.walkDist += Math.abs(rose.vx) * dt; }
       else if (was) { rose.walking = false; stopFade = true; }
       // plus rien sous les pieds (bord d'une dalle) : elle se met à flotter et redescend doucement
-      const sf = surfaceAt(rose.x, rose.base);
-      if (sf < rose.base - 2 && !a) { rose.mode = 'air'; rose.y = rose.base - (topOf('rose_hover0') - topOf('rose_idle0')); rose.vy = 0; rose.airPose = 'hover'; rose.airT = 0; rose.walking = false; }
-      else rose.base = sf;
+      followGround(dt);
       if (key.fly && !a && rose.mode === 'ground') { if (Math.abs(rose.vx) > 60) play('up', 'air', { vx0: rose.vx }); else play('lift', 'air'); rose.walking = false; }
     } else if (rose.mode === 'air') {
       const ty = key.fly ? RISE : key.down ? -SINK * 1.8 : -SINK;
@@ -295,20 +346,20 @@
       rose.vx += Math.max(-FLY_ACC * dt, Math.min(FLY_ACC * dt, target - rose.vx));
       moveX(rose.vx * dt, true);
       const ny = rose.y + rose.vy * dt;
-      let blocked = false;
-      for (const s of solids) {
-        if (!overlaps(s, rose.x - RW + 4, rose.x + RW - 4, ny + 4, ny + RH)) continue;
-        if (rose.vy > 0) { const hard = rose.vy > 150; rose.y = s.y - RH - .1; rose.vy = hard ? -30 : 0; blocked = true; if (hard) bonk(); }   // la tête touche : petit rebond tout doux
-      }
-      if (!blocked) rose.y = Math.min(400, ny);                 // plafond du ciel : Rose reste toujours à l'écran
+      if (bodyHit(rose.x, ny, true)) {
+        if (rose.vy > 0) { const hard = rose.vy > 150; rose.vy = hard ? -30 : 0; if (hard) bonk(); }           // la tête touche : petit rebond tout doux
+        else { rose.vy = 0; for (const d of [3, -3]) if (!bodyHit(rose.x + d * 2, ny, true)) { rose.x += d; break; } }   // glisse le long de la paroi
+      } else rose.y = Math.min(400, ny);                 // plafond du ciel : Rose reste toujours à l'écran
       if (rose.y >= 400 && rose.vy > 0) rose.vy = 0;
       const sp = Math.abs(rose.vx), want = sp < 60 ? 'hover' : sp < DASH_AT ? 'fly' : 'dash';
       if (want !== rose.airPose) { rose.airPose = want; rose.airT = 0; }
       if (rose.vy < 0) {                                          // atterrissage : la jonction démarre pile à la bonne hauteur
-        const sf = surfaceAt(rose.x, rose.y + 40), moving = sp > 60;
+        const sf = supportAt(rose.x, rose.y + 40), moving = sp > 60;
         const startTop = moving ? topOf('rose_down0') : topOf('rose_lift' + (A.lift.n - 1));
         const hAt = startTop - topOf('rose_hover0');
-        if (rose.y - sf <= hAt) { rose.base = sf; rose.y = sf; rose.vy = 0; play(moving ? 'down' : 'drop', 'ground', { vx0: rose.vx }); }
+        const st = steepAt(rose.x, sf);
+        if (st && rose.y - sf <= hAt + 20) { const nx = rose.x + st * 160 * dt; if (!bodyHit(nx, rose.y, true)) rose.x = nx; }
+        else if (rose.y - sf <= hAt) { rose.base = sf; rose.y = sf; rose.vy = 0; play(moving ? 'down' : 'drop', 'ground', { vx0: rose.vx }); }
       }
     } else if (a) {
       const n = A[a.name].n, dur = (n - 1) / A[a.name].fps, k = Math.min(1, a.t / dur);
@@ -316,8 +367,9 @@
       else if (a.name === 'down') rose.vx = a.vx0 + (rose.face * WALK * (dir ? 1 : .3) - a.vx0) * k;
       else rose.vx *= Math.pow(.02, dt);
       moveX(rose.vx * dt, false);
+      if (a.then !== 'air' && a.name !== 'win') followGround(dt);
     }
-    if (a) {
+    if (a && rose.anim === a) {
       a.t += dt;
       if (a.t >= (A[a.name].n - 1) / A[a.name].fps) {
         rose.anim = null;
@@ -357,7 +409,7 @@
       if (tgt) { const want = Math.atan2(tgt[1] - u.y, tgt[0] - u.x); let da = want - ang; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI; ang += Math.max(-2.4 * dt, Math.min(2.4 * dt, da)); }
       u.vx = Math.cos(ang) * nsp; u.vy = Math.sin(ang) * nsp;
       u.x += u.vx * dt; u.y += u.vy * dt + Math.sin(u.age * 9) * .4;
-      let hit = u.life <= 0 || solids.some(s => s.kind !== 'slab' && u.x > s.x && u.x < s.x + s.w && u.y > s.y && u.y < s.y + s.h);
+      let hit = u.life <= 0 || solidPoint(u.x, u.y, false);
       for (const a of aliens) if (!hit && a.state === 'farceur') { const ab = alienBox(a); if (u.x + u.r * .6 > ab.x0 && u.x - u.r * .6 < ab.x1 && u.y + u.r * .6 > ab.y0 && u.y - u.r * .6 < ab.y1) {
         a.state = 'bubble'; a.bt = 0; a.vy = 40; a.vx = (Math.random() - .5) * 60; hit = 'keep'; sfx.pop(); got.aliens++; } }
       for (const c of cages) if (!hit && !c.open && Math.abs(u.x - c.x) < 70 + u.r * .4 && u.y > c.y && u.y < c.y + 160) { openCage(c); hit = true; }
@@ -382,7 +434,7 @@
     // boules de slime de Zap : rien de méchant, juste un « splotch »
     for (let i = slime.length - 1; i >= 0; i--) { const s = slime[i]; s.life -= dt; s.x += s.vx * dt; s.y += s.vy * dt;
       if (hitR(B, s.x, s.y, 14)) { slime.splice(i, 1); sfx.bonk(); puffs.push({ x: s.x, y: s.y, t: 0, c: '#8be36a' }); rose.vx *= .4; continue; }
-      if (s.life <= 0 || s.y < 0 || solids.some(q => s.x > q.x && s.x < q.x + q.w && s.y > q.y && s.y < q.y + q.h)) { slime.splice(i, 1); puffs.push({ x: s.x, y: Math.max(8, s.y), t: 0, c: '#8be36a' }); } }
+      if (s.life <= 0 || s.y < 0 || solidPoint(s.x, s.y, true)) { slime.splice(i, 1); puffs.push({ x: s.x, y: Math.max(8, s.y), t: 0, c: '#8be36a' }); } }
     // les amis suivent Rose en petite file
     friends.filter(f => f.home).forEach(f => { f.t += dt; f.hv += 260 * dt; f.x += 420 * dt; f.y += f.hv * dt * .8; f.face = 1; });   // les plus anciens rentrent à la fusée
     friends.filter(f => !f.home).forEach((f, i) => { f.t += dt; const tx = rose.x - rose.face * (150 + i * 95), ty = Math.max(0, (rose.mode === 'air' ? rose.y : rose.base) - 10 + Math.sin(f.t * 3 + i) * 10);
@@ -467,18 +519,19 @@
       const px = x + w / 2 + Math.cos(a) * rx, py = y - Math.sin(a) * -ry; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
     ctx.closePath();
   }
+  function polyPath(P) { ctx.beginPath(); P.forEach(([px, py], i) => i ? ctx.lineTo(SX(px), SY(py)) : ctx.moveTo(SX(px), SY(py))); ctx.closePath(); }
   function drawSolids(time) {
     for (const s of solids) {
-      const x = SX(s.x), w = s.w * zoom; if (x > W + 50 || x + w < -50) continue;
+      const x = SX(s.x), w = s.w * zoom; if (x > W + 80 || x + w < -50) continue;
       const yb = SY(s.y), yt = SY(s.y + s.h);
-      if (s.kind === 'ceil') { const g = ctx.createLinearGradient(0, yt, 0, yb); g.addColorStop(0, '#2a2350'); g.addColorStop(1, '#5a5390'); ctx.fillStyle = g; ctx.fillRect(x, -10, w, yb + 10);
+      if (s.kind === 'ceil') { const g = ctx.createLinearGradient(0, yt, 0, yb); g.addColorStop(0, '#2a2350'); g.addColorStop(1, '#5a5390'); ctx.fillStyle = g; polyPath(s.poly); ctx.fill();
         ctx.fillStyle = '#6f68a8'; for (let k = 0; k < s.w; k += 90) { const kx = SX(s.x + k); ctx.beginPath(); ctx.moveTo(kx, yb); ctx.lineTo(kx + 20 * zoom, yb + (18 + (k % 3) * 8) * zoom); ctx.lineTo(kx + 40 * zoom, yb); ctx.fill(); }
         for (let k = 60; k < s.w; k += 330) { const kx = SX(s.x + k), ky = yb + 8 * zoom, gl = .5 + .5 * Math.sin(time * 2 + k); ctx.fillStyle = `rgba(140,230,255,${.5 + gl * .4})`; ctx.beginPath(); ctx.moveTo(kx, ky); ctx.lineTo(kx + 9 * zoom, ky + 26 * zoom); ctx.lineTo(kx + 18 * zoom, ky); ctx.fill(); }
         continue; }
-      if (s.kind === 'slab') { ctx.fillStyle = '#8e8bb0'; ctx.beginPath(); ctx.roundRect(x, yt, w, yb - yt + 10 * zoom, 14 * zoom); ctx.fill(); ctx.fillStyle = '#c9c7e0'; ctx.beginPath(); ctx.roundRect(x, yt, w, 12 * zoom, 8 * zoom); ctx.fill(); continue; }
-      if (s.kind === 'tite') { ctx.fillStyle = '#4b447e'; ctx.beginPath(); ctx.moveTo(x - 8 * zoom, yt); ctx.lineTo(x + w + 8 * zoom, yt); ctx.lineTo(x + w * .78, yb + 10 * zoom); ctx.quadraticCurveTo(x + w / 2, yb + 30 * zoom, x + w * .22, yb + 10 * zoom); ctx.closePath(); ctx.fill(); continue; }
+      if (s.kind === 'slab') { ctx.fillStyle = '#8e8bb0'; polyPath(s.poly); ctx.fill(); ctx.fillStyle = '#c9c7e0'; ctx.beginPath(); ctx.roundRect(x, yt, w, 12 * zoom, 8 * zoom); ctx.fill(); continue; }
+      if (s.kind === 'tite') { ctx.fillStyle = '#4b447e'; polyPath(s.poly); ctx.fill(); continue; }
       // rochers et stalagmites
-      ctx.fillStyle = s.kind === 'mite' ? '#5d568f' : '#9a98b4'; rockPath(x, yb, w, (yb - yt), s.x * .01); ctx.fill();
+      ctx.fillStyle = s.kind === 'mite' ? '#5d568f' : '#9a98b4'; polyPath(s.poly); ctx.fill();
       ctx.fillStyle = s.kind === 'mite' ? '#7a73ad' : '#b9b7cf'; ctx.beginPath(); ctx.ellipse(x + w * .35, yt + (yb - yt) * .35, w * .12, (yb - yt) * .06, 0, 0, Math.PI * 2); ctx.ellipse(x + w * .62, yt + (yb - yt) * .6, w * .09, (yb - yt) * .05, 0, 0, Math.PI * 2); ctx.fill();
     }
   }
@@ -560,7 +613,7 @@
     if (f.set !== shownSet) { if (shownSet) { fadeFrom = shown; fadeT = 0; fadeGy = lastGy; fadeLen = stopFade ? STOP_FADE : FADE; stopFade = false;
         fadeAng = (RF[fadeFrom] && RF[fadeFrom].ang) || 0; fadePivot = (lastGround && f.ground) ? 0 : PIVOT; } shownSet = f.set; }
     shown = f.mix > .5 ? f.k2 : f.k;
-    const surf = SY(surfaceAt(rose.x, (rose.mode === 'air' ? rose.y : rose.base) + 2)), h = f.ground ? 0 : rose.y - surfaceAt(rose.x, rose.y + 2), sh = Math.max(.2, 1 - h / 500);
+    const surf = SY(supportAt(rose.x, (rose.mode === 'air' ? rose.y : rose.base) + 2)), h = f.ground ? 0 : rose.y - supportAt(rose.x, rose.y + 2), sh = Math.max(.2, 1 - h / 500);
     ctx.fillStyle = `rgba(30,25,70,${.3 * sh})`; ctx.beginPath(); ctx.ellipse(px, surf + 3, 52 * zoom * sh, 11 * zoom * sh, 0, 0, Math.PI * 2); ctx.fill();
     const draw = (k, alpha, y) => { const q = RF[k]; ctx.save(); ctx.globalAlpha = alpha; ctx.translate(px, y); ctx.scale(rose.face * zoom, zoom); ctx.drawImage(roseImg, q.x, q.y, q.w, q.h, -q.ax, -q.ay, q.w, q.h); ctx.restore(); };
     if (f.air) {                                                        // vol : deux animations, chacune penchée vers l'autre, en fondu selon la vitesse
