@@ -127,3 +127,7 @@ Filou reste accroché à sa toile tant qu'on ne saute pas (le bouton SAUT cligno
 - 2e image d'animation (v0.53) : cases 35 à 40 de `monsters.webp` (`MON_ALT`), calées sur le dessin principal ; ailes qui battent (`MON_FLAP`, battements par seconde) pour la chauve-souris, la fée, les abeilles et le papillon ; la chenille fait sa bosse en rampant.
 - Sons des amis (v0.55) : `friendSound(m)` joue un petit son différent pour chacun des 15 monstres tranquilles et une note par couleur de flamme, quand il devient ami (fabriqués en code avec Web Audio, aucun fichier) ; il remplace le « ding » habituel et passe avant la voix qui compte (v0.56).
 - Nuage d'aide (v0.59) : après 2 chutes dans le même trou (`cloudHelp`), un petit nuage souriant attend dedans ; s'il rattrape le héros, il le fait rebondir jusqu'à l'autre bord (`cloudBounce`, trajectoire calculée). Un enfant qui réussit ne le voit jamais. Remis à zéro à chaque mission.
+
+## Rose (en préparation)
+- `assets/rose.webp` + `rose.json` : animations tirées des GIF (`tools/rose/`), toutes à la même échelle et calées sur le sol ; `top` = hauteur du casque au-dessus du sol, pour raccorder les animations.
+- `rose.html` : page d'essai des mouvements (pas encore dans le jeu). Marche lente d'exosquelette, pieds qui ne glissent pas ; décollage depuis l'arrêt ou depuis la marche, vol stationnaire / lent / rapide selon la vitesse, atterrissage vers l'arrêt ou vers la marche, victoire. Chaque changement passe par son animation de jonction, sinon par un fondu court.
