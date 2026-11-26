@@ -22,6 +22,9 @@ def crop_white(im):
     px = im.convert('RGB'); bg = Image.new('RGB', px.size, (255, 255, 255)); from PIL import ImageChops
     d = ImageChops.difference(px, bg).convert('L').point(lambda v: 255 if v > 18 else 0); bb = d.getbbox(); return im.crop(bb) if bb else im
 ROSE = crop_white(ROSE)
+# Rose dans l'espace : casque MIS (c'est le vrai casque du jeu), image détourée de la planche d'animation
+_RJ = json.load(open(A('rose.json'))); _RA = Image.open(A('rose.webp')).convert('RGBA'); _q = _RJ['rose_idle0']
+ROSE_SPACE = _RA.crop((_q['x'], _q['y'], _q['x'] + _q['w'], _q['y'] + _q['h'])); ROSE_SPACE = ROSE_SPACE.crop(ROSE_SPACE.getbbox())
 def note(text, w=300, h=420, col=(255, 240, 200)):
     im = Image.new('RGBA', (w, h), col + (255,)); d = ImageDraw.Draw(im); d.rectangle([2, 2, w - 3, h - 3], outline=(150, 110, 40), width=4)
     y = 20

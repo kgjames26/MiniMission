@@ -7,7 +7,7 @@ import planche as P
 FB = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
 # nom affiché, image, hauteur par rapport à Rose (= 1)
 CAST = {
- 'rose': ('Rose', P.ROSE, 1.0), 'ziggy': ('Ziggy', P.hero(0, 0), .95), 'filou': ('Filou', P.hero(2, 1), .95), 'titan': ('Titan', P.hero(2, 2), .95),
+ 'rose': ('Rose', P.ROSE_SPACE, 1.0), 'ziggy': ('Ziggy', P.hero(0, 0), .95), 'filou': ('Filou', P.hero(2, 1), .95), 'titan': ('Titan', P.hero(2, 2), .95),
  'glouglou': ('Glouglou', P.alien('glouglou_f1'), .5), 'boing': ('Boing', P.alien('boing_f1'), .58), 'zap': ('Zap', P.alien('zap_f1'), .55),
  'bidou': ('Gros Bidou', P.alien('bidou_f1'), .72), 'zigzag': ('Zigzag', P.alien('zigzag_f1'), .55),
  'herisson': ('hedgehog', P.mon(0), .42), 'limon': ('slime', P.mon(1), .4), 'chauvesouris': ('bat', P.mon(2), .38), 'golem': ('stone golem', P.mon(3), .5),

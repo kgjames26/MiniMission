@@ -10,7 +10,7 @@ font = lambda s, b=False: ImageFont.truetype(FB if b else F, s)
 CAST = dict(CAST)
 CAST['farfouille'] = ('Capt. Farfouille', P.note('Capitaine Farfouille : joindre SA fiche'), .75)
 CAST['rose_cool'] = ('Rose (casual)', P.note('Rose en TENUE COOL : joindre SA fiche', 330, 460, (255, 225, 240)), 1.0)
-ROSE = 'Rose (7-year-old girl, long auburn hair, big brown eyes, freckles, light-blue/white/orange space exosuit with a white triangle on the chest, round glass helmet ALWAYS closed in space)'
+ROSE = 'Rose (7-year-old girl, long auburn hair, big brown eyes, freckles, light-blue/white/orange space exosuit with a white triangle on the chest, her round glass bubble helmet with orange ear pieces ALWAYS ON in space, exactly as in the model)'
 ZIG = 'Ziggy (boy, red suit with yellow stars, red eye mask, yellow cape)'
 FIL = 'Filou (boy, blue zip hoodie with the hood up, purple gloves, he swings on a thin web line)'
 TIT = 'Titan (strong boy, dark skin, green and yellow suit, yellow cape)'
