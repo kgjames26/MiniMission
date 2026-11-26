@@ -97,7 +97,8 @@
   function picture(id, di) {
     const key = id + '-' + di; if (PICS[key]) return PICS[key];
     const b = MM.STORY[id], art = (b.art || [])[di] || 'auto';
-    return (PICS[key] = (art === 'img' ? load(`assets/book/${id}-w${di + 1}.webp`).then(im => im ? im.src : scene(id, di)) : scene(id, di)));
+    const drawn = () => MM.bookArt && MM.bookArt[key] ? (async () => { const cv = document.createElement('canvas'); cv.width = 2000; cv.height = 750; await MM.bookArt[key](cv.getContext('2d')); return cv.toDataURL('image/jpeg', .88); })() : scene(id, di);
+    return (PICS[key] = (art === 'img' ? load(`assets/book/${id}-w${di + 1}.webp`).then(im => im ? im.src : drawn()) : drawn()));
   }
   let styled = false;
   const style = () => { if (styled) return; styled = true; const s = document.createElement('style'); s.textContent = css; document.head.appendChild(s); };
