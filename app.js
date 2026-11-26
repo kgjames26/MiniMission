@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '76', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '77', asset = (p) => `${p}?v=${ASSET_V}`;
   // la soucoupe des farceurs passe de temps en temps dans le ciel des villes (l'indice de l'histoire, chapitre 1)
   const ufoImg = new Image(); let UFO = null; ufoImg.src = asset('assets/aliens.webp'); fetch(asset('assets/aliens.json')).then(r => r.json()).then(j => { UFO = j.zap_f1; }).catch(() => {});
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
@@ -727,11 +727,12 @@
       ctx.fillStyle = '#ef4b43'; roundRect(hx - 24, hy, 48, 14, 3, true); }
   }
   function drawSite(time) {
-    const W = view.w, cam = world.camera, k = .7;
+    const W = view.w, cam = world.camera, k = .7; ctx.save(); ctx.globalAlpha = .6;   // au loin : à ne pas confondre avec les vrais obstacles
     for (let i = Math.floor(cam * k / 340) - 1; i < Math.floor(cam * k / 340) + Math.ceil(W / 340) + 2; i++) { const x = i * 340 - cam * k; if (x < -120 || x > W + 120) continue;
       if (i % 2 === 0) { ctx.fillStyle = '#ffffff'; ctx.fillRect(x, 360, 96, 12); ctx.fillStyle = '#ef4b43'; for (let s = 0; s < 4; s++) ctx.fillRect(x + 6 + s * 24, 360, 12, 12); ctx.fillStyle = '#5d6b7a'; ctx.fillRect(x + 8, 372, 6, 24); ctx.fillRect(x + 82, 372, 6, 24); }
       else { ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = 4; ctx.strokeRect(x, 290, 80, 106); ctx.beginPath(); ctx.moveTo(x, 290); ctx.lineTo(x + 80, 343); ctx.lineTo(x, 396); ctx.moveTo(x, 343); ctx.lineTo(x + 80, 343); ctx.stroke(); ctx.fillStyle = '#c69a5a'; ctx.fillRect(x - 6, 286, 92, 8); }
-      ctx.fillStyle = '#ff7a1f'; ctx.beginPath(); ctx.moveTo(x + 130, 396); ctx.lineTo(x + 140, 368); ctx.lineTo(x + 150, 396); ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillRect(x + 135, 380, 10, 4); }
+      ctx.fillStyle = '#ff7a1f'; ctx.beginPath(); ctx.moveTo(x + 132, 392); ctx.lineTo(x + 140, 372); ctx.lineTo(x + 148, 392); ctx.fill(); ctx.fillStyle = '#fff'; ctx.fillRect(x + 136, 382, 8, 3); }
+    ctx.restore();
   }
   function drawLandmark() {
     const TH = theme(), W = view.w, cam = world.camera, fn = MM.landmarks[TH.lm]; if (!fn) return;

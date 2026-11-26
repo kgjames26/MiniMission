@@ -1,6 +1,6 @@
 /* Mini Mission — lecteur du livre de l'histoire.
    MM.book.open(id, { onDone, force }) : ouvre un livre de MM.STORY (une seule fois sauf force) ; MM.book.seen(id) ; MM.book.library(ids).
-   Paysage : double page (2 pages côte à côte) ; portrait : une page à la fois. La voix lit toute seule (bouton 🔊 pour réécouter). */
+   Paysage : double page (2 pages côte à côte) ; portrait : une page à la fois. La voix lit seulement quand on appuie sur 🔊. */
 (() => {
   const MM = (window.MM = window.MM || {});
   const KEY = 'mm.book.seen';
@@ -54,7 +54,7 @@
       <div class="mmb-bar"><button class="mmb-btn alt" data-a="prev" aria-label="Page d’avant">◀</button><button class="mmb-btn alt" data-a="say" aria-label="Écouter">🔊</button><div class="mmb-dots"></div><button class="mmb-btn" data-a="next" aria-label="Page suivante">▶</button><button class="mmb-btn go" data-a="done" aria-label="C’est parti" hidden>▶▶</button></div>`;
     document.body.appendChild(root);
     const pages = book.pages, el = root.querySelector('.mmb-book'), dots = root.querySelector('.mmb-dots');
-    let per = 2, at = 0, closed = false;
+    let per = 2, at = 0, closed = false, sayNow = false;
     const render = () => {
       per = innerWidth > innerHeight && pages.length > 1 ? 2 : 1; root.classList.toggle('single', per === 1);
       at = Math.floor(at / per) * per;
@@ -65,12 +65,13 @@
       dots.innerHTML = Array.from({ length: spreads }, (_, i) => `<i class="${i === cur ? 'on' : ''}"></i>`).join('');
       root.querySelector('[data-a="prev"]').style.visibility = at > 0 ? 'visible' : 'hidden';
       const last = at + per >= pages.length; root.querySelector('[data-a="next"]').hidden = last; root.querySelector('[data-a="done"]').hidden = !last;
-      speak(view.map(p => p.s || p.t).join(' '));
+      if (sayNow) speak(view.map(p => p.s || p.t).join(' '));   // la voix ne lit que si on appuie sur 🔊 (la synthèse vocale n'est pas toujours belle)
+      sayNow = false;
     };
     const close = () => { if (closed) return; closed = true; hush(); removeEventListener('resize', render); root.remove(); if (opts.onDone) opts.onDone(); };
-    const go = (d) => { const n = at + d * per; if (n < 0) return; if (n >= pages.length) { close(); return; } at = n; render(); };
+    const go = (d) => { const n = at + d * per; if (n < 0) return; if (n >= pages.length) { close(); return; } at = n; hush(); render(); };
     root.addEventListener('click', (e) => { const a = e.target.closest('[data-a]'); if (!a) return; const k = a.dataset.a;
-      if (k === 'prev') go(-1); else if (k === 'next') go(1); else if (k === 'done') close(); else if (k === 'say') render(); });
+      if (k === 'prev') go(-1); else if (k === 'next') go(1); else if (k === 'done') close(); else if (k === 'say') { sayNow = true; render(); } });
     root.querySelector('.mmb-skip').onclick = close;
     let sx = null; root.addEventListener('pointerdown', e => { sx = e.clientX; }); root.addEventListener('pointerup', e => { if (sx === null) return; const dx = e.clientX - sx; sx = null; if (Math.abs(dx) > 60 && !e.target.closest('button')) go(dx < 0 ? 1 : -1); });
     addEventListener('resize', render);
