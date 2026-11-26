@@ -6,9 +6,9 @@
     ui: {
       aHome: '미니 미션 홈', aSettingsHold: '보호자 설정: 1.5초 동안 길게 누르세요', tSettingsHold: '설정 (길게 누르기)',
       howto: '놀이 방법', aTimerHold: '놀이 타이머: 1.5초 동안 길게 누르세요', tTimerHold: '타이머 (길게 누르기)', aSoundToggle: '소리 켜기 또는 끄기',
-      aAlbum: '스티커 앨범', myAlbums: '내 앨범', tagline: '앨범을 스티커로 채워 봐!', play: '놀자!',
+      aAlbum: '스티커 앨범', myAlbums: '내 앨범', myBooks: '내 책', aBooks: '내 이야기책', tagline: '앨범을 스티커로 채워 봐!', play: '놀자!',
       aChooseHero: '영웅 고르기', aBackHome: '홈으로 돌아가기', chooseHero1: '영웅을', chooseHero2: '골라 봐!', giftLine: '친구들에게 줄 선물:',
-      aChooseChapter: '이야기 고르기', chooseChap1: '이야기를', chooseChap2: '골라 봐!', chap1: '지구', chap2: '우주', chap3: '마지막 대결', soon: '곧 나와요', sayChooseChapter: '이야기를 골라 봐!', sayChooseChapterN: '{name}, 이야기를 골라 봐!', sayChooseHeroCity: '{city}에서 누가 도와줄까?', aChoosePlanet: '행성 고르기', sayChoosePlanet: '로즈는 어디로 갈까?', soonSay: '이 세계는 곧 나와요!', finalSoonSay: '마지막 대결은 곧 나와요!', lockedPlanetSay: '앞에 있는 세계를 먼저 끝내 줘!', aBackChapters: '이야기로 돌아가기', aBackCities: '도시로 돌아가기', pLune: '달', pMars: '화성', pVenus: '금성', pMercure: '수성', pJupiter: '목성', pSaturne: '토성', pUranus: '천왕성', pNeptune: '해왕성', pTerre: '지구', pSoleil: '태양',
+      aChooseChapter: '이야기 고르기', chooseChap1: '이야기를', chooseChap2: '골라 봐!', chap1: '지구', chap2: '우주', chap3: '마지막 대결', soon: '곧 나와요', sayChooseChapter: '이야기를 골라 봐!', sayChooseChapterN: '{name}, 이야기를 골라 봐!', sayChooseHeroCity: '{city}에서 누가 도와줄까?', aChoosePlanet: '행성 고르기', sayChoosePlanet: '로즈는 어디로 갈까?', finalLockedSay: '먼저 로즈와 함께 우주에 있는 친구들을 모두 구해 줘!', soonSay: '이 세계는 곧 나와요!', finalSoonSay: '마지막 대결은 곧 나와요!', lockedPlanetSay: '앞에 있는 세계를 먼저 끝내 줘!', aBackChapters: '이야기로 돌아가기', aBackCities: '도시로 돌아가기', pLune: '달', pMars: '화성', pVenus: '금성', pMercure: '수성', pJupiter: '목성', pSaturne: '토성', pUranus: '천왕성', pNeptune: '해왕성', pTerre: '지구', pSoleil: '태양',
       aZiggy: '지기 고르기. 장애물을 휙휙 지나가는 빠른 영웅', aFilou: '필루 고르기. 거미줄로 그네를 타는 날쌘 영웅', aTitan: '타이탄 고르기. 커다란 바위를 옮기는 힘센 영웅',
       speed: '빠르기', agility: '날쌤', strength: '힘', choose: '고르기',
       sessionTimer: '놀이 타이머', optional: '(선택)', off: '끄기', minutes: '{n}분', hour1: '1시간',
@@ -18,7 +18,7 @@
       album1: '내', album2: '앨범', aStickerDetail: '스티커 자세히 보기', aClose: '닫기', aListen: '듣기',
       aGame: '미션 중', aCanvas: '2D 플랫폼 게임', pause: '일시 정지', aStars: '모은 별', aFriends: '잡은 몬스터 (20마리 중)', aLetters: '모은 글자',
       aProgress: '진행', aMute: '소리 끄기', aUnmute: '소리 켜기', aLR: '왼쪽이나 오른쪽으로 가기', aLeft: '왼쪽으로', aRight: '오른쪽으로',
-      aAction: '액션: 영웅의 힘으로 장난꾸러기를 친구로 만들기', aShoot: '작은 몬스터에게 쏘기', aJump: '점프', newBadge: 'NEW',
+      aAction: '액션: 영웅의 힘으로 장난꾸러기를 친구로 만들기', aShoot: '작은 몬스터에게 쏘기', aJump: '점프', aBubbles: '비눗방울 쏘기', aStick: '조이스틱: 엄지를 밀어서 걷고 날아요', newBadge: 'NEW',
       peekLeft: '{parts} 더 찾아 보자!', peekAll: '다 찾았어! 잘했어!', aPeek: '지금까지 찾은 것', aLeftToFind: '아직 찾아야 할 것', resume: '계속하기', restart: '처음부터', stats: '기록', quit: '미션 그만하기',
       aStatsScreen: '미션 기록', aBackPause: '일시 정지로 돌아가기', statStars: '⭐ 별', statFriends: '♥ 친구', statLetters: '🔤 글자', statStickers: '🏅 스티커', statPuzzles: '❓ 수수께끼',
       aPuzzle: '어떻게 도울지 고르기', aQuit: '그만하기', aListenQ: '질문 듣기', aListenInstr: '설명 듣기', question: '질문', super: '좋아!',
@@ -45,7 +45,7 @@
       noVoice: '이 기기에는 {lang} 음성이 설치되어 있지 않습니다. 휴대폰 설정(텍스트 음성 변환)에서 추가해 주세요.',
       langTitle: '언어를 골라 봐', aPuzzlePiece: '퍼즐 조각', aCardDown: '뒤집힌 카드', aColorN: '색깔 {n}',
       // prénom de l'enfant (facultatif, reste sur l'appareil)
-      nameTitle: '보호자분께', nameQ: '아이 이름 (선택)', namePh: '이름', nameSayLabel: '음성이 이름을 잘못 읽으면, 소리 나는 대로 적어 주세요', nameSayPh: '예: 마엘리스', nameListen: '이름 듣기', nameOk: '시작하자!', nameSkip: '건너뛰기', nameLocal: '이름은 이 기기에만 저장됩니다.', nameSetting: '👧 이름', nameNone: '없음', helloN: '안녕, {name}{아}!', sayChooseCityN: '{name}{아}, 도시를 골라 봐!', endSayLeftN: '{name}{아}, 잘했어! 아직 {parts} 남았어.', endSayAllN: '{name}{아}, 잘했어! 이 도시는 모두 끝냈어!', goldSayN: '{name}{아}, 잘했어! 금 스티커! {n}!', restSayN: '영웅들은 이제 쉴 거야. 이따 또 만나, {name}{아}!',
+      nameTitle: '보호자분께', nameQ: '아이 이름 (선택)', namePh: '이름', nameSayLabel: '음성이 이름을 잘못 읽으면, 소리 나는 대로 적어 주세요', nameSayPh: '예: 마엘리스', nameListen: '이름 듣기', nameOk: '시작하자!', nameSkip: '건너뛰기', nameLocal: '이름은 이 기기에만 저장됩니다.', nameSetting: '👧 이름', devMode: '🛠️ 개발자 모드', devCode: '코드', devOff: '끄기', nameNone: '없음', helloN: '안녕, {name}{아}!', sayChooseCityN: '{name}{아}, 도시를 골라 봐!', endSayLeftN: '{name}{아}, 잘했어! 아직 {parts} 남았어.', endSayAllN: '{name}{아}, 잘했어! 이 도시는 모두 끝냈어!', goldSayN: '{name}{아}, 잘했어! 금 스티커! {n}!', restSayN: '영웅들은 이제 쉴 거야. 이따 또 만나, {name}{아}!',
       mazeSay: '{a}{이} {b}{을} 찾도록 도와줘!', jigsawSay: '그림을 알맞은 순서로 맞춰 봐!', pairsSay: '같은 그림을 찾아 봐!', simonSay: '음악을 듣고 색깔을 잘 봐. 그리고 나처럼 따라 해 봐!'
     },
     plural: { stars: ['별 {n}개'], letters: ['글자 {n}개'], monsters: ['몬스터 {n}마리'], games: ['미니게임 {n}개'] },

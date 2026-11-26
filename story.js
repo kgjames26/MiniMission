@@ -119,12 +119,12 @@
                   P('Le savais-tu ? Le Soleil est si gros qu’on pourrait mettre plus d’un million de Terres dedans. Et attention : on ne le regarde jamais directement, même avec des lunettes de soleil !', '☀️🌍🙈')] },
   };
   for (const w in W) { S[w + '_a'] = { bg: 'space', world: w, pages: W[w].a }; S[w + '_c'] = { bg: 'space', world: w, pages: W[w].c }; }
-  // ---- chapitre 3 : le grand final (la partie viendra plus tard) ----
+  // ---- chapitre 3 : le grand final (rose-world.html?w=final : Rose vole, les trois héros courent avec elle) ----
   S.final_a = { bg: 'night', pages: [
     P('Un matin, le ciel se remplit de soucoupes ! Les farceurs débarquent sur la Terre, et Capitaine Farfouille secoue un énorme sac de poudre Grognon. « Toute la ville va bouder ! »', '🛸🛸🏙️'),
     P('Rose atterrit juste à temps dans le jardin. Ziggy, Filou et Titan courent vers elle. « Rose ! Tu es revenue ! » Les quatre amis se serrent très fort.', '🧑‍🚀🤗🦸'),
     P('« Cette fois, on y va tous les quatre, dit Rose. Ziggy, les avenues. Filou, les toits. Titan, le chantier. Et moi, le ciel ! » Les vingt amis veulent aider aussi.', '🗺️🦸💛'),
-    P('Et toi, avec qui veux-tu jouer ? Choisis ton héros… les trois autres t’aideront. C’est parti pour la grande bataille de bulles !', '🦸🦸🦸🧑‍🚀'),
+    P('À toi de jouer : tu voles avec Rose, et Ziggy, Filou et Titan courent à côté de toi en lançant des bulles. C’est parti pour la grande bataille de bulles !', '🧑‍🚀🦸🦸🦸🫧'),
   ] };
   S.final_c = { bg: 'night', pages: [
     P('Pop, pop, pop ! Toute la ville est remplie de bulles, avec des farceurs dedans. La dernière bulle, c’est celle de Capitaine Farfouille. Et là… il se met à pleurer.', '🫧🫧😢'),
@@ -142,9 +142,9 @@
   for (const w in WN) { S[w + '_a'].title = WN[w] + ' ①'; S[w + '_c'].title = WN[w] + ' ②'; }
   // ordre de la bibliothèque
   MM.STORY_ORDER = ['prologue', ...CN.flatMap((_, i) => ['c' + i + 'a', 'c' + i + 'c']), 'ch1end', ...Object.keys(WN).flatMap(w => [w + '_a', w + '_c']), 'final_a', 'final_c'];
-  // images à dessiner (25) : une grande image par double page marquée 'img' ; 'auto' = scène dessinée par le jeu
-  S.prologue.art = ['img', 'img']; S.ch1end.art = ['img', 'auto']; S.final_a.art = ['img', 'auto']; S.final_c.art = ['auto', 'img', 'auto'];
-  CN.forEach((_, i) => { S['c' + i + 'a'].art = ['img']; });
-  for (const w in WN) S[w + '_a'].art = ['img'];
+  // grandes images : une par double page marquée 'img' (assets/book/<livre>-w<n>.webp) ; si le fichier manque, la scène dessinée par le jeu la remplace
+  S.prologue.art = ['img', 'img']; S.ch1end.art = ['img', 'img']; S.final_a.art = ['img', 'img']; S.final_c.art = ['img', 'img', 'img'];
+  CN.forEach((_, i) => { S['c' + i + 'a'].art = ['img']; S['c' + i + 'c'].art = ['img']; });
+  for (const w in WN) { S[w + '_a'].art = ['img']; S[w + '_c'].art = ['img']; }
   MM.STORY = S;
 })();

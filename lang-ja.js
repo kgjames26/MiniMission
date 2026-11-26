@@ -6,9 +6,9 @@
     ui: {
       aHome: 'ミニミッション ホーム', aSettingsHold: '保護者向け設定：1.5秒間 長押し', tSettingsHold: '設定（長押し）',
       howto: 'あそびかた', aTimerHold: 'プレイタイマー：1.5秒間 長押し', tTimerHold: 'タイマー（長押し）', aSoundToggle: 'おとを オン・オフ',
-      aAlbum: 'シール アルバム', myAlbums: 'アルバム', tagline: 'アルバムを シールで いっぱいに しよう！', play: 'あそぶ！',
+      aAlbum: 'シール アルバム', myAlbums: 'アルバム', myBooks: 'えほん', aBooks: 'えほんの ほんだな', tagline: 'アルバムを シールで いっぱいに しよう！', play: 'あそぶ！',
       aChooseHero: 'ヒーローを えらぶ', aBackHome: 'ホームに もどる', chooseHero1: 'ヒーローを', chooseHero2: 'えらんでね！', giftLine: 'ともだちへの プレゼント：',
-      aChooseChapter: 'しょうを えらぶ', chooseChap1: 'おはなしを', chooseChap2: 'えらんでね！', chap1: 'ちきゅう', chap2: 'うちゅう', chap3: 'さいごの たたかい', soon: 'もうすぐ', sayChooseChapter: 'おはなしを えらんでね！', sayChooseChapterN: '{name}、おはなしを えらんでね！', sayChooseHeroCity: '{city}で だれが たすける？', aChoosePlanet: 'わくせいを えらぶ', sayChoosePlanet: 'ローズは どこへ いく？', soonSay: 'この せかいは もうすぐ できるよ！', finalSoonSay: 'さいごの たたかいは もうすぐ だよ！', lockedPlanetSay: 'さきに、まえの せかいを クリアしてね！', aBackChapters: 'おはなしに もどる', aBackCities: 'まちに もどる', pLune: 'つき', pMars: 'かせい', pVenus: 'きんせい', pMercure: 'すいせい', pJupiter: 'もくせい', pSaturne: 'どせい', pUranus: 'てんのうせい', pNeptune: 'かいおうせい', pTerre: 'ちきゅう', pSoleil: 'たいよう',
+      aChooseChapter: 'しょうを えらぶ', chooseChap1: 'おはなしを', chooseChap2: 'えらんでね！', chap1: 'ちきゅう', chap2: 'うちゅう', chap3: 'さいごの たたかい', soon: 'もうすぐ', sayChooseChapter: 'おはなしを えらんでね！', sayChooseChapterN: '{name}、おはなしを えらんでね！', sayChooseHeroCity: '{city}で だれが たすける？', aChoosePlanet: 'わくせいを えらぶ', sayChoosePlanet: 'ローズは どこへ いく？', finalLockedSay: 'まず ローズと いっしょに、うちゅうの ともだちを みんな たすけてね！', soonSay: 'この せかいは もうすぐ できるよ！', finalSoonSay: 'さいごの たたかいは もうすぐ だよ！', lockedPlanetSay: 'さきに、まえの せかいを クリアしてね！', aBackChapters: 'おはなしに もどる', aBackCities: 'まちに もどる', pLune: 'つき', pMars: 'かせい', pVenus: 'きんせい', pMercure: 'すいせい', pJupiter: 'もくせい', pSaturne: 'どせい', pUranus: 'てんのうせい', pNeptune: 'かいおうせい', pTerre: 'ちきゅう', pSoleil: 'たいよう',
       aZiggy: 'ジギーを えらぶ。しょうがいぶつを すりぬける はやい ヒーロー', aFilou: 'フィルーを えらぶ。いとで ブランコの ように とぶ すばしっこい ヒーロー', aTitan: 'タイタンを えらぶ。おおきな いわを うごかす ちからもちの ヒーロー',
       speed: 'はやさ', agility: 'すばやさ', strength: 'ちから', choose: 'えらぶ',
       sessionTimer: 'プレイタイマー', optional: '（任意）', off: 'オフ', minutes: '{n}分', hour1: '1時間',
@@ -18,7 +18,7 @@
       album1: 'シール', album2: 'アルバム', aStickerDetail: 'シールの せつめい', aClose: 'とじる', aListen: 'きく',
       aGame: 'ミッション ちゅう', aCanvas: '2D アクションゲーム', pause: 'ポーズ', aStars: 'あつめた ほし', aFriends: 'つかまえた モンスター（20ぴき ちゅう）', aLetters: 'あつめた もじ',
       aProgress: 'しんちょく', aMute: 'おとを けす', aUnmute: 'おとを だす', aLR: 'ひだりか みぎに いく', aLeft: 'ひだりへ', aRight: 'みぎへ',
-      aAction: 'アクション：ヒーローの ちからで いたずらっこを ともだちに する', aShoot: 'ちいさな モンスターに うつ', aJump: 'ジャンプ', newBadge: 'NEW',
+      aAction: 'アクション：ヒーローの ちからで いたずらっこを ともだちに する', aShoot: 'ちいさな モンスターに うつ', aJump: 'ジャンプ', aBubbles: 'シャボンだまを とばす', aStick: 'ジョイスティック：ゆびを すべらせて あるいたり とんだり', newBadge: 'NEW',
       peekLeft: 'あと {parts} だよ。さがしてみよう！', peekAll: 'ぜんぶ みつけたね！ すごい！', aPeek: 'みつけたもの', aLeftToFind: 'まだ みつけていない もの', resume: 'つづける', restart: 'さいしょから', stats: 'きろく', quit: 'ミッションを やめる',
       aStatsScreen: 'ミッションの きろく', aBackPause: 'ポーズに もどる', statStars: '⭐ ほし', statFriends: '♥ ともだち', statLetters: '🔤 もじ', statStickers: '🏅 シール', statPuzzles: '❓ なぞなぞ',
       aPuzzle: 'どう たすけるか えらぶ', aQuit: 'やめる', aListenQ: 'しつもんを きく', aListenInstr: 'せつめいを きく', question: 'しつもん', super: 'やったね！',
@@ -45,7 +45,7 @@
       noVoice: 'この端末には {lang} の音声がありません。端末の設定（テキスト読み上げ）で追加してください。',
       langTitle: 'ことばを えらんでね', aPuzzlePiece: 'パズルの ピース', aCardDown: 'うらがえしの カード', aColorN: 'いろ {n}',
       // prénom de l'enfant (facultatif, reste sur l'appareil)
-      nameTitle: '保護者の方へ', nameQ: 'お子さまの名前（任意）', namePh: 'なまえ', nameSayLabel: '読み上げが正しくない場合は、ひらがなで読み方を入力してください', nameSayPh: '例：まえりす', nameListen: '名前を聞く', nameOk: 'はじめよう！', nameSkip: 'スキップ', nameLocal: '名前はこの端末の中だけに保存されます。', nameSetting: '👧 なまえ', nameNone: 'なし', helloN: 'こんにちは、{name}！', sayChooseCityN: '{name}、まちを えらんでね！', endSayLeftN: 'すごいね、{name}！ あと、{parts} のこってるよ。', endSayAllN: 'すごいね、{name}！ この まちは ぜんぶ クリアしたよ！', goldSayN: 'すごいね、{name}！ きんの シール！ {n}！', restSayN: 'ヒーローたちは これから やすみます。また あとでね、{name}！',
+      nameTitle: '保護者の方へ', nameQ: 'お子さまの名前（任意）', namePh: 'なまえ', nameSayLabel: '読み上げが正しくない場合は、ひらがなで読み方を入力してください', nameSayPh: '例：まえりす', nameListen: '名前を聞く', nameOk: 'はじめよう！', nameSkip: 'スキップ', nameLocal: '名前はこの端末の中だけに保存されます。', nameSetting: '👧 なまえ', devMode: '🛠️ かいはつしゃモード', devCode: 'コード', devOff: 'オフにする', nameNone: 'なし', helloN: 'こんにちは、{name}！', sayChooseCityN: '{name}、まちを えらんでね！', endSayLeftN: 'すごいね、{name}！ あと、{parts} のこってるよ。', endSayAllN: 'すごいね、{name}！ この まちは ぜんぶ クリアしたよ！', goldSayN: 'すごいね、{name}！ きんの シール！ {n}！', restSayN: 'ヒーローたちは これから やすみます。また あとでね、{name}！',
       mazeSay: '{a}を {b}の ところまで つれていってね！', jigsawSay: 'えを ただしい じゅんばんに ならべてね！', pairsSay: 'おなじ えを みつけてね！', simonSay: 'おとを きいて いろを みてね。それから まねしてね！'
     },
     plural: { stars: ['ほし {n}こ'], letters: ['もじ {n}こ'], monsters: ['モンスター {n}ひき'], games: ['ミニゲーム {n}こ'] },

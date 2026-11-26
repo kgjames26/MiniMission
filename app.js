@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '84', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '90', asset = (p) => `${p}?v=${ASSET_V}`;
   // la soucoupe des farceurs passe de temps en temps dans le ciel des villes (l'indice de l'histoire, chapitre 1)
   const ufoImg = new Image(); let UFO = null; ufoImg.src = asset('assets/aliens.webp'); fetch(asset('assets/aliens.json')).then(r => r.json()).then(j => { UFO = j.zap_f1; }).catch(() => {});
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
@@ -252,7 +252,8 @@
   const HEROES3 = ['ziggy', 'filou', 'titan'];
   let levelCity = 0;
   const cityDone = i => HEROES3.some(h => readLevel(h, i).done);
-  const cityUnlocked = i => i === 0 || cityDone(i - 1);
+  const DEV = () => { try { return localStorage.getItem('mm.dev') === '1'; } catch (e) { return false; } };   // mode développeur : tout est ouvert
+  const cityUnlocked = i => i === 0 || DEV() || cityDone(i - 1);
   const heroMini = h => `<span class="sprite" style="--col:${h === 'ziggy' ? 0 : 2};--row:${HERO_ROW[h] ?? 0}"></span>`;
   function openCities() { renderLevels(); setScreen('level-screen'); if (!timerNoticePlaying) sayText(TN('sayChooseCity'), null, true); }
   function openLevels() { openHeroes(levelCity); }
@@ -310,7 +311,7 @@
   }
   function hash(value) { let h = 2166136261; for (let i=0;i<value.length;i++) { h ^= value.charCodeAt(i); h = Math.imul(h,16777619); } return h >>> 0; }
   function seeded(seed) { let s = seed || 1; return () => { s += 0x6D2B79F5; let t = s; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-  function setScreen(id) { if(hudPeek){hudPeek=null;$('#hud-peek')?.classList.add('hidden');document.body.classList.remove('peeking');} if(id!=='puzzle-screen')cancelSpeech(); if(id!=='game-screen'){$('#toast')?.classList.remove('show');$('#award-banner')?.classList.remove('show');} if (id === 'pause-screen') renderPauseCollect(); screens.forEach(s => s.classList.toggle('active', s.id === id)); scene = id; if (id !== 'game-screen') releaseControls(); if (!['game-screen','puzzle-screen'].includes(id)) lastActiveTick=performance.now(); if (id === 'game-screen') resizeCanvas(); updateMusic(); }
+  function setScreen(id) { if (id === 'home' && MM.updateBooksBadge) MM.updateBooksBadge(); if(hudPeek){hudPeek=null;$('#hud-peek')?.classList.add('hidden');document.body.classList.remove('peeking');} if(id!=='puzzle-screen')cancelSpeech(); if(id!=='game-screen'){$('#toast')?.classList.remove('show');$('#award-banner')?.classList.remove('show');} if (id === 'pause-screen') renderPauseCollect(); screens.forEach(s => s.classList.toggle('active', s.id === id)); scene = id; if (id !== 'game-screen') releaseControls(); if (!['game-screen','puzzle-screen'].includes(id)) lastActiveTick=performance.now(); if (id === 'game-screen') resizeCanvas(); updateMusic(); }
   // la musique accompagne la partie ; elle se met en pause avec le jeu
   function updateMusic() {
     const should = audioEnabled && musicEnabled && !document.hidden && !idleMuted && (scene === 'game-screen' || scene === 'puzzle-screen');
@@ -333,7 +334,7 @@
     if (restLocked()) { showRest(); return; }
     if(sessionActive&&stopAfterMission){endSession();return;}
     $('#session-timer-row').classList.toggle('hidden',sessionActive);
-    setScreen('chapter-screen');
+    updateChapters(); setScreen('chapter-screen');
     if (!timerNoticePlaying) sayText(TN('sayChooseChapter'), null, true);
   }
   function chooseHero(heroId) { if (!heroes[heroId]) return; startLevel(heroId, levelCity); }
@@ -344,8 +345,11 @@
   function chooseChapter(n) {
     if (n === 1) { book('prologue', openCities); return; }
     if (n === 2) { book('ch1end', openSpace); return; }
-    const card = $('.chap-card.c3'); card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); MM.haptic('oops'); sayText(T('finalSoonSay'));
+    // chapitre 3 : le grand final, ouvert quand Rose a fini le Soleil
+    if (DEV() || roseDone().includes('soleil')) { location.href = 'rose-world.html?w=final'; return; }
+    const card = $('.chap-card.c3'); card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); MM.haptic('oops'); sayText(T('finalLockedSay'));
   }
+  function updateChapters() { const c3 = $('.chap-card.c3'); if (c3) c3.classList.toggle('locked', !(DEV() || roseDone().includes('soleil'))); }
   // ----- chapitre 2 : les 10 mondes de Rose (chaque monde s'ouvre quand le précédent est fini) -----
   const PLANETS = [
     { id: 'lune', k: 'pLune', file: 'rose-world.html?w=lune', s: .62, c: ['#f4f4fa', '#a6a4c0'] },
@@ -363,14 +367,14 @@
   function openSpace() {
     const done = roseDone();
     $('#space-map').innerHTML = PLANETS.map((p, i) => {
-      const open = i === 0 || done.includes(PLANETS[i - 1].id), ready = !!p.file;
+      const open = i === 0 || DEV() || done.includes(PLANETS[i - 1].id), ready = !!p.file;
       return `<button type="button" role="listitem" class="planet ${open ? '' : 'locked'} ${ready ? '' : 'soon'} ${done.includes(p.id) ? 'done' : ''}" data-i="${i}" style="--s:${p.s};--c1:${p.c[0]};--c2:${p.c[1]};--y:${(i % 2 ? 1 : -1) * 18}%"><span class="pl-ball ${p.band ? 'band' : ''} ${p.earth ? 'earth' : ''} ${p.sun ? 'sun' : ''}">${p.ring ? `<i class="pl-ring r${p.ring}"></i>` : ''}</span><b class="pl-name">${escapeHtml(T(p.k))}</b>${!open ? '<span class="pl-badge">🔒</span>' : !ready ? `<span class="pl-badge soon">${escapeHtml(T('soon'))}</span>` : ''}</button>`;
     }).join('');
     setScreen('space-screen');
     if (!timerNoticePlaying) sayText(T('sayChoosePlanet'), null, true);
   }
   function pickPlanet(i) {
-    const p = PLANETS[i], done = roseDone(), open = i === 0 || done.includes(PLANETS[i - 1].id), btn = $(`#space-map .planet[data-i="${i}"]`);
+    const p = PLANETS[i], done = roseDone(), open = i === 0 || DEV() || done.includes(PLANETS[i - 1].id), btn = $(`#space-map .planet[data-i="${i}"]`);
     const shake = () => { if (btn) { btn.classList.remove('shake'); void btn.offsetWidth; btn.classList.add('shake'); } MM.haptic('oops'); };
     if (!open) { shake(); sayText(T('lockedPlanetSay')); return; }
     if (!p.file) { shake(); sayText(T(p.k) + '. ' + T('soonSay')); return; }
@@ -2637,8 +2641,16 @@
   document.querySelectorAll('.hero-card[data-hero]').forEach(card=>card.addEventListener('click',()=>chooseHero(card.dataset.hero)));
   document.querySelectorAll('.chap-card').forEach(card=>card.addEventListener('click',()=>chooseChapter(Number(card.dataset.chap))));
   $('#space-map').addEventListener('click',e=>{const p=e.target.closest('.planet');if(p)pickPlanet(Number(p.dataset.i));});
-  $('#space-back').addEventListener('click',()=>{setScreen('chapter-screen');});
-  $('#library-open').addEventListener('click',()=>{cancelSpeech();if(MM.book)MM.book.library(MM.STORY_ORDER||[]);});
+  $('#space-back').addEventListener('click',()=>{updateChapters();setScreen('chapter-screen');});
+  const updateBooksBadge = () => { const b = $('#books-badge'), L = MM.STORY_ORDER || []; if (b && MM.book) b.textContent = `${L.filter(id => MM.book.seen(id)).length}/${L.length}`; };
+  // Toucher un héros sur l'accueil : il fait un petit saut et dit son nom
+  { const HN = { ja: { ziggy: 'ジギー', filou: 'フィルー', titan: 'タイタン', rose: 'ローズ' }, ko: { ziggy: '지기', filou: '필루', titan: '타이탄', rose: '로즈' } };
+    const nm = (h) => (HN[MM.i18n.lang] || {})[h] || h[0].toUpperCase() + h.slice(1);
+    document.querySelectorAll('.home-hero').forEach((el) => { const h = (el.className.match(/hh-(\w+)/) || [])[1]; if (!h) return;
+      el.addEventListener('pointerdown', () => { el.classList.remove('hop'); void el.offsetWidth; el.classList.add('hop'); sound('coin'); MM.haptic('good'); sayText(nm(h) + ' !', null, true); });
+      el.addEventListener('animationend', (e) => { if (e.animationName === 'hero-hop') el.classList.remove('hop'); }); }); }
+  $('#library-open').addEventListener('click',()=>{cancelSpeech();if(MM.book)MM.book.library(MM.STORY_ORDER||[], updateBooksBadge);});
+  updateBooksBadge(); addEventListener('pageshow', updateBooksBadge); MM.updateBooksBadge = updateBooksBadge;
   MM.say=(t)=>sayText(t); MM.hush=()=>cancelSpeech();
   $('#hero-back').addEventListener('click',()=>{renderLevels();setScreen('level-screen');});
   $('#level-grid').addEventListener('click',e=>{const card=e.target.closest('.level-card');if(card)pickLevel(Number(card.dataset.i));});
@@ -2802,6 +2814,17 @@
   $('#name-skip').addEventListener('click', () => closeNameScreen(false));
   ['#child-name', '#child-name-say'].forEach(sel => $(sel).addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); closeNameScreen(true); } }));
   $('#name-edit').addEventListener('click', () => openNameScreen('settings-screen'));
+  // mode développeur (pour l'adulte) : un code ouvre toutes les villes, planètes, le grand final et tous les livres
+  { const row = $('#dev-row'), inp = $('#dev-code'), btn = $('#dev-btn');
+    const paint = () => { const on = DEV(); row.classList.toggle('on', on); inp.hidden = on; inp.value = ''; btn.textContent = on ? T('devOff') : 'OK'; $('#dev-state').textContent = on ? ' ✅' : ''; };
+    const go = () => {
+      if (DEV()) { try { localStorage.removeItem('mm.dev'); } catch (e) {} }
+      else if (inp.value.trim().toLowerCase() === 'ludogo') { try { localStorage.setItem('mm.dev', '1'); } catch (e) {} MM.haptic('gold'); sound('sticker'); }
+      else { inp.classList.remove('shake'); void inp.offsetWidth; inp.classList.add('shake'); MM.haptic('oops'); inp.select(); return; }
+      paint(); updateChapters(); updateBooksBadge && updateBooksBadge();
+    };
+    btn.addEventListener('click', go); inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+    MM.i18n.onChange ? MM.i18n.onChange(paint) : 0; paint(); }
   $('#lang-grid').addEventListener('click', e => {
     const b = e.target.closest('.lang-btn'); if (!b) return;
     MM.haptic('good'); MM.i18n.setLang(b.dataset.lang);
@@ -2815,6 +2838,7 @@
   if (!MM.i18n.chosen) { const g = MM.i18n.guess(); $('#lang-grid').querySelector(`[data-lang="${g}"]`)?.classList.add('guess'); setScreen('lang-screen'); }
   else if (!save.nameAsked) openNameScreen('home');
   else if (location.hash === '#space' && !restLocked()) openSpace();       // retour d'un monde de Rose : on revient sur la carte des planètes
+  else if (location.hash === '#chapters' && !restLocked()) startToday();   // retour du grand final : on revient aux chapitres
   if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   lastActiveTick=performance.now();setInterval(tickMissionClock,250);
   if('serviceWorker' in navigator && location.protocol!=='file:')navigator.serviceWorker.register('./sw.js').catch(()=>{});

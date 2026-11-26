@@ -4,6 +4,17 @@
   // ================= le monde choisi (rose-worlds.js) =================
   const WID = (new URLSearchParams(location.search).get('w') || location.hash.slice(1) || 'lune').toLowerCase();
   const WD = (MM.ROSE_WORLDS || {})[WID] || MM.ROSE_WORLDS.lune;
+  // ================= langue : textes du monde, devinettes et phrases de la voix (story-xx.js) =================
+  const LANG = (MM.i18n && MM.i18n.lang) || 'fr', LX = (MM.STORY_L10N || {})[LANG] || null;
+  const TTS = (MM.i18n && MM.i18n.info && MM.i18n.info().tts) || 'fr-FR';
+  try { if (MM.i18n && MM.i18n.applyDom) MM.i18n.applyDom(); document.documentElement.lang = LANG; } catch (e) {}
+  { const lw = LX && LX.worlds && LX.worlds[WID];
+    if (lw) { for (const k of ['name', 'chip', 'on', 'intro', 'outroAll']) if (lw[k]) WD[k] = lw[k];
+      (lw.riddles || []).forEach((r, i) => { const R = WD.riddles[i]; if (!R || !r) return; R.q = r[0]; r[1].forEach((o, k) => { if (R.o[k]) R.o[k] = [R.o[k][0], o]; }); R.fact = r[2]; }); } }
+  const EN = { freed: ['Libéré !', 'Merci Rose !', 'Youpi !', 'Un ami de plus !'], partial: 'Bravo Rose ! Tu as libéré {n} amis. Les autres attendent encore sur {on} !', again: 'Essaie encore !',
+    robot: 'Bip bip ! Le petit robot se réveille !', heli: 'Le petit hélicoptère s’envole avec toi !', bossStart: 'Voilà Capitaine Farfouille dans sa soucoupe ! Envoie-lui des bulles !',
+    boss: ['Hé hé ! Tu ne m’attraperas pas !', 'Oh ! Encore une bulle ?', 'Non, non, non !'], bossPop: 'Pop ! Capitaine Farfouille est dans une bulle !', endN: 'Bravo, {name} !', end: 'Bravo !', replay: '↻ Rejouer',
+    ...((LX && LX.engine) || {}) };
   document.title = 'Mini Mission · Rose · ' + WD.name; $('#wchip').textContent = WD.chip;
   document.querySelector('meta[name=theme-color]').setAttribute('content', WD.theme); document.body.style.background = WD.theme;
   // ================= images =================
@@ -13,6 +24,8 @@
   const monImg = new Image(); monImg.src = 'assets/monsters.webp?v=' + V;
   const s2Img = new Image(); s2Img.src = 'assets/sprites2.webp?v=' + V; let S2 = null; fetch('assets/sprites2.json?v=' + V).then(r => r.json()).then(j => { S2 = j; });
   const flameImg = new Image(); flameImg.src = 'assets/friend-flame.webp?v=' + V;
+  const farfImg = new Image(); if (WD.boss) farfImg.src = 'assets/farfouille.webp?v=' + V;
+  const FARF = { joke: { x: 0, w: 325 }, sad: { x: 335, w: 299 }, happy: { x: 644, w: 321 } };   // Capitaine Farfouille (planche de 300 px de haut)
   let RF = null, AF = null;
   fetch('assets/rose.json?v=' + V + 'b').then(r => r.json()).then(j => { RF = j; });
   fetch('assets/aliens.json?v=' + V).then(r => r.json()).then(j => { AF = j; });
@@ -21,13 +34,13 @@
   let voiceOn = 'speechSynthesis' in window, speaking = 0;
   // la voix parle au JOUEUR : « Bravo Rose ! » devient « Bravo Léa ! » (prénom donné par le parent), ou « Bravo ! » sans prénom
   const KID = (() => { try { const s = JSON.parse(localStorage.getItem('mini-mission-v1') || '{}'); return String(s.childNameSay || s.childName || '').trim(); } catch (e) { return ''; } })();
-  const toKid = (t) => String(t).replace(/(?<!avec)(,)?\s+Rose(\s*!)/g, (m, c, end) => KID ? (c || '') + ' ' + KID + end : end);
+  const toKid = (t) => String(t).replace(/([,、，]?\s*)\{name\}/g, (m, pre) => KID ? pre + KID : '').replace(/(?<!avec)(,)?\s+Rose(\s*!)/g, (m, c, end) => KID ? (c || '') + ' ' + KID + end : end);
   function say(text, important = true) {
     if (!voiceOn) return;
     text = toKid(text);
     if (!important && performance.now() < speaking) return;
-    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'fr-FR'; u.rate = .95; u.pitch = 1.08;
-      const v = speechSynthesis.getVoices().find(v => /^fr/i.test(v.lang)); if (v) u.voice = v; speechSynthesis.speak(u); speaking = performance.now() + 1200 + text.length * 70; } catch {}
+    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = TTS; u.rate = .95; u.pitch = 1.08;
+      const lp = TTS.slice(0, 2).toLowerCase(), vs = speechSynthesis.getVoices(), v = vs.find(v => v.lang && v.lang.replace('_', '-').toLowerCase() === TTS.toLowerCase()) || vs.find(v => v.lang && v.lang.toLowerCase().startsWith(lp)); if (v) u.voice = v; speechSynthesis.speak(u); speaking = performance.now() + 1200 + text.length * 70; } catch {}
   }
   let AC = null;
   function tone(f0, f1, dur, type = 'sine', vol = .08, at = 0) {
@@ -109,6 +122,8 @@
       P.push([x0, top]);
       for (let x = x0; x <= x1; x += 30) P.push([x, s.y - 26 - Math.abs(Math.sin(x * .012)) * 34]);
       P.push([x1, s.y], [x1, top]);
+    } else if (s.kind === 'block') {                        // immeuble (le grand final) : murs droits, toit plat
+      P.push([x0, s.y - 30], [x0, top], [x1, top], [x1, s.y - 30]);
     } else if (s.kind === 'rock' || s.kind === 'mite' || s.kind === 'ice') {          // dôme un peu irrégulier
       const N = 28, seed = s.x * .01, cx = x0 + s.w / 2;
       for (let i = 0; i <= N; i++) { const t = i / N, a = Math.PI + t * Math.PI, j = Math.sin(seed + t * 9) * .05;
@@ -178,11 +193,18 @@
     for (const s of solids) if (s.kind === 'slab' || s.kind === 'arch' || s.kind === 'mesa' || s.kind === 'pancake') cageSpots.push({ x: s.x + s.w / 2, y: s.y + s.h });
     for (let x = 1050; cageSpots.length < 20 && x < L - 400; x += 320) if (!blocked(x)) cageSpots.push({ x, y: 0 });
     for (let x = 1210; cageSpots.length < 20 && x < L - 400; x += 320) if (!blocked(x) && !cageSpots.some(p => p.y === 0 && Math.abs(p.x - x) < 150)) cageSpots.push({ x, y: 0 }); }   // toujours 20 cages
-  const cages = cageSpots.slice(0, 20).map((p, i) => ({ ...p, ...prisoners[i], open: false, t: 0 }));
+  const cages = WD.noCages ? [] : cageSpots.slice(0, 20).map((p, i) => ({ ...p, ...prisoners[i], open: false, t: 0 }));
   // caisses « ? » : une devinette sur l'espace
   const boxes = WD.boxes.map(b => ({ ...b, done: false }));
   const ROCKET = L - 280;
   const friends = [];                       // ceux qui suivent Rose
+  for (let i = 0; i < (WD.friends || 0); i++) friends.push({ img: 'mon', cell: CALM[(i * 4) % CALM.length][1], x: 260 - i * 90, y: 0, t: i * 1.3 });   // grand final : des amis déjà libres viennent aider
+  // grand final : Ziggy, Filou et Titan courent avec Rose et envoient des bulles eux aussi
+  const HSPR = { ziggy: ['ziggy_r0', 'ziggy_r1', 'ziggy_r2', 'ziggy_r3'], filou: [0, 1, 2, 3, 4, 5, 6, 7].map(i => 'filou_w' + i), titan: [0, 1, 2, 3, 4, 5, 6, 7].map(i => 'titan_w' + i) };
+  const helpers = (WD.helpers || []).map((n, i) => ({ n, i, x: 300 - i * 110, y: 0, vx: 0, face: 1, t: i, cool: 2 + i * 1.1, run: 0, shotT: 0 }));
+  // grand final : Capitaine Farfouille dans sa soucoupe (il faut 3 bulles), tout au bout de la ville
+  const boss = WD.boss ? { ...WD.boss, hpMax: WD.boss.hp, state: 'wait', t: 0, dir: -1, hitT: 0, cool: 2.5, bt: 0, yy: WD.boss.y } : null;
+  const bossBox = () => ({ x0: boss.x - 95, x1: boss.x + 95, y0: boss.yy + 10, y1: boss.yy + 235 });
   const slime = [], bubbles = [], puffs = [];
   const RIDDLES = WD.riddles;
   const quizPick = RIDDLES.map((r, i) => i).sort(() => Math.random() - .5).slice(0, 3);
@@ -225,10 +247,11 @@
   zone.addEventListener('pointerup', stickUp); zone.addEventListener('pointercancel', stickUp);
   addEventListener('keydown', (e) => { if (e.repeat) return; if (e.key === 'ArrowDown') key.down = true; if (e.key === 'ArrowLeft') key.l = true; if (e.key === 'ArrowRight') key.r = true; if (e.key === ' ' || e.key === 'ArrowUp') key.fly = true; if (e.key === 'x' || e.key === 'Enter') shoot(); });
   addEventListener('keyup', (e) => { if (e.key === 'ArrowDown') key.down = false; if (e.key === 'ArrowLeft') key.l = false; if (e.key === 'ArrowRight') key.r = false; if (e.key === ' ' || e.key === 'ArrowUp') key.fly = false; });
-  $('#quit').onclick = () => { location.href = 'index.html#space'; };
-  $('#home').onclick = () => { location.href = 'index.html#space'; };
-  if (WD.next) { $('#next').textContent = WD.nextIcon + ' ➜'; $('#next').onclick = () => { location.href = 'rose-world.html?w=' + WD.next; }; } else $('#next').style.display = 'none';
-  $('#again').onclick = () => { location.reload(); };
+  const BACK = WD.boss ? 'index.html#chapters' : 'index.html#space';   // le grand final revient aux chapitres, les planètes à la carte
+  $('#quit').onclick = () => { location.href = BACK; };
+  $('#home').onclick = () => { location.href = BACK; };
+  if (WD.next) { $('#next').textContent = WD.nextIcon + ' ➜'; { const nw = (LX && LX.worlds && LX.worlds[WD.next]) || (MM.ROSE_WORLDS || {})[WD.next]; if (nw && nw.name) $('#next').setAttribute('aria-label', nw.name); } $('#next').onclick = () => { location.href = 'rose-world.html?w=' + WD.next; }; } else $('#next').style.display = 'none';
+  $('#again').onclick = () => { location.reload(); }; $('#again').textContent = EN.replay;
 
   function shoot() {
     if (paused || finished || rose.cool > 0 || !RF) return;
@@ -263,11 +286,11 @@
     const B = roseBox();
     // le robot : il dort jusqu'à ce que Rose le touche, puis la suit (il roule derrière le décor)
     rover.t += dt;
-    if (!rover.awake && B.x1 > rover.x - 60 && B.x0 < rover.x + 60 && B.y0 < 90) { rover.awake = true; sfx.beep(); say('Bip bip ! Le petit robot se réveille !', false); puffs.push({ x: rover.x, y: 80, t: 0, c: '#ffe9a8' }); }
+    if (!rover.awake && B.x1 > rover.x - 60 && B.x0 < rover.x + 60 && B.y0 < 90) { rover.awake = true; sfx.beep(); say(EN.robot, false); puffs.push({ x: rover.x, y: 80, t: 0, c: '#ffe9a8' }); }
     if (rover.awake) { const tx = rose.x - rose.face * 170, d = tx - rover.x, v = Math.max(-230, Math.min(230, d * 2.2)); if (Math.abs(d) > 6) { rover.x += v * dt; rover.face = Math.sign(v) || rover.face; rover.wheel += v * dt / 11; } }
     // l'hélicoptère : il se réveille aussi au contact, puis vole à côté de Rose
     heli.t += dt;
-    if (!heli.awake && B.x1 > heli.x - 50 && B.x0 < heli.x + 50 && B.y0 < 80) { heli.awake = true; sfx.heli(); say('Le petit hélicoptère s’envole avec toi !', false); }
+    if (!heli.awake && B.x1 > heli.x - 50 && B.x0 < heli.x + 50 && B.y0 < 80) { heli.awake = true; sfx.heli(); say(EN.heli, false); }
     if (heli.awake) { const h = rose.mode === 'air' ? rose.y : rose.base, tx = rose.x - rose.face * 110, ty = Math.min(CEIL - 60 > h ? 560 : 560, h + RH + 30 + Math.sin(heli.t * 2) * 12);
       let ty2 = ty; if (rose.x > CAVE0 - 100 && rose.x < CAVE1 + 100) ty2 = Math.min(ty, CEIL - 70);
       heli.vx += ((tx - heli.x) * 4 - heli.vx * 2.6) * dt; heli.vy += ((ty2 - heli.y) * 4 - heli.vy * 2.6) * dt; heli.x += heli.vx * dt; heli.y += heli.vy * dt; if (Math.abs(heli.vx) > 20) heli.face = Math.sign(heli.vx); }
@@ -343,7 +366,7 @@
   function addFriend(img, cell, x, y) {
     friends.push({ img, cell, x, y, t: Math.random() * 6 }); got.friends++; chip('#cFriends', '💛 ' + got.friends + '/20'); sfx.friend();
     const followers = friends.filter(f => !f.home); if (followers.length > 5) { followers[0].home = true; followers[0].hv = 0; }   // au plus 5 suivent Rose
-    say(['Libéré !', 'Merci Rose !', 'Youpi !', 'Un ami de plus !'][got.friends % 4], false);
+    say(EN.freed[got.friends % EN.freed.length], false);
   }
   function updateWorld(dt) {
     const B = roseBox();
@@ -359,6 +382,7 @@
       const sp = Math.hypot(u.vx, u.vy), nsp = Math.max(150, sp * Math.pow(.05, dt));      // …en ralentissant
       let tgt = null, bd = 1100;                                                          // et file un peu vers le farceur le plus proche, devant elle
       for (const a of aliens) if (a.state === 'farceur') { const ab = alienBox(a), ax = (ab.x0 + ab.x1) / 2, ay = (ab.y0 + ab.y1) / 2, dx = ax - u.x, d = Math.hypot(dx, ay - u.y); if (dx * Math.sign(u.vx || 1) > -20 && d < bd) { bd = d; tgt = [ax, ay]; } }
+      if (boss && boss.state === 'fight') { const bb = bossBox(), ax = boss.x, ay = (bb.y0 + bb.y1) / 2, dx = ax - u.x, d = Math.hypot(dx, ay - u.y); if (dx * Math.sign(u.vx || 1) > -20 && d < bd) { bd = d; tgt = [ax, ay]; } }
       let ang = Math.atan2(u.vy, u.vx);
       if (tgt) { const want = Math.atan2(tgt[1] - u.y, tgt[0] - u.x); let da = want - ang; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI; ang += Math.max(-2.4 * dt, Math.min(2.4 * dt, da)); }
       u.vx = Math.cos(ang) * nsp; u.vy = Math.sin(ang) * nsp;
@@ -366,7 +390,8 @@
       let hit = u.life <= 0 || solidPoint(u.x, u.y, false);
       for (const a of aliens) if (!hit && a.state === 'farceur') { const ab = alienBox(a); if (u.x + u.r * .6 > ab.x0 && u.x - u.r * .6 < ab.x1 && u.y + u.r * .6 > ab.y0 && u.y - u.r * .6 < ab.y1) {
         if (a.hp > 1) { a.hp--; a.hitT = .55; hit = true; sfx.bonk(); puffs.push({ x: u.x, y: u.y, t: 0, c: '#ffd08a' }); continue; }   // 1re bulle : il boude, il en faut une 2e
-        a.state = 'bubble'; a.bt = 0; a.vy = 40; a.vx = (Math.random() - .5) * 60; hit = 'keep'; sfx.pop(); got.aliens++; } }
+        a.state = 'bubble'; a.bt = 0; a.vy = 40; a.vx = (Math.random() - .5) * 60; hit = 'keep'; sfx.pop(); got.aliens++; if (WD.noCages) bubbleChip(); } }
+      if (!hit && boss && boss.state === 'fight') { const bb = bossBox(); if (u.x + u.r * .6 > bb.x0 && u.x - u.r * .6 < bb.x1 && u.y + u.r * .6 > bb.y0 && u.y - u.r * .6 < bb.y1) { hit = true; hitBoss(u.x, u.y); } }
       for (const c of cages) if (!hit && !c.open && Math.abs(u.x - c.x) < 70 + u.r * .4 && u.y > c.y && u.y < c.y + 160) { openCage(c); hit = true; }
       if (hit) { bubbles.splice(i, 1); if (hit !== 'keep') puffs.push({ x: u.x, y: u.y, t: 0, c: '#d9f6ff' }); }
     }
@@ -402,7 +427,8 @@
       f.x += (tx - f.x) * Math.min(1, dt * 2.6); f.y += (ty - f.y) * Math.min(1, dt * 2.2); f.face = tx > f.x ? 1 : -1; });
     for (let i = puffs.length - 1; i >= 0; i--) { puffs[i].t += dt; if (puffs[i].t > .6) puffs.splice(i, 1); }
     cages.forEach(c => { if (c.open) c.t += dt; });
-    if (!finished && rose.x > ROCKET - 40 && rose.mode !== 'air') finish();
+    if (!finished && !WD.boss && rose.x > ROCKET - 40 && rose.mode !== 'air') finish();
+    updateHelpers(dt); updateBoss(dt, B);
   }
   const ASCALE = 1;
   const BUBBLE_R = 92;   // un peu plus grand que le plus grand extraterrestre (≈ 150 de haut)
@@ -410,6 +436,49 @@
   const SHADES = { glouglou: [.08, .62], boing: [.02, .7], zap: [0, .6], bidou: [0, .7], zigzag: [0, .66] };   // où poser les lunettes (fraction de l'image)   // Gros Bidou, le costaud, un peu plus grand
   function alienBox(a) { const f = AF && AF[a.type + '_f1'], z = ASCALE * (TSCALE[a.type] || 1); const w = f ? f.w * z : 120, h = f ? f.h * z : 120; return { x0: a.x - w * .38, x1: a.x + w * .38, y0: a.y, y1: a.y + h * .9 }; }
   function openCage(c) { c.open = true; c.t = 0; sfx.pop(); puffs.push({ x: c.x, y: c.y + 90, t: 0, c: '#ffe9a8' }); setTimeout(() => addFriend(c.kind, c.kind === 'mon' ? c.a : c.hue, c.x, c.y), 450); }
+
+  function bubbleChip() { chip('#cFriends', '🫧 ' + got.aliens + '/' + (aliens.length + (boss ? 1 : 0))); }
+  // ----- les héros qui aident (grand final) -----
+  function groundTop(x) { let best = 0; for (const q of solids) { if (q.kind === 'slab') continue; const sp = spansAt(q, x); if (sp) for (const [, hi] of sp) if (hi > best) best = hi; } return best; }
+  function updateHelpers(dt) {
+    for (const h of helpers) {
+      h.t += dt; h.cool -= dt; h.shotT -= dt;
+      const tx = rose.x - rose.face * (120 + h.i * 115), d = tx - h.x, v = Math.max(-480, Math.min(480, d * 2.4));
+      h.vx = Math.abs(d) > 12 ? v : 0; h.x += h.vx * dt; if (Math.abs(h.vx) > 20) h.face = Math.sign(h.vx); h.run += Math.abs(h.vx) * dt;
+      const gt = groundTop(h.x), ty = gt + (gt > h.y + 4 ? 0 : 0); h.y += (ty - h.y) * Math.min(1, dt * (ty > h.y ? 9 : 6));   // ils sautent sur les toits
+      if (h.cool <= 0 && !finished) {                     // une bulle vers le farceur le plus proche
+        let best = null, bd = 700;
+        for (const a of aliens) if (a.state === 'farceur') { const dd = Math.abs(a.x - h.x); if (dd < bd) { bd = dd; best = a.x; } }
+        if (boss && boss.state === 'fight' && Math.abs(boss.x - h.x) < bd) best = boss.x;
+        if (best !== null) { h.face = best > h.x ? 1 : -1; h.cool = 2.4 + Math.random() * 1.6; h.shotT = .3; sfx.bubble();
+          bubbles.push({ x: h.x + h.face * 50, y: h.y + 130, vx: h.face * 950, vy: 0, age: 0, life: 2.2, r: 5 }); }
+        else h.cool = .5;
+      }
+    }
+  }
+  // ----- Capitaine Farfouille (grand final) -----
+  const BOSS_SAY = EN.boss;
+  function hitBoss(x, y) {
+    puffs.push({ x, y, t: 0, c: '#d9a8ff' });
+    if (boss.hp > 1) { boss.hp--; boss.hitT = .8; sfx.bonk(); say(BOSS_SAY[Math.min(BOSS_SAY.length - 1, boss.hpMax - boss.hp)], false); return; }
+    boss.state = 'bubble'; boss.bt = 0; sfx.pop(); sfx.friend(); got.aliens++; bubbleChip(); say(EN.bossPop);
+    setTimeout(() => { if (!finished) finish(); }, 2600);
+  }
+  function updateBoss(dt, B) {
+    if (!boss) return; boss.t += dt; boss.hitT -= dt;
+    if (boss.state === 'wait') { if (rose.x > boss.x0 - 1000) { boss.state = 'fight'; say(EN.bossStart); } return; }
+    if (boss.state === 'fight') {
+      if (boss.hitT <= 0) { boss.x += boss.dir * 130 * dt; if (boss.x < boss.x0) boss.dir = 1; if (boss.x > boss.x1) boss.dir = -1; }
+      boss.yy = boss.y + Math.sin(boss.t * 1.5) * 55;
+      boss.cool -= dt;
+      if (boss.cool <= 0 && Math.abs(rose.x - boss.x) < 900) { boss.cool = 2.6;         // il lance un peu de poudre violette (rien de méchant : Rose ralentit juste un peu)
+        const h = (rose.mode === 'air' ? rose.y : rose.base) + 100, dx = rose.x - boss.x, dy = h - (boss.yy + 40), base = Math.atan2(dy, dx);
+        for (const da of [-.25, 0, .25]) slime.push({ soap: true, glitter: true, x: boss.x, y: boss.yy + 40, vx: Math.cos(base + da) * 200, vy: Math.sin(base + da) * 200, life: 3.5 }); }
+      const bb = bossBox();
+      if (B.x1 > bb.x0 && B.x0 < bb.x1 && B.y1 > bb.y0 && B.y0 < bb.y1 && rose.bump <= 0) { rose.vx = (rose.x < boss.x ? -1 : 1) * 240; rose.bump = .6; sfx.bonk(); }
+    } else if (boss.state === 'bubble') { boss.bt += dt; const h = rose.mode === 'air' ? rose.y : rose.base;   // sa bulle vient flotter près de Rose, bien visible
+      boss.yy += (Math.max(80, Math.min(330, h + 40)) - boss.yy) * Math.min(1, dt * 1.5); boss.x += ((rose.x + rose.face * 330) - boss.x) * Math.min(1, dt * .8) + Math.sin(boss.bt * 2) * 30 * dt; }
+  }
 
   // ================= devinettes =================
   let qIndex = 0, curBox = null;
@@ -425,7 +494,7 @@
       const i = +btn.dataset.i;
       if (i === r.a) { btn.classList.add('good'); sfx.good(); say(r.fact); for (let k = 0; k < 6; k++) stars.push({ x: b.x - 100 + k * 40, y: b.y + 60 + Math.sin(k) * 30, got: false });
         setTimeout(() => { $('#quiz').classList.remove('show'); paused = false; last = performance.now(); }, 2600); }
-      else { btn.classList.remove('no'); void btn.offsetWidth; btn.classList.add('no'); sfx.no(); say('Essaie encore !'); }
+      else { btn.classList.remove('no'); void btn.offsetWidth; btn.classList.add('no'); sfx.no(); say(EN.again); }
     });
     $('#quiz').classList.add('show');
   }
@@ -434,10 +503,11 @@
     try { localStorage.setItem('mm.rose.world', 'rose-world.html?w=' + WID); } catch (e) {}
     try { const d = JSON.parse(localStorage.getItem('mm.rose.done') || '[]'); if (!d.includes(WID)) { d.push(WID); localStorage.setItem('mm.rose.done', JSON.stringify(d)); } } catch (e) {}
     finished = true; rose.vx = 0; rose.walking = false; play('win', 'ground'); rose.mode = 'ground'; sfx.good();
-    say(got.friends >= 20 ? WD.outroAll : 'Bravo Rose ! Tu as libéré ' + got.friends + ' amis. Les autres attendent encore sur ' + WD.on + ' !');
+    say(WD.boss || got.friends >= 20 ? WD.outroAll : EN.partial.replace('{n}', got.friends).replace('{on}', WD.on));
     setTimeout(() => MM.book && !MM.book.seen(WID + '_c') ? MM.book.open(WID + '_c', { onDone: showEnd }) : showEnd(), 3200);
     function showEnd() {
-      $('#estats').innerHTML = `<span>⭐ ${got.stars}/${stars.length}</span><span>🔤 ${got.letters}/${letters.length}</span><span>💛 ${got.friends}/${cages.length}</span><span>🫧 ${got.aliens}</span>`;
+      $('#end .title').textContent = KID ? EN.endN.replace('{name}', KID) : EN.end;   // on félicite le joueur, pas le personnage
+      $('#estats').innerHTML = `<span>⭐ ${got.stars}/${stars.length}</span><span>🔤 ${got.letters}/${letters.length}</span>` + (WD.noCages ? '' : `<span>💛 ${got.friends}/${cages.length}</span>`) + `<span>🫧 ${got.aliens}</span>`;
       $('#end').classList.add('show');
     }
   }
@@ -524,6 +594,12 @@
         for (let k = 60; k < s.w; k += 330) { const kx = SX(s.x + k), ky = yb + 8 * zoom, gl = .5 + .5 * Math.sin(time * 2 + k); ctx.fillStyle = `rgba(${C.crystal},${.4 + gl * .4})`; ctx.beginPath(); ctx.moveTo(kx, ky); ctx.lineTo(kx + 9 * zoom, ky + 26 * zoom); ctx.lineTo(kx + 18 * zoom, ky); ctx.fill(); }
         continue; }
       if (s.kind === 'cloudceil') { ctx.fillStyle = C.cloud[0]; polyPath(s.poly); ctx.fill(); ctx.fillStyle = C.cloud[1]; for (let k = 0; k < s.w; k += 60) { ctx.beginPath(); ctx.arc(SX(s.x + k + 30), SY(s.y - 26 - Math.abs(Math.sin((s.x + k + 30) * .012)) * 34) - 8 * zoom, 26 * zoom, Math.PI, 0); ctx.fill(); } continue; }
+      if (s.kind === 'block') { const pal = (C.block || [['#d8d0c4', '#a89c8c']])[s.c || 0]; ctx.fillStyle = pal[0]; polyPath(s.poly); ctx.fill();
+        const cols = Math.max(2, Math.floor(s.w / 85)), rows = Math.max(1, Math.floor((s.h - 50) / 70));
+        for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) { const wx = SX(s.x + 34 + i * (s.w - 68) / Math.max(1, cols - 1)) - 17 * zoom, wy = SY(s.y + s.h - 36 - j * 70);
+          ctx.fillStyle = (i + j) % 3 ? 'rgba(225,242,255,.95)' : 'rgba(255,228,150,.95)'; ctx.fillRect(wx, wy, 34 * zoom, 42 * zoom); ctx.fillStyle = 'rgba(0,0,0,.12)'; ctx.fillRect(wx, wy + 38 * zoom, 34 * zoom, 4 * zoom); }
+        ctx.fillStyle = 'rgba(0,0,0,.08)'; ctx.fillRect(x + w - 14 * zoom, yt, 14 * zoom, yb - yt);
+        ctx.fillStyle = pal[1]; ctx.beginPath(); ctx.roundRect(x - 8 * zoom, yt - 6 * zoom, w + 16 * zoom, 18 * zoom, 6 * zoom); ctx.fill(); continue; }
       if (s.kind === 'slab') { ctx.fillStyle = C.slab[0]; polyPath(s.poly); ctx.fill(); ctx.fillStyle = C.slab[1]; ctx.beginPath(); ctx.roundRect(x, yt, w, 12 * zoom, 8 * zoom); ctx.fill(); continue; }
       if (s.kind === 'tite') { ctx.fillStyle = C.tite; polyPath(s.poly); ctx.fill(); continue; }
       if (s.kind === 'mesa' || s.kind === 'arch') {           // roche en couches, comme les falaises de Mars
@@ -550,7 +626,7 @@
       ctx.globalAlpha = b.done ? .35 : 1; ctx.fillStyle = '#ffb648'; ctx.beginPath(); ctx.roundRect(x - s / 2, y - s / 2, s, s, 14 * zoom); ctx.fill(); ctx.strokeStyle = '#b06a10'; ctx.lineWidth = 4 * zoom; ctx.stroke();
       ctx.fillStyle = '#fff'; ctx.font = `900 ${Math.round(46 * zoom)}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(b.done ? '✓' : '?', x, y + 2 * zoom); ctx.globalAlpha = 1; }
     // la fusée d'arrivée
-    { const x = SX(ROCKET), y = SY(0), s = zoom; if (x > -200 && x < W + 200) { ctx.save(); ctx.translate(x, y);
+    if (!WD.noRocket) { const x = SX(ROCKET), y = SY(0), s = zoom; if (x > -200 && x < W + 200) { ctx.save(); ctx.translate(x, y);
       ctx.fillStyle = '#e9eef7'; ctx.beginPath(); ctx.moveTo(0, -330 * s); ctx.quadraticCurveTo(70 * s, -240 * s, 55 * s, -60 * s); ctx.lineTo(-55 * s, -60 * s); ctx.quadraticCurveTo(-70 * s, -240 * s, 0, -330 * s); ctx.fill();
       ctx.fillStyle = '#ff5d5d'; ctx.beginPath(); ctx.moveTo(-55 * s, -60 * s); ctx.lineTo(-95 * s, 0); ctx.lineTo(-40 * s, -10 * s); ctx.fill(); ctx.beginPath(); ctx.moveTo(55 * s, -60 * s); ctx.lineTo(95 * s, 0); ctx.lineTo(40 * s, -10 * s); ctx.fill();
       ctx.beginPath(); ctx.moveTo(0, -330 * s); ctx.quadraticCurveTo(40 * s, -290 * s, 48 * s, -250 * s); ctx.lineTo(-48 * s, -250 * s); ctx.quadraticCurveTo(-40 * s, -290 * s, 0, -330 * s); ctx.fill();
@@ -601,11 +677,34 @@
     for (const u of bubbles) { const x = SX(u.x), y = SY(u.y), r = u.r * zoom; const g = ctx.createRadialGradient(x - r * .3, y - r * .3, r * .1, x, y, r);
       g.addColorStop(0, 'rgba(255,255,255,.95)'); g.addColorStop(.6, 'rgba(160,225,255,.45)'); g.addColorStop(1, 'rgba(255,160,240,.8)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); }
     for (const s of slime) { const x = SX(s.x), y = SY(s.y);
-      if (s.soap) { const r = 19 * zoom, g = ctx.createRadialGradient(x - r * .3, y - r * .3, r * .1, x, y, r); g.addColorStop(0, 'rgba(255,255,255,.95)'); g.addColorStop(.6, 'rgba(120,200,255,.7)'); g.addColorStop(1, 'rgba(60,140,235,1)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); continue; }
+      if (s.soap) { const r = 19 * zoom, g = ctx.createRadialGradient(x - r * .3, y - r * .3, r * .1, x, y, r); g.addColorStop(0, 'rgba(255,255,255,.95)'); g.addColorStop(.6, s.glitter ? 'rgba(200,150,255,.8)' : 'rgba(120,200,255,.7)'); g.addColorStop(1, s.glitter ? 'rgba(140,60,220,1)' : 'rgba(60,140,235,1)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); continue; }
       ctx.fillStyle = '#7fe060'; ctx.strokeStyle = '#3f9a2c'; ctx.lineWidth = 3 * zoom; ctx.beginPath(); ctx.arc(x, y, 14 * zoom, 0, 7); ctx.fill(); ctx.stroke();
       ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.beginPath(); ctx.arc(x - 4 * zoom, y - 4 * zoom, 4 * zoom, 0, 7); ctx.fill(); }
     for (const p of puffs) { const k = p.t / .6, x = SX(p.x), y = SY(p.y); ctx.globalAlpha = 1 - k; ctx.strokeStyle = p.c; ctx.lineWidth = 4 * zoom; ctx.beginPath(); ctx.arc(x, y, (14 + k * 40) * zoom, 0, 7); ctx.stroke();
       ctx.fillStyle = p.c; for (let i = 0; i < 6; i++) { const an = i * Math.PI / 3 + p.x; ctx.beginPath(); ctx.arc(x + Math.cos(an) * (20 + k * 50) * zoom, y + Math.sin(an) * (20 + k * 50) * zoom, 4 * zoom * (1 - k), 0, 7); ctx.fill(); } ctx.globalAlpha = 1; }
+  }
+  function drawHelpers() {
+    if (!S2 || !s2Img.complete) return;
+    for (const h of helpers) { const fr = HSPR[h.n], k = fr[Math.abs(h.vx) > 20 ? Math.floor(h.run / 38) % fr.length : 0], q = S2[k]; if (!q) continue;
+      const x = SX(h.x), y = SY(h.y), sc = 190 / 280 * zoom; if (x < -150 || x > W + 150) continue;
+      ctx.fillStyle = 'rgba(30,25,70,.22)'; ctx.beginPath(); ctx.ellipse(x, y + 3, 44 * zoom, 9 * zoom, 0, 0, 7); ctx.fill();
+      ctx.save(); ctx.translate(x, y - (h.shotT > 0 ? 6 * zoom : 0)); ctx.scale(h.face * sc, sc); ctx.drawImage(s2Img, q.x, q.y, q.w, q.h, -q.ax, -q.ay, q.w, q.h); ctx.restore(); }
+  }
+  function drawBoss(time) {
+    if (!boss || !farfImg.complete) return; const x = SX(boss.x), y = SY(boss.yy), z = zoom; if (x < -300 || x > W + 300) return;
+    const pose = boss.state === 'bubble' || boss.hitT > 0 ? 'sad' : 'joke', f = FARF[pose], sh = 190 * z / 300;
+    if (boss.state !== 'bubble') {          // la soucoupe
+      ctx.fillStyle = 'rgba(160,220,255,.35)'; ctx.beginPath(); ctx.ellipse(x, y - 120 * z, 105 * z, 125 * z, 0, Math.PI, 0); ctx.fill();
+    }
+    const wob = boss.hitT > 0 ? Math.sin(boss.hitT * 40) * 4 * z : 0;
+    ctx.save(); ctx.translate(x + wob, y - (boss.state === 'bubble' ? 30 * z : 20 * z)); ctx.scale(boss.dir < 0 ? sh : -sh, sh); ctx.drawImage(farfImg, f.x, 0, f.w, 300, -f.w / 2, -300, f.w, 300); ctx.restore();
+    if (boss.state !== 'bubble') {
+      ctx.fillStyle = '#aab4c8'; ctx.beginPath(); ctx.ellipse(x, y - 10 * z, 150 * z, 34 * z, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#d6dceb'; ctx.beginPath(); ctx.ellipse(x, y - 20 * z, 150 * z, 22 * z, 0, Math.PI, 0); ctx.fill();
+      for (let i = 0; i < 7; i++) { const a = i / 7 * Math.PI * 2 + time * 3; ctx.fillStyle = `hsl(${(i * 50 + time * 120) % 360},90%,65%)`; ctx.beginPath(); ctx.arc(x + Math.cos(a) * 120 * z, y - 6 * z + Math.sin(a) * 18 * z, 7 * z, 0, 7); ctx.fill(); }
+      for (let i = 0; i < boss.hpMax; i++) { ctx.fillStyle = i < boss.hp ? '#c58cff' : 'rgba(255,255,255,.5)'; ctx.beginPath(); ctx.arc(x + (i - (boss.hpMax - 1) / 2) * 30 * z, y + 40 * z, 9 * z, 0, 7); ctx.fill(); }
+    } else { const r = 140 * z, cy = y - 125 * z, g = ctx.createRadialGradient(x - r * .3, cy - r * .3, r * .1, x, cy, r);
+      g.addColorStop(0, 'rgba(255,255,255,.55)'); g.addColorStop(.7, 'rgba(170,230,255,.18)'); g.addColorStop(1, 'rgba(255,170,240,.55)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, cy, r, 0, 7); ctx.fill(); }
   }
   function roseFrame() {
     const a = rose.anim;
@@ -667,11 +766,11 @@
       const time = now / 1000;
       drawBg(time); drawGround(time); drawDevils(time); drawRover(time); drawSolids(time); drawItems(time);
       cages.forEach(c => drawCage(c, time)); aliens.forEach(a => drawAlien(a, time)); friends.forEach(f => drawFriend(f, time));
-      drawRose(); drawHeli(time); drawShots();
+      drawHelpers(); drawBoss(time); drawRose(); drawHeli(time); drawShots();
     } else { ctx.fillStyle = WD.theme; ctx.fillRect(0, 0, W, H); }
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
-  $('#cStars').textContent = '⭐ 0'; $('#cLetters').textContent = '🔤 0'; $('#cFriends').textContent = '💛 0/20';
-  window.__rose = { WID, rover, heli, devils, rose, aliens, cages, boxes, stars, letters, friends, key, got, solids, get paused() { return paused; } };
+  $('#cStars').textContent = '⭐ 0'; $('#cLetters').textContent = '🔤 0'; $('#cFriends').textContent = WD.noCages ? '🫧 0/' + (aliens.length + (boss ? 1 : 0)) : '💛 0/20';
+  window.__rose = { WID, helpers, get boss() { return boss; }, rover, heli, devils, rose, aliens, cages, boxes, stars, letters, friends, key, got, solids, get paused() { return paused; } };
 })();

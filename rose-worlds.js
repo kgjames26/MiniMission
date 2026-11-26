@@ -755,4 +755,82 @@
       for (const c of craters) { const sx = SX(c.x); if (sx < -200 || sx > W + 200) continue; ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(sx, gy + (24 + c.r * .2) * zoom, c.r * zoom, c.r * .2 * zoom, 0, 0, 7); ctx.fill(); }
     },
   };
+  // ================= le grand final : la ville envahie par les soucoupes =================
+  // Rose vole, Ziggy, Filou et Titan courent avec elle et envoient des bulles eux aussi ; à la fin, Capitaine Farfouille dans sa soucoupe.
+  W.final = {
+    name: 'Le grand final', chip: '🏙️ Le grand final', on: 'la ville', theme: '#8fd3ff', L: 9000, pin: 0,
+    noCages: true, noRocket: true, helpers: ['ziggy', 'filou', 'titan'], friends: 4,
+    boss: { x: 8150, x0: 7650, x1: 8650, y: 330, hp: 3 },
+    intro: 'Les farceurs sont partout dans la ville ! Envoie des bulles avec Ziggy, Filou et Titan. Capitaine Farfouille t’attend tout au bout !',
+    outroAll: 'Bravo Rose ! Toute la ville est remplie de bulles, et Capitaine Farfouille aussi !',
+    colors: { ceil: ['#888', '#aaa', '#ccc'], crystal: '255,255,255', cloud: ['#fff', '#fff'], slab: ['#c0563a', '#ff8a5a'], tite: '#888', mesa: '#d9b38c', arch: '#c9a27c', mesaTop: '#f2d5b0', rock: ['#9aa3b5', '#c8d0de'],
+      block: [['#f2b6a0', '#c97a64'], ['#a8d8ea', '#6aa8c4'], ['#ffe08a', '#d1a84a'], ['#c8b6f2', '#8f7ac9'], ['#b6e6a8', '#74b064']] },
+    solids: [
+      { x: 900, y: 0, w: 360, h: 220, kind: 'block', c: 0 },
+      { x: 1500, y: 260, w: 260, h: 34, kind: 'slab' },
+      { x: 2050, y: 0, w: 420, h: 300, kind: 'block', c: 1 },
+      { x: 2900, y: 0, w: 300, h: 180, kind: 'block', c: 2 },
+      { x: 3500, y: 300, w: 280, h: 34, kind: 'slab' },
+      { x: 4100, y: 0, w: 460, h: 260, kind: 'block', c: 3 },
+      { x: 4900, y: 0, w: 540, h: 330, kind: 'arch', oh: 240 },
+      { x: 5800, y: 0, w: 320, h: 200, kind: 'block', c: 4 },
+      { x: 6400, y: 280, w: 280, h: 34, kind: 'slab' },
+      { x: 6950, y: 0, w: 380, h: 240, kind: 'block', c: 0 },
+    ],
+    stars: [[300, 650, 60, 60, 5], [940, 1220, 270, 40, 5], [1520, 1740, 330, 30, 4], [2100, 2420, 350, 40, 5], [2940, 3160, 230, 40, 4], [3520, 3760, 370, 30, 4], [4150, 4510, 310, 40, 5], [4980, 5360, 410, 40, 5], [5020, 5320, 60, 50, 4], [5840, 6080, 250, 40, 4], [6420, 6660, 350, 30, 4], [7000, 7280, 290, 40, 5], [7500, 7700, 80, 60, 3]],
+    aliens: [
+      { type: 'glouglou', x: 1350, x0: 1280, x1: 1480, y: 0 },
+      { type: 'zap', x: 1800, y0: 380, y: 380 },
+      { type: 'boing', x: 2700, x0: 2560, x1: 2840, y: 0 },
+      { type: 'zigzag', x: 3350, x0: 3250, x1: 3450, y: 0 },
+      { type: 'bidou', x: 3900, x0: 3820, x1: 4040, y: 0 },
+      { type: 'zap', x: 4700, y0: 380, y: 380 },
+      { type: 'glouglou', x: 5150, x0: 5060, x1: 5280, y: 0 },
+      { type: 'boing', x: 5600, x0: 5500, x1: 5720, y: 0 },
+      { type: 'zigzag', x: 6250, x0: 6180, x1: 6340, y: 0 },
+      { type: 'zap', x: 6800, y0: 400, y: 400 },
+      { type: 'bidou', x: 7450, x0: 7380, x1: 7560, y: 0 },
+    ],
+    boxes: [{ x: 1080, y: 310 }, { x: 4330, y: 350 }, { x: 7140, y: 330 }],
+    riddles: [
+      { q: 'Pourquoi les farceurs faisaient-ils des blagues ?', o: [['💛', 'ils voulaient des amis'], ['🍰', 'ils voulaient un gâteau'], ['😴', 'ils voulaient dormir']], a: 0, fact: 'Oui ! Sur leur comète, ils étaient tout seuls. Ils voulaient juste des amis pour jouer.' },
+      { q: 'Pour jouer avec quelqu’un, que peut-on faire ?', o: [['🙋', 'lui demander gentiment'], ['😠', 'lui prendre ses jouets'], ['🙈', 'se cacher']], a: 0, fact: 'Bravo ! Il suffit de demander : « Tu veux jouer avec moi ? »' },
+      { q: 'Que dit la poudre Grognon quand elle tombe sur le nez ?', o: [['😾', 'elle rend grognon'], ['😂', 'elle fait rire'], ['🌈', 'elle fait des arcs-en-ciel']], a: 0, fact: 'Oui ! La poudre Grognon rend tout le monde grognon. Heureusement, les héros savent quoi faire !' },
+      { q: 'Quand quelqu’un est triste, que peut-on proposer ?', o: [['🤗', 'un câlin'], ['🙉', 'de crier'], ['🚪', 'de partir']], a: 0, fact: 'Bravo ! On peut demander : « Tu veux un câlin ? »' },
+      { q: 'Quand on est en colère, que peut-on faire ?', o: [['🎈', 'souffler doucement'], ['🦶', 'taper du pied très fort'], ['🍫', 'manger du chocolat']], a: 0, fact: 'Oui ! On souffle tout doucement, comme dans un ballon, et la colère s’envole.' },
+      { q: 'Après une dispute, que dit-on ?', o: [['🙏', 'pardon'], ['🤐', 'rien du tout'], ['😜', 'bien fait']], a: 0, fact: 'Bravo ! On dit pardon, et on refait ami-ami.' },
+      { q: 'Quand on attend son tour, que peut-on faire ?', o: [['🔢', 'compter jusqu’à dix'], ['🏃', 'passer devant'], ['😭', 'pleurer']], a: 0, fact: 'Oui ! On compte, ou on chante une chanson, et le temps passe plus vite.' },
+      { q: 'Qui est le chef des farceurs ?', o: [['🧢', 'Capitaine Farfouille'], ['🦸', 'Ziggy'], ['🐸', 'une grenouille']], a: 0, fact: 'Bravo ! Capitaine Farfouille, avec sa casquette dorée trop grande et sa cape trop longue.' },
+      { q: 'D’où viennent les farceurs ?', o: [['☄️', 'd’une petite comète'], ['🌊', 'du fond de la mer'], ['🏔️', 'd’une montagne']], a: 0, fact: 'Oui ! Ils vivent tout au bout du système solaire, sur une petite comète glacée.' },
+      { q: 'Avec quoi Rose attrape-t-elle les farceurs ?', o: [['🫧', 'des bulles'], ['🥅', 'un filet'], ['🍯', 'du miel']], a: 0, fact: 'Bravo ! Des bulles toutes douces : personne n’a mal, les farceurs flottent, c’est tout !' },
+      { q: 'Combien d’amis Rose a-t-elle libérés dans l’espace ?', o: [['2️⃣0️⃣', 'vingt'], ['3️⃣', 'trois'], ['1️⃣0️⃣0️⃣', 'cent']], a: 0, fact: 'Oui ! Vingt amis, sur dix mondes différents. Quel voyage !' },
+      { q: 'Quand on rencontre quelqu’un de nouveau, que peut-on dire ?', o: [['👋', 'bonjour, comment tu t’appelles ?'], ['🙄', 'va-t’en'], ['🤫', 'rien']], a: 0, fact: 'Bravo ! Un sourire et un bonjour, et c’est peut-être le début d’une grande amitié.' },
+    ],
+    drawBg(A, time) {
+      const { ctx, W, H, GY, zoom, camX, camY } = A;
+      const g = ctx.createLinearGradient(0, 0, 0, GY); g.addColorStop(0, '#5bb8ff'); g.addColorStop(1, '#cdeeff'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      // soleil et nuages
+      ctx.fillStyle = 'rgba(255,240,170,.9)'; ctx.beginPath(); ctx.arc(W * .85, H * .14, Math.min(W, H) * .07, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.85)';
+      for (let i = 0; i < 7; i++) { const x = ((i * 420 - camX * zoom * .08 + time * 6) % (W + 400) + W + 400) % (W + 400) - 200, y = H * (.1 + (i % 3) * .07);
+        ctx.beginPath(); ctx.arc(x, y, 28, 0, 7); ctx.arc(x + 30, y - 12, 34, 0, 7); ctx.arc(x + 64, y, 26, 0, 7); ctx.fill(); }
+      // des soucoupes partout dans le ciel, et la poudre violette qui tombe
+      for (let i = 0; i < 9; i++) { const x = ((i * 337 - camX * zoom * .15 + Math.sin(time * .4 + i) * 60) % (W + 300) + W + 300) % (W + 300) - 150, y = H * (.08 + (i % 4) * .06) + Math.sin(time * 1.3 + i) * 8, s = .6 + (i % 3) * .25;
+        ctx.fillStyle = '#b7c0d4'; ctx.beginPath(); ctx.ellipse(x, y, 34 * s, 10 * s, 0, 0, 7); ctx.fill(); ctx.fillStyle = 'rgba(170,230,255,.9)'; ctx.beginPath(); ctx.ellipse(x, y - 7 * s, 15 * s, 11 * s, 0, Math.PI, 0); ctx.fill();
+        ctx.fillStyle = 'rgba(190,120,255,.55)'; for (let k = 0; k < 4; k++) { const py = y + 14 * s + ((time * 40 + k * 22 + i * 13) % 70); ctx.beginPath(); ctx.arc(x + Math.sin(time * 3 + k) * 8, py, 2, 0, 7); ctx.fill(); } }
+      // la ville au loin (deux rangées d'immeubles en parallaxe)
+      for (const [par, col, hb, sd] of [[.12, '#a9c6e8', .3, 1], [.25, '#86a8d6', .22, 2]]) {
+        ctx.fillStyle = col; const step = 90;
+        for (let i = -2; i < W / step + 3; i++) { const wx = i * step - ((camX * zoom * par) % step), idx = i + Math.floor(camX * zoom * par / step), h = (GY * hb) * (.55 + ((idx * 7919 * sd) % 100) / 160);
+          ctx.fillRect(wx, GY - h - camY * zoom * .1, step - 8, h + 200); } }
+    },
+    drawGround(A, time) {
+      const { ctx, W, H, zoom, SX, SY } = A;
+      const gy = SY(0); ctx.fillStyle = '#d8d4cc'; ctx.fillRect(0, gy, W, 26 * zoom); ctx.fillStyle = '#efece6'; ctx.fillRect(0, gy, W, 5 * zoom);
+      ctx.fillStyle = '#5a5f6e'; ctx.fillRect(0, gy + 26 * zoom, W, H);
+      ctx.fillStyle = '#f5f0d8'; for (let x = ((SX(0) % (160 * zoom)) + 160 * zoom) % (160 * zoom) - 160 * zoom; x < W; x += 160 * zoom) ctx.fillRect(x, gy + 60 * zoom, 70 * zoom, 8 * zoom);
+      // un peu de poudre violette sur le trottoir
+      ctx.fillStyle = 'rgba(170,100,240,.5)'; for (let i = 0; i < 40; i++) { const x = SX(i * 230 + (i % 3) * 40); if (x < -10 || x > W + 10) continue; ctx.beginPath(); ctx.arc(x, gy + 10 * zoom, 3 * zoom, 0, 7); ctx.fill(); }
+    },
+  };
 })();

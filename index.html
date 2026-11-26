@@ -56,13 +56,18 @@
           <span class="logo-line logo-mini" aria-hidden="true"><span style="--c:#3fa4ea;--r:-4deg">M</span><span style="--c:#ef4b43;--r:3deg">I</span><span style="--c:#ffb92e;--r:-2deg">N</span><span style="--c:#5fbf68;--r:4deg">I</span></span>
           <span class="logo-line logo-mission" aria-hidden="true"><span style="--c:#ef4b43;--r:-3deg">M</span><span style="--c:#ffb92e;--r:2deg">I</span><span style="--c:#3fa4ea;--r:-2deg">S</span><span style="--c:#ef4b43;--r:3deg">S</span><span style="--c:#ffb92e;--r:-3deg">I</span><span style="--c:#3fa4ea;--r:2deg">O</span><span style="--c:#ef4b43;--r:-2deg">N</span></span>
         </h1>
+        <div class="home-deco" aria-hidden="true">
+          <span class="hd-stars"></span><span class="hd-planet p1"></span><span class="hd-planet p2"></span>
+          <span class="hd-ufo"><span class="hd-beam"></span><span class="hd-dome"><span class="hd-farf"></span></span><span class="hd-disc"></span></span>
+          <span class="hd-bub b1"></span><span class="hd-bub b2"></span><span class="hd-bub b3"></span><span class="hd-bub b4"></span><span class="hd-bub b5"></span>
+        </div>
         <div class="home-heroes" aria-hidden="true">
           <span class="home-hero hh-ziggy"><span class="sprite" style="--col:0;--row:0"></span></span>
           <span class="home-hero hh-filou"><span class="sprite" style="--col:2;--row:1"></span></span>
+          <span class="home-hero hh-rose"><img src="assets/rose-card.webp" alt="" draggable="false"></span>
           <span class="home-hero hh-titan"><span class="sprite" style="--col:2;--row:2"></span></span>
         </div>
-        <div class="home-album-row"><button id="library-open" class="pill-btn" type="button" aria-label="Mes livres"><span aria-hidden="true" class="album-ico">📚</span></button><button id="album-open" class="pill-btn" type="button" aria-label="Mon album d’autocollants" data-i18n-aria="aAlbum"><span aria-hidden="true" class="album-ico">📒</span><span data-i18n="myAlbums">Mes albums</span><b id="album-badge" class="album-badge">0</b></button></div>
-        <p class="home-tagline" data-i18n="tagline">Remplis tes albums&nbsp;!</p>
+        <div class="home-album-row"><button id="library-open" class="pill-btn home-books" type="button" aria-label="Mes livres" data-i18n-aria="aBooks"><span class="book-ico" aria-hidden="true"><i></i></span><span data-i18n="myBooks">Mes livres</span><b id="books-badge" class="album-badge">0</b></button><button id="album-open" class="pill-btn" type="button" aria-label="Mon album d’autocollants" data-i18n-aria="aAlbum"><span aria-hidden="true" class="album-ico">📒</span><span data-i18n="myAlbums">Mes albums</span><b id="album-badge" class="album-badge">0</b></button></div>
         <button id="start-button" class="play-button" type="button"><span data-i18n="play">JOUER&nbsp;!</span> <span aria-hidden="true">▶</span></button>
         <span id="home-version" class="home-version" aria-hidden="true"></span>
       </section>
@@ -76,7 +81,7 @@
         <div class="chap-grid">
           <button class="chap-card c1" type="button" data-chap="1"><span class="chap-num">1</span><span class="chap-art"><span class="chap-globe"></span><span class="chap-heroes"><span class="sprite" style="--col:0;--row:0"></span><span class="sprite" style="--col:2;--row:1"></span><span class="sprite" style="--col:2;--row:2"></span></span></span><b class="chap-name" data-i18n="chap1">La Terre</b></button>
           <button class="chap-card c2" type="button" data-chap="2"><span class="chap-num">2</span><span class="chap-art"><span class="chap-planet p1"></span><span class="chap-planet p2"></span><span class="chap-planet p3"></span><img class="chap-rose" src="assets/rose-card.webp" alt=""></span><b class="chap-name" data-i18n="chap2">L’espace</b></button>
-          <button class="chap-card c3 locked" type="button" data-chap="3"><span class="chap-num">3</span><span class="chap-art"><span class="chap-ufo">🛸</span><span class="chap-ufo u2">🛸</span><span class="chap-lock">🔒</span></span><b class="chap-name" data-i18n="chap3">Le grand final</b><span class="chap-soon" data-i18n="soon">Bientôt</span></button>
+          <button class="chap-card c3 locked" type="button" data-chap="3"><span class="chap-num">3</span><span class="chap-art"><span class="chap-ufo">🛸</span><span class="chap-ufo u2">🛸</span><span class="chap-lock">🔒</span></span><b class="chap-name" data-i18n="chap3">Le grand final</b></button>
         </div>
       </section>
 
@@ -278,7 +283,7 @@
       </section>
 
       <section id="settings-screen" class="screen modal-screen" aria-label="Réglages adulte" data-i18n-aria="aSettings">
-        <div class="modal-card settings-card"><button class="close-settings" type="button" data-go="home" aria-label="Fermer" data-i18n-aria="aClose">×</button><h2 data-i18n="settings">⚙ Réglages</h2><label class="setting-row"><span data-i18n="sounds">🔊 Sons</span><input id="music-toggle" type="checkbox" checked /></label><label class="setting-row"><span data-i18n="music">🎵 Musique</span><input id="music-bg-toggle" type="checkbox" checked /></label><label class="setting-row"><span data-i18n="sfx">💥 Bruitages</span><input id="effects-toggle" type="checkbox" checked /></label><label class="setting-row"><span data-i18n="vibr">📳 Vibrations</span><input id="haptics-toggle" type="checkbox" checked /></label><label class="setting-row one-button-row"><span><span data-i18n="oneBtn">👶 Un seul bouton</span> <small data-i18n="oneBtnHint">(3-4 ans : le pouvoir part tout seul)</small></span><input id="one-button-toggle" type="checkbox" /></label><div class="setting-row name-setting"><span data-i18n="nameSetting">👧 Prénom</span><button id="name-edit" class="pill-btn name-edit" type="button"><span id="name-current"></span> ✏️</button></div><label class="setting-row lang-row"><span>🌐 Language</span><select id="lang-select" aria-label="Language"></select></label><label class="setting-row voice-row"><span data-i18n="voice">🗣️ Voix</span><select id="voice-select" aria-label="Choisir la voix" data-i18n-aria="aVoice"><option value="" data-i18n="auto">Automatique</option></select></label><button id="timer-reset-button" class="reset-hold" type="button" aria-label="Réinitialiser le minuteur : garder appuyé 3 secondes" data-i18n-aria="aResetTimer"><span class="rh-fill"></span><span class="rh-text"><span data-i18n="resetTimer">⏱️ Réinitialiser le minuteur</span> <small data-i18n="holdHint">(garder appuyé)</small></span></button><button id="reset-button" class="reset-hold" type="button" aria-label="Réinitialiser le jeu : garder appuyé 3 secondes" data-i18n-aria="aResetAll"><span class="rh-fill"></span><span class="rh-text"><span data-i18n="resetAll">🗑️ Tout réinitialiser</span> <small data-i18n="holdHint">(garder appuyé)</small></span></button></div>
+        <div class="modal-card settings-card"><button class="close-settings" type="button" data-go="home" aria-label="Fermer" data-i18n-aria="aClose">×</button><h2 data-i18n="settings">⚙ Réglages</h2><label class="setting-row"><span data-i18n="sounds">🔊 Sons</span><input id="music-toggle" type="checkbox" checked /></label><label class="setting-row"><span data-i18n="music">🎵 Musique</span><input id="music-bg-toggle" type="checkbox" checked /></label><label class="setting-row"><span data-i18n="sfx">💥 Bruitages</span><input id="effects-toggle" type="checkbox" checked /></label><label class="setting-row"><span data-i18n="vibr">📳 Vibrations</span><input id="haptics-toggle" type="checkbox" checked /></label><label class="setting-row one-button-row"><span><span data-i18n="oneBtn">👶 Un seul bouton</span> <small data-i18n="oneBtnHint">(3-4 ans : le pouvoir part tout seul)</small></span><input id="one-button-toggle" type="checkbox" /></label><div class="setting-row name-setting"><span data-i18n="nameSetting">👧 Prénom</span><button id="name-edit" class="pill-btn name-edit" type="button"><span id="name-current"></span> ✏️</button></div><label class="setting-row lang-row"><span>🌐 Language</span><select id="lang-select" aria-label="Language"></select></label><label class="setting-row voice-row"><span data-i18n="voice">🗣️ Voix</span><select id="voice-select" aria-label="Choisir la voix" data-i18n-aria="aVoice"><option value="" data-i18n="auto">Automatique</option></select></label><div id="dev-row" class="setting-row dev-row"><span><span data-i18n="devMode">🛠️ Mode développeur</span><span id="dev-state"></span></span><span class="dev-ctl"><input id="dev-code" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Code" data-i18n-ph="devCode" aria-label="Code" data-i18n-aria="devCode" /><button id="dev-btn" class="pill-btn" type="button">OK</button></span></div><button id="timer-reset-button" class="reset-hold" type="button" aria-label="Réinitialiser le minuteur : garder appuyé 3 secondes" data-i18n-aria="aResetTimer"><span class="rh-fill"></span><span class="rh-text"><span data-i18n="resetTimer">⏱️ Réinitialiser le minuteur</span> <small data-i18n="holdHint">(garder appuyé)</small></span></button><button id="reset-button" class="reset-hold" type="button" aria-label="Réinitialiser le jeu : garder appuyé 3 secondes" data-i18n-aria="aResetAll"><span class="rh-fill"></span><span class="rh-text"><span data-i18n="resetAll">🗑️ Tout réinitialiser</span> <small data-i18n="holdHint">(garder appuyé)</small></span></button></div>
       </section>
       <!-- Choix de la langue : au premier lancement, puis dans les réglages (« Language », toujours en anglais) -->
       <section id="lang-screen" class="screen lang-screen" aria-label="Language">
@@ -302,6 +307,11 @@
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </main>
     <script src="story.js" defer></script>
+    <script src="story-en.js" defer></script>
+    <script src="story-es.js" defer></script>
+    <script src="story-de.js" defer></script>
+    <script src="story-ja.js" defer></script>
+    <script src="story-ko.js" defer></script>
     <script src="book-art.js" defer></script>
     <script src="book.js" defer></script>
     <script src="i18n.js" defer></script>
