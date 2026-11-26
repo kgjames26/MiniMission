@@ -33,10 +33,10 @@
 
   // ---------- réglages (en pixels de la planche : Rose mesure ~230 px du casque aux pieds) ----------
   const WALK = 172;            // marche avec l'exosquelette : lente et posée
-  const WALK_ACC = 300, WALK_DEC = 520;
+  const WALK_ACC = 300, WALK_DEC = 700;
   const STEP_PX = 13.2;        // distance parcourue par image de marche (pieds qui ne glissent pas)
   // départ et arrêt de la marche sur les images les plus proches de la pose debout (bras le long du corps, pieds rapprochés)
-  const WALK_START = 4, WALK_STOPS = [4, 12, 19, 26];
+  const WALK_START = 4, STOP_FADE = .24;   // l'arrêt : fondu un peu plus long vers la pose debout
   const FLY = 360, DASH_AT = 290, FLY_ACC = 520;
   const RISE = 260, SINK = 200;
   const ceil = () => Math.max(120, (GROUND - H * .1) / zoom - 250);   // Rose reste toujours visible en haut de l'écran
@@ -95,11 +95,8 @@
       if (Math.abs(rose.vx) > 8 && !a) {
         if (!was) rose.walkDist = WALK_START * STEP_PX;                // on démarre sur un pas qui ressemble à l'arrêt
         rose.walking = true; rose.walkDist += Math.abs(rose.vx) * dt;
-      } else if (was) {                                                 // on finit le pas en cours jusqu'à une pose proche de l'arrêt
-        const pos = rose.walkDist / STEP_PX, cyc = Math.floor(pos / 30) * 30, inC = pos - cyc;
-        const target = cyc + (WALK_STOPS.find(f => f >= inC - .05) ?? 30 + WALK_STOPS[0]);
-        rose.walkDist += Math.max(Math.abs(rose.vx), 120) * dt;
-        if (rose.walkDist / STEP_PX >= target) { rose.walkDist = target * STEP_PX; rose.walking = false; }
+      } else if (was) {                                                 // elle s'arrête là où elle est : les jambes s'arrêtent avec elle
+        rose.walking = false; stopFade = true;
       }
       if (key.fly && !a) {                                       // décollage : depuis la marche ou depuis l'arrêt
         if (Math.abs(rose.vx) > 40) play('up', 'air', { vx0: rose.vx }); else play('lift', 'air');
@@ -170,7 +167,7 @@
   function drawRose(px, py) {
     const f = frame(); if (!F[f.k]) return;
     const gy0 = f.ground ? GROUND : GROUND - rose.y * zoom;
-    if (f.set !== shownSet) { if (shownSet) { fadeFrom = shown; fadeT = 0; fadeGy = lastGy; } shownSet = f.set; }
+    if (f.set !== shownSet) { if (shownSet) { fadeFrom = shown; fadeT = 0; fadeGy = lastGy; fadeLen = stopFade ? STOP_FADE : FADE; stopFade = false; } shownSet = f.set; }
     shown = f.mix > .5 ? f.k2 : f.k;
     const draw = (k, alpha, gy) => { const q = F[k]; ctx.save(); ctx.globalAlpha = alpha; ctx.translate(px, gy); ctx.scale(rose.face * zoom, zoom);
       ctx.drawImage(img, q.x, q.y, q.w, q.h, -q.ax, -q.ay, q.w, q.h); ctx.restore(); };
@@ -179,10 +176,10 @@
     const h = f.ground ? 0 : rose.y, sh = Math.max(.25, 1 - h / 500);
     ctx.fillStyle = `rgba(40,40,80,${.28 * sh})`; ctx.beginPath(); ctx.ellipse(px, GROUND + 4, 55 * zoom * sh, 12 * zoom * sh, 0, 0, Math.PI * 2); ctx.fill();
     draw(f.k, 1, gy); if (f.mix > .01 && f.k2 !== f.k) draw(f.k2, f.mix, gy);      // fondu continu entre deux images voisines
-    if (fadeFrom && fadeT < FADE) { const k = fadeT / FADE; draw(fadeFrom, 1 - k * k * (3 - 2 * k), fadeGy); } else fadeFrom = null;
+    if (fadeFrom && fadeT < fadeLen) { const k = fadeT / fadeLen; draw(fadeFrom, 1 - k * k * (3 - 2 * k), fadeGy); } else fadeFrom = null;
     lastGy = gy;
   }
-  let fadeGy = 0, lastGy = 0, shownSet = null;
+  let fadeGy = 0, lastGy = 0, shownSet = null, fadeLen = .13, stopFade = false;
 
   let last = performance.now(), cam = 0;
   function loop(now) {
