@@ -36,10 +36,10 @@
   .mmb-end b{font-size:clamp(40px,12vmin,110px)}
   .mmb-spine{position:absolute;left:50%;top:0;bottom:0;width:60px;margin-left:-30px;pointer-events:none;z-index:3;background:linear-gradient(90deg,transparent,rgba(60,30,0,.18) 45%,rgba(60,30,0,.28) 50%,rgba(60,30,0,.18) 55%,transparent)}
   .mmb.one .mmb-spine{left:0;margin-left:-20px;width:40px;opacity:.7}
-  .mmb-leaf{position:absolute;top:0;bottom:0;z-index:5;transform-style:preserve-3d;will-change:transform}
-  .mmb-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden}
-  .mmb-face.back{transform:rotateY(180deg)}
-  .mmb-shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.25),transparent 40%);opacity:0}
+  .mmb-sheet{position:absolute;inset:0;z-index:5;pointer-events:none}
+  .mmb-fold{position:absolute;top:0;overflow:hidden;transform-origin:0 0;will-change:transform,clip-path}
+  .mmb-fold.back .mmb-pg{box-shadow:inset 0 0 40px rgba(120,90,40,.12)}
+  .mmb-foldfx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
   .mmb-curl{position:absolute;right:0;bottom:0;width:clamp(34px,7vmin,64px);height:clamp(34px,7vmin,64px);z-index:4;pointer-events:none;
     background:linear-gradient(135deg,transparent 50%,#e4d3ad 50%,#fff6e0 70%,#d9c49a);border-top-left-radius:8px;box-shadow:-3px -3px 6px rgba(0,0,0,.18);animation:mmbCurl 2.4s ease-in-out infinite}
   @keyframes mmbCurl{0%,70%,100%{transform:scale(1)}80%{transform:scale(1.35)}}
@@ -154,50 +154,95 @@
     const close = () => { if (closed) return; closed = true; hush(); removeEventListener('resize', render); root.remove(); if (opts.onDone) opts.onDone(); };
     const step = () => two ? 2 : 1;
 
-    // ---- la feuille qui tourne : dir = 1 (page suivante) ou -1 (page d'avant) ----
-    let leaf = null, dir = 0, angle = 0, ending = false;
-    const startFlip = (d) => {
+    // ---- la page qui se tourne PAR LE COIN : on attrape le coin, la feuille se plie en diagonale ----
+    // Géométrie : le coin attrapé C suit le doigt P ; le pli est la médiatrice de [C, P]. La partie de la page côté coin
+    // se replie (on voit son dos = la page suivante) ; en dessous apparaît la page d'après. Le dos est la page suivante
+    // posée à sa place finale puis « réfléchie » deux fois (par le dos du livre, puis par le pli) : une simple rotation CSS.
+    let sheet = null, dir = 0, ending = false, P = null, C = null, F = null, cy = 0, geo = null;
+    const NS = 'http://www.w3.org/2000/svg';
+    const clipHalf = (poly, M, n, sgn) => { const out = [], f = (p) => sgn * ((p[0] - M[0]) * n[0] + (p[1] - M[1]) * n[1]);
+      for (let i = 0; i < poly.length; i++) { const a = poly[i], b = poly[(i + 1) % poly.length], fa = f(a), fb = f(b);
+        if (fa >= 0) out.push(a); if ((fa >= 0) !== (fb >= 0)) { const t = fa / (fa - fb); out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); } }
+      return out; };
+    const cssPoly = (pts) => pts.length < 3 ? 'polygon(0 0,0 0,0 0)' : 'polygon(' + pts.map(p => p[0].toFixed(1) + 'px ' + p[1].toFixed(1) + 'px').join(',') + ')';
+    const startFlip = (d, corner) => {
       const n = at + d * step(); if (n < 0) return false; ending = n >= count();
-      dir = d; hush(); leaf = document.createElement('div'); leaf.className = 'mmb-leaf';
-      const front = document.createElement('div'), back = document.createElement('div'), shade = document.createElement('div');
-      front.className = 'mmb-face front'; back.className = 'mmb-face back'; shade.className = 'mmb-shade';
-      if (two) {
-        if (d > 0) { leaf.style.cssText = 'left:50%;width:50%;transform-origin:0 50%'; front.appendChild(page(at + 1)); back.appendChild(page(at + 2)); fill(R, at + 3); }
-        else { leaf.style.cssText = 'left:0;width:50%;transform-origin:100% 50%'; front.appendChild(page(at)); back.appendChild(page(at - 1)); fill(L, at - 2); }
-      } else {
-        leaf.style.cssText = 'left:0;width:100%;transform-origin:0 50%';
-        if (d > 0) { front.appendChild(page(at)); back.appendChild(page(-1)); fill(R, at + 1); }
-        else { front.appendChild(page(at - 1)); back.appendChild(page(-1)); }
-      }
-      front.appendChild(shade); leaf.append(front, back); area.appendChild(leaf);
-      angle = (!two && d < 0) ? -180 : 0; setAngle(angle); return true;
+      dir = d; hush();
+      const A = area.clientWidth, h = area.clientHeight, sp = two ? A / 2 : 0, X1 = A, wP = X1 - sp;
+      cy = corner ? h : 0; C = [X1, cy]; F = [2 * sp - X1, cy]; geo = { A, h, sp, X1, wP, ex: 2 * sp - X1 };
+      let frontI, backI;
+      if (two) { if (d > 0) { frontI = at + 1; backI = at + 2; fill(R, at + 3); } else { frontI = at - 1; backI = at; fill(L, at - 2); } }
+      else { if (d > 0) { frontI = at; backI = -1; fill(R, at + 1); } else { frontI = at - 1; backI = -1; } }
+      root.querySelectorAll('.mmb-curl,.mmb-hand').forEach(c => c.remove());
+      sheet = document.createElement('div'); sheet.className = 'mmb-sheet';
+      const fr = document.createElement('div'), bk = document.createElement('div');
+      fr.className = 'mmb-fold front'; bk.className = 'mmb-fold back';
+      fr.style.cssText = `left:${sp}px;width:${wP}px;height:${h}px`; bk.style.cssText = `left:${geo.ex}px;width:${wP}px;height:${h}px`;
+      const pf = page(frontI), pb = page(backI); if (!two) { pb.classList.remove('l'); pb.classList.add('r'); }
+      fr.appendChild(pf); bk.appendChild(pb);
+      const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('class', 'mmb-foldfx'); svg.setAttribute('viewBox', `0 0 ${A} ${h}`); svg.setAttribute('preserveAspectRatio', 'none');
+      svg.innerHTML = `<defs><linearGradient id="mmbG1" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#000" stop-opacity=".22"/><stop offset=".12" stop-color="#fff" stop-opacity=".35"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".10"/></linearGradient>
+        <linearGradient id="mmbG2" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#000" stop-opacity=".38"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>
+        <linearGradient id="mmbG3" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#000" stop-opacity=".25"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient></defs>
+        <polygon class="under" fill="url(#mmbG2)"/><polygon class="cast" fill="url(#mmbG3)"/><polygon class="flap" fill="url(#mmbG1)"/>`;
+      sheet.append(fr, bk, svg); area.appendChild(sheet);
+      P = d > 0 ? C.slice() : F.slice(); place(); return true;
     };
-    const setAngle = (a) => { angle = a; leaf.style.transform = `rotateY(${a}deg)`; const s = leaf.querySelector('.mmb-shade'); if (s) s.style.opacity = Math.min(1, Math.abs(a) / 90);
-      leaf.style.boxShadow = `0 0 ${20 * Math.sin(Math.abs(a) * Math.PI / 180)}px rgba(0,0,0,.35)`; };
-    const target = () => two ? (dir > 0 ? -180 : 180) : (dir > 0 ? -180 : 0);
-    const origin = () => (!two && dir < 0) ? -180 : 0;
-    const finish = (done) => new Promise(res => {
-      busy = true; const from = angle, to = done ? target() : origin(), t0 = performance.now(), dur = 380 * Math.max(.35, Math.abs(to - from) / 180);
-      const tick = (t) => { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3); setAngle(from + (to - from) * e);
+    // contraintes du papier : le coin ne peut pas s'éloigner plus que la largeur de la page du coin du dos (sinon la feuille se déchirerait)
+    const constrain = (p) => { const { sp, wP, h } = geo, Sc = [sp, cy], So = [sp, h - cy], dg = Math.hypot(wP, h);
+      for (let k = 0; k < 2; k++) { let dx = p[0] - Sc[0], dy = p[1] - Sc[1], dd = Math.hypot(dx, dy); if (dd > wP) p = [Sc[0] + dx * wP / dd, Sc[1] + dy * wP / dd];
+        dx = p[0] - So[0]; dy = p[1] - So[1]; dd = Math.hypot(dx, dy); if (dd > dg) p = [So[0] + dx * dg / dd, So[1] + dy * dg / dd]; }
+      return p; };
+    function place() {
+      const { sp, X1, h, ex } = geo, [fr, bk, svg] = sheet.children;
+      P = constrain(P);
+      const dx = C[0] - P[0], dy = C[1] - P[1], dist = Math.hypot(dx, dy);
+      if (dist < .5) { fr.style.clipPath = 'none'; bk.style.display = 'none'; svg.style.display = 'none'; return; }
+      bk.style.display = ''; svg.style.display = '';
+      const n = [dx / dist, dy / dist], M = [(C[0] + P[0]) / 2, (C[1] + P[1]) / 2];
+      const refl = (p) => { const k = 2 * ((p[0] - M[0]) * n[0] + (p[1] - M[1]) * n[1]); return [p[0] - k * n[0], p[1] - k * n[1]]; };
+      const rect = [[sp, 0], [X1, 0], [X1, h], [sp, h]];
+      const corner = clipHalf(rect, M, n, 1), front = clipHalf(rect, M, n, -1), flap = corner.map(refl);
+      fr.style.clipPath = cssPoly(front.map(p => [p[0] - sp, p[1]]));
+      bk.style.clipPath = cssPoly(corner.map(p => [X1 - p[0], p[1]]));
+      const b0 = refl([X1, 0]), bx = refl([X1 - 1, 0]), by = refl([X1, 1]);
+      bk.style.transform = `matrix(${bx[0] - b0[0]},${bx[1] - b0[1]},${by[0] - b0[0]},${by[1] - b0[1]},${b0[0] - ex},${b0[1]})`;
+      const pts = (q) => q.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+      const depth = Math.max(20, dist / 2), [g1, g2, g3] = svg.querySelectorAll('linearGradient');
+      const setG = (g, x2, y2) => { g.setAttribute('x1', M[0]); g.setAttribute('y1', M[1]); g.setAttribute('x2', x2); g.setAttribute('y2', y2); };
+      setG(g1, M[0] - n[0] * depth, M[1] - n[1] * depth);                 // le dos de la feuille : ombre au pli, reflet, puis clair
+      setG(g2, M[0] + n[0] * Math.min(70, depth * 1.2), M[1] + n[1] * Math.min(70, depth * 1.2));   // l'ombre du pli sur la page d'en dessous
+      const cast = flap.map(p => [p[0] - n[0] * 14, p[1] - n[1] * 14]);  // l'ombre que la feuille pliée jette sur la page
+      setG(g3, M[0] - n[0] * (depth + 14), M[1] - n[1] * (depth + 14));
+      svg.querySelector('.flap').setAttribute('points', pts(flap)); svg.querySelector('.under').setAttribute('points', pts(corner));
+      svg.querySelector('.cast').setAttribute('points', pts(clipHalf(cast, M, n, -1)));
+    }
+    const startP = () => dir > 0 ? C : F, endP = () => dir > 0 ? F : C;
+    const finish = (done, arc) => new Promise(res => {
+      busy = true; const from = P.slice(), to = (done ? endP() : startP()).slice(), t0 = performance.now(), len = Math.hypot(to[0] - from[0], to[1] - from[1]);
+      const dur = Math.max(160, Math.min(650, len / geo.A * 900)), lift = (arc ? .2 : .08) * geo.h * (cy ? -1 : 1);
+      const tick = (t) => { const k = Math.min(1, (t - t0) / dur), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+        P = [from[0] + (to[0] - from[0]) * e, from[1] + (to[1] - from[1]) * e + lift * Math.sin(Math.PI * e) * (done ? 1 : .4)]; place();
         if (k < 1) return requestAnimationFrame(tick);
-        leaf.remove(); leaf = null; busy = false; if (done && ending) { close(); return res(); } if (done) at += dir * step(); render(); res(); };
+        sheet.remove(); sheet = null; busy = false; if (done && ending) { close(); return res(); } if (done) at += dir * step(); render(); res(); };
       requestAnimationFrame(tick);
     });
-    const turn = (d) => { if (busy || leaf) return; if (startFlip(d)) finish(true); };
+    const turn = (d) => { if (busy || sheet) return; if (startFlip(d, true)) finish(true, true); };
 
-    // ---- le doigt : on attrape la page et on la tourne ----
-    let px = null, py = null, moved = false, w = 1;
+    // ---- le doigt : on attrape la page (n'importe où, c'est le coin le plus proche qui suit) et on la tourne ----
+    let px = null, py = null, moved = false, P0 = null;
     area.addEventListener('dragstart', e => e.preventDefault());
-    area.addEventListener('pointerdown', e => { if (busy || e.target.closest('button')) return; px = e.clientX; py = e.clientY; moved = false; w = area.clientWidth / (two ? 2 : 1); area.setPointerCapture(e.pointerId); });
+    area.addEventListener('pointerdown', e => { if (busy || e.target.closest('button')) return; px = e.clientX; py = e.clientY; moved = false; area.setPointerCapture(e.pointerId); });
     area.addEventListener('pointermove', e => {
-      if (px === null) return; const dx = e.clientX - px;
-      if (!leaf) { if (Math.abs(dx) < 10) return; moved = true; if (!startFlip(dx < 0 ? 1 : -1)) { px = null; return; } }
-      const k = Math.max(0, Math.min(1, (dir > 0 ? -dx : dx) / (w * 1.1)));
-      setAngle(two ? (dir > 0 ? -180 * k : 180 * k) : (dir > 0 ? -180 * k : -180 + 180 * k));
+      if (px === null) return; const dx = e.clientX - px, dy = e.clientY - py;
+      if (!sheet) { if (Math.abs(dx) < 10) return; moved = true; const r = area.getBoundingClientRect();
+        if (!startFlip(dx < 0 ? 1 : -1, (py - r.top) > r.height / 2)) { px = null; return; } P0 = P.slice(); }
+      P = [P0[0] + dx * 1.15, P0[1] + dy * .9]; place();
     });
     const up = (e) => {
       if (px === null) return; const dx = e.clientX - px; px = null;
-      if (leaf) { finish(Math.abs(angle - origin()) > 60 || (e.type === 'pointerup' && Math.abs(dx) > w * .35)); return; }
+      if (sheet) { const half = (C[0] + F[0]) / 2, past = dir > 0 ? P[0] < half : P[0] > half;
+        finish(past || (e.type === 'pointerup' && Math.abs(dx) > geo.wP * .3)); return; }
       if (!moved && !e.target.closest('button')) { const r = area.getBoundingClientRect(), x = (e.clientX - r.left) / r.width; if (x > .66) turn(1); else if (x < .34) turn(-1); }
     };
     area.addEventListener('pointerup', up); area.addEventListener('pointercancel', up);
