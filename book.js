@@ -31,7 +31,7 @@
   .mmb-tx{flex:1;min-height:0;display:flex;align-items:center;padding:clamp(4px,1.2vmin,12px) clamp(12px,3.2vmin,34px);font-weight:700;color:#3b2a1a;line-height:1.28;font-size:clamp(13px,2.75vmin,24px);overflow:hidden}
   .mmb.one .mmb-tx{font-size:clamp(16px,4.6vw,26px);align-items:flex-start;padding-top:12px}
   .mmb-pg.l .mmb-tx{padding-right:clamp(16px,4vmin,40px)}.mmb-pg.r .mmb-tx{padding-left:clamp(16px,4vmin,40px)}
-  .mmb-num{position:absolute;bottom:6px;left:50% !important;right:auto !important;transform:translateX(-50%);font-size:13px;font-weight:800;color:#b49a72}.mmb-pg.l .mmb-num{left:12px}.mmb-pg.r .mmb-num{right:12px}
+  html:lang(ja) .mmb-tx,html:lang(ko) .mmb-tx{word-break:keep-all;overflow-wrap:anywhere}.mmb-num{position:absolute;bottom:6px;left:50% !important;right:auto !important;transform:translateX(-50%);font-size:13px;font-weight:800;color:#b49a72}.mmb-pg.l .mmb-num{left:12px}.mmb-pg.r .mmb-num{right:12px}
   .mmb-end{flex:1;display:grid;place-items:center;align-content:center;gap:14px;background:radial-gradient(circle,#fff6dc,#f6e6c4)}
   .mmb-end b{font-size:clamp(40px,12vmin,110px)}
   .mmb-spine{position:absolute;left:50%;top:0;bottom:0;width:60px;margin-left:-30px;pointer-events:none;z-index:3;background:linear-gradient(90deg,transparent,rgba(60,30,0,.18) 45%,rgba(60,30,0,.28) 50%,rgba(60,30,0,.18) 55%,transparent)}
