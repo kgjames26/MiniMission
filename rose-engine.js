@@ -4,6 +4,16 @@
   // ================= le monde choisi (rose-worlds.js) =================
   const WID = (new URLSearchParams(location.search).get('w') || location.hash.slice(1) || 'lune').toLowerCase();
   const WD = (MM.ROSE_WORLDS || {})[WID] || MM.ROSE_WORLDS.lune;
+  // ================= langue : textes du monde, devinettes et phrases de la voix (story-xx.js) =================
+  const LANG = (MM.i18n && MM.i18n.lang) || 'fr', LX = (MM.STORY_L10N || {})[LANG] || null;
+  const TTS = (MM.i18n && MM.i18n.info && MM.i18n.info().tts) || 'fr-FR';
+  { const lw = LX && LX.worlds && LX.worlds[WID];
+    if (lw) { for (const k of ['name', 'chip', 'on', 'intro', 'outroAll']) if (lw[k]) WD[k] = lw[k];
+      (lw.riddles || []).forEach((r, i) => { const R = WD.riddles[i]; if (!R || !r) return; R.q = r[0]; r[1].forEach((o, k) => { if (R.o[k]) R.o[k] = [R.o[k][0], o]; }); R.fact = r[2]; }); } }
+  const EN = { freed: ['Libéré !', 'Merci Rose !', 'Youpi !', 'Un ami de plus !'], partial: 'Bravo Rose ! Tu as libéré {n} amis. Les autres attendent encore sur {on} !', again: 'Essaie encore !',
+    robot: 'Bip bip ! Le petit robot se réveille !', heli: 'Le petit hélicoptère s’envole avec toi !', bossStart: 'Voilà Capitaine Farfouille dans sa soucoupe ! Envoie-lui des bulles !',
+    boss: ['Hé hé ! Tu ne m’attraperas pas !', 'Oh ! Encore une bulle ?', 'Non, non, non !'], bossPop: 'Pop ! Capitaine Farfouille est dans une bulle !', endN: 'Bravo, {name} !', end: 'Bravo !', replay: '↻ Rejouer',
+    ...((LX && LX.engine) || {}) };
   document.title = 'Mini Mission · Rose · ' + WD.name; $('#wchip').textContent = WD.chip;
   document.querySelector('meta[name=theme-color]').setAttribute('content', WD.theme); document.body.style.background = WD.theme;
   // ================= images =================
@@ -23,13 +33,13 @@
   let voiceOn = 'speechSynthesis' in window, speaking = 0;
   // la voix parle au JOUEUR : « Bravo Rose ! » devient « Bravo Léa ! » (prénom donné par le parent), ou « Bravo ! » sans prénom
   const KID = (() => { try { const s = JSON.parse(localStorage.getItem('mini-mission-v1') || '{}'); return String(s.childNameSay || s.childName || '').trim(); } catch (e) { return ''; } })();
-  const toKid = (t) => String(t).replace(/(?<!avec)(,)?\s+Rose(\s*!)/g, (m, c, end) => KID ? (c || '') + ' ' + KID + end : end);
+  const toKid = (t) => String(t).replace(/([,、，]?\s*)\{name\}/g, (m, pre) => KID ? pre + KID : '').replace(/(?<!avec)(,)?\s+Rose(\s*!)/g, (m, c, end) => KID ? (c || '') + ' ' + KID + end : end);
   function say(text, important = true) {
     if (!voiceOn) return;
     text = toKid(text);
     if (!important && performance.now() < speaking) return;
-    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'fr-FR'; u.rate = .95; u.pitch = 1.08;
-      const v = speechSynthesis.getVoices().find(v => /^fr/i.test(v.lang)); if (v) u.voice = v; speechSynthesis.speak(u); speaking = performance.now() + 1200 + text.length * 70; } catch {}
+    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = TTS; u.rate = .95; u.pitch = 1.08;
+      const lp = TTS.slice(0, 2).toLowerCase(), vs = speechSynthesis.getVoices(), v = vs.find(v => v.lang && v.lang.replace('_', '-').toLowerCase() === TTS.toLowerCase()) || vs.find(v => v.lang && v.lang.toLowerCase().startsWith(lp)); if (v) u.voice = v; speechSynthesis.speak(u); speaking = performance.now() + 1200 + text.length * 70; } catch {}
   }
   let AC = null;
   function tone(f0, f1, dur, type = 'sine', vol = .08, at = 0) {
@@ -240,7 +250,7 @@
   $('#quit').onclick = () => { location.href = BACK; };
   $('#home').onclick = () => { location.href = BACK; };
   if (WD.next) { $('#next').textContent = WD.nextIcon + ' ➜'; $('#next').onclick = () => { location.href = 'rose-world.html?w=' + WD.next; }; } else $('#next').style.display = 'none';
-  $('#again').onclick = () => { location.reload(); };
+  $('#again').onclick = () => { location.reload(); }; $('#again').textContent = EN.replay;
 
   function shoot() {
     if (paused || finished || rose.cool > 0 || !RF) return;
@@ -275,11 +285,11 @@
     const B = roseBox();
     // le robot : il dort jusqu'à ce que Rose le touche, puis la suit (il roule derrière le décor)
     rover.t += dt;
-    if (!rover.awake && B.x1 > rover.x - 60 && B.x0 < rover.x + 60 && B.y0 < 90) { rover.awake = true; sfx.beep(); say('Bip bip ! Le petit robot se réveille !', false); puffs.push({ x: rover.x, y: 80, t: 0, c: '#ffe9a8' }); }
+    if (!rover.awake && B.x1 > rover.x - 60 && B.x0 < rover.x + 60 && B.y0 < 90) { rover.awake = true; sfx.beep(); say(EN.robot, false); puffs.push({ x: rover.x, y: 80, t: 0, c: '#ffe9a8' }); }
     if (rover.awake) { const tx = rose.x - rose.face * 170, d = tx - rover.x, v = Math.max(-230, Math.min(230, d * 2.2)); if (Math.abs(d) > 6) { rover.x += v * dt; rover.face = Math.sign(v) || rover.face; rover.wheel += v * dt / 11; } }
     // l'hélicoptère : il se réveille aussi au contact, puis vole à côté de Rose
     heli.t += dt;
-    if (!heli.awake && B.x1 > heli.x - 50 && B.x0 < heli.x + 50 && B.y0 < 80) { heli.awake = true; sfx.heli(); say('Le petit hélicoptère s’envole avec toi !', false); }
+    if (!heli.awake && B.x1 > heli.x - 50 && B.x0 < heli.x + 50 && B.y0 < 80) { heli.awake = true; sfx.heli(); say(EN.heli, false); }
     if (heli.awake) { const h = rose.mode === 'air' ? rose.y : rose.base, tx = rose.x - rose.face * 110, ty = Math.min(CEIL - 60 > h ? 560 : 560, h + RH + 30 + Math.sin(heli.t * 2) * 12);
       let ty2 = ty; if (rose.x > CAVE0 - 100 && rose.x < CAVE1 + 100) ty2 = Math.min(ty, CEIL - 70);
       heli.vx += ((tx - heli.x) * 4 - heli.vx * 2.6) * dt; heli.vy += ((ty2 - heli.y) * 4 - heli.vy * 2.6) * dt; heli.x += heli.vx * dt; heli.y += heli.vy * dt; if (Math.abs(heli.vx) > 20) heli.face = Math.sign(heli.vx); }
@@ -355,7 +365,7 @@
   function addFriend(img, cell, x, y) {
     friends.push({ img, cell, x, y, t: Math.random() * 6 }); got.friends++; chip('#cFriends', '💛 ' + got.friends + '/20'); sfx.friend();
     const followers = friends.filter(f => !f.home); if (followers.length > 5) { followers[0].home = true; followers[0].hv = 0; }   // au plus 5 suivent Rose
-    say(['Libéré !', 'Merci Rose !', 'Youpi !', 'Un ami de plus !'][got.friends % 4], false);
+    say(EN.freed[got.friends % EN.freed.length], false);
   }
   function updateWorld(dt) {
     const B = roseBox();
@@ -446,16 +456,16 @@
     }
   }
   // ----- Capitaine Farfouille (grand final) -----
-  const BOSS_SAY = ['Hé hé ! Tu ne m’attraperas pas !', 'Oh ! Encore une bulle ?', 'Non, non, non !'];
+  const BOSS_SAY = EN.boss;
   function hitBoss(x, y) {
     puffs.push({ x, y, t: 0, c: '#d9a8ff' });
     if (boss.hp > 1) { boss.hp--; boss.hitT = .8; sfx.bonk(); say(BOSS_SAY[Math.min(BOSS_SAY.length - 1, boss.hpMax - boss.hp)], false); return; }
-    boss.state = 'bubble'; boss.bt = 0; sfx.pop(); sfx.friend(); got.aliens++; bubbleChip(); say('Pop ! Capitaine Farfouille est dans une bulle !');
+    boss.state = 'bubble'; boss.bt = 0; sfx.pop(); sfx.friend(); got.aliens++; bubbleChip(); say(EN.bossPop);
     setTimeout(() => { if (!finished) finish(); }, 2600);
   }
   function updateBoss(dt, B) {
     if (!boss) return; boss.t += dt; boss.hitT -= dt;
-    if (boss.state === 'wait') { if (rose.x > boss.x0 - 1000) { boss.state = 'fight'; say('Voilà Capitaine Farfouille dans sa soucoupe ! Envoie-lui des bulles !'); } return; }
+    if (boss.state === 'wait') { if (rose.x > boss.x0 - 1000) { boss.state = 'fight'; say(EN.bossStart); } return; }
     if (boss.state === 'fight') {
       if (boss.hitT <= 0) { boss.x += boss.dir * 130 * dt; if (boss.x < boss.x0) boss.dir = 1; if (boss.x > boss.x1) boss.dir = -1; }
       boss.yy = boss.y + Math.sin(boss.t * 1.5) * 55;
@@ -483,7 +493,7 @@
       const i = +btn.dataset.i;
       if (i === r.a) { btn.classList.add('good'); sfx.good(); say(r.fact); for (let k = 0; k < 6; k++) stars.push({ x: b.x - 100 + k * 40, y: b.y + 60 + Math.sin(k) * 30, got: false });
         setTimeout(() => { $('#quiz').classList.remove('show'); paused = false; last = performance.now(); }, 2600); }
-      else { btn.classList.remove('no'); void btn.offsetWidth; btn.classList.add('no'); sfx.no(); say('Essaie encore !'); }
+      else { btn.classList.remove('no'); void btn.offsetWidth; btn.classList.add('no'); sfx.no(); say(EN.again); }
     });
     $('#quiz').classList.add('show');
   }
@@ -492,10 +502,10 @@
     try { localStorage.setItem('mm.rose.world', 'rose-world.html?w=' + WID); } catch (e) {}
     try { const d = JSON.parse(localStorage.getItem('mm.rose.done') || '[]'); if (!d.includes(WID)) { d.push(WID); localStorage.setItem('mm.rose.done', JSON.stringify(d)); } } catch (e) {}
     finished = true; rose.vx = 0; rose.walking = false; play('win', 'ground'); rose.mode = 'ground'; sfx.good();
-    say(WD.boss || got.friends >= 20 ? WD.outroAll : 'Bravo Rose ! Tu as libéré ' + got.friends + ' amis. Les autres attendent encore sur ' + WD.on + ' !');
+    say(WD.boss || got.friends >= 20 ? WD.outroAll : EN.partial.replace('{n}', got.friends).replace('{on}', WD.on));
     setTimeout(() => MM.book && !MM.book.seen(WID + '_c') ? MM.book.open(WID + '_c', { onDone: showEnd }) : showEnd(), 3200);
     function showEnd() {
-      $('#end .title').textContent = KID ? 'Bravo, ' + KID + ' !' : 'Bravo !';   // on félicite le joueur, pas le personnage
+      $('#end .title').textContent = KID ? EN.endN.replace('{name}', KID) : EN.end;   // on félicite le joueur, pas le personnage
       $('#estats').innerHTML = `<span>⭐ ${got.stars}/${stars.length}</span><span>🔤 ${got.letters}/${letters.length}</span>` + (WD.noCages ? '' : `<span>💛 ${got.friends}/${cages.length}</span>`) + `<span>🫧 ${got.aliens}</span>`;
       $('#end').classList.add('show');
     }

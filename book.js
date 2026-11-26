@@ -115,7 +115,12 @@
   }
   let styled = false;
   const style = () => { if (styled) return; styled = true; const s = document.createElement('style'); s.textContent = css; document.head.appendChild(s); };
-  const speak = (t) => { if (MM.say) MM.say(t); else { try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = 'fr-FR'; speechSynthesis.speak(u); } catch (e) {} } };
+  const speak = (t) => { if (MM.say) MM.say(t); else { try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = (MM.i18n && MM.i18n.info().tts) || 'fr-FR'; speechSynthesis.speak(u); } catch (e) {} } };
+  // traductions de l'histoire (story-xx.js) : on garde le français si une page manque
+  const LX = () => (MM.STORY_L10N || {})[(MM.i18n && MM.i18n.lang) || 'fr'];
+  const ptext = (id, i, fr) => { const l = LX(); return (l && l.story && l.story[id] && l.story[id].pages && l.story[id].pages[i]) || fr; };
+  const ttext = (id, fr) => { const l = LX(); return (l && l.story && l.story[id] && l.story[id].title) || fr; };
+  const uitext = (k, fr) => { const l = LX(); return (l && l.ui && l.ui[k]) || fr; };
   const hush = () => { if (MM.hush) MM.hush(); else { try { speechSynthesis.cancel(); } catch (e) {} } };
   const esc = (v) => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -125,7 +130,7 @@
     style(); markSeen(id);
     const pages = book.pages, root = document.createElement('div'); root.className = 'mmb'; root.setAttribute('role', 'dialog');
     root.innerHTML = `<div class="mmb-book"><div class="mmb-pages"><div class="mmb-slot l"></div><div class="mmb-slot r"></div><div class="mmb-spine"></div></div></div>
-      <div class="mmb-ui tl"><button class="mmb-rb" data-a="say" aria-label="Écouter">🔊</button></div><div class="mmb-ui tr"><button class="mmb-rb" data-a="close" aria-label="Fermer">✕</button></div>`;
+      <div class="mmb-ui tl"><button class="mmb-rb" data-a="say" aria-label="${uitext('listen', 'Écouter')}">🔊</button></div><div class="mmb-ui tr"><button class="mmb-rb" data-a="close" aria-label="${uitext('close', 'Fermer')}">✕</button></div>`;
     document.body.appendChild(root);
     const area = root.querySelector('.mmb-pages'), L = root.querySelector('.mmb-slot.l'), R = root.querySelector('.mmb-slot.r');
     let two = true, at = 0, closed = false, busy = false, hinted = false;
@@ -138,7 +143,7 @@
       if (i < 0 || i >= count()) { d.className = 'mmb-pg'; return d; }
       const side = i % 2 ? 'r' : 'l'; d.className = 'mmb-pg ' + side + (solo ? ' solo' : '');
       if (i >= pages.length) { d.innerHTML = `<div class="mmb-end"><b>⭐</b><button class="mmb-go" data-a="close" aria-label="C’est parti">▶▶</button></div>`; return d; }
-      d.innerHTML = `<div class="mmb-pic"><img alt="" draggable="false"></div><div class="mmb-tx">${esc(pages[i].t)}</div><div class="mmb-num">${i + 1}</div>${i === pages.length - 1 ? '<button class="mmb-go small" data-a="close" aria-label="C’est parti">▶▶</button>' : ''}`;
+      d.innerHTML = `<div class="mmb-pic"><img alt="" draggable="false"></div><div class="mmb-tx">${esc(ptext(id, i, pages[i].t))}</div><div class="mmb-num">${i + 1}</div>${i === pages.length - 1 ? '<button class="mmb-go small" data-a="close" aria-label="C’est parti">▶▶</button>' : ''}`;
       const img = d.querySelector('img'); picture(id, Math.floor(i / 2)).then(src => { img.onload = () => img.classList.add('on'); img.src = src; });
       return d;
     };
@@ -248,7 +253,7 @@
     area.addEventListener('pointerup', up); area.addEventListener('pointercancel', up);
     root.addEventListener('click', e => { const a = e.target.closest('[data-a]'); if (!a) return;
       if (a.dataset.a === 'close') close();
-      else if (a.dataset.a === 'say') speak((two ? pages.slice(at, at + 2) : pages.slice(at, at + 1)).map(p => p.s || p.t).join(' '));   // la voix ne lit que si on appuie sur 🔊
+      else if (a.dataset.a === 'say') speak((two ? pages.slice(at, at + 2) : pages.slice(at, at + 1)).map((p, k) => ptext(id, at + k, p.s || p.t)).join(' '));   // la voix ne lit que si on appuie sur 🔊
     });
     addEventListener('keydown', function kd(e) { if (closed) return removeEventListener('keydown', kd); if (e.key === 'ArrowRight') turn(1); else if (e.key === 'ArrowLeft') turn(-1); else if (e.key === 'Escape') close(); });
     addEventListener('resize', render);
@@ -262,7 +267,7 @@
     const seen = seenList(), root = document.createElement('div'); root.className = 'mmb-lib';
     const items = order.filter(id => MM.STORY[id]);
     root.innerHTML = `<button class="mmb-skip" aria-label="Fermer">✕</button><h2>📚</h2><div class="mmb-shelf">${items.map(id => { const b = MM.STORY[id], [b1, b2] = BG[b.bg] || BG.city, ok = seen.includes(id);
-      return `<button class="mmb-cover ${ok ? '' : 'lock'}" data-id="${id}">${ok ? `<img alt="" data-src="${id}">` : '<span>🔒</span>'}<em>${ok ? esc(b.title || '') : ''}</em></button>`; }).join('')}</div>`;
+      return `<button class="mmb-cover ${ok ? '' : 'lock'}" data-id="${id}">${ok ? `<img alt="" data-src="${id}">` : '<span>🔒</span>'}<em>${ok ? esc(ttext(id, b.title || '')) : ''}</em></button>`; }).join('')}</div>`;
     document.body.appendChild(root);
     root.querySelectorAll('img[data-src]').forEach(im => picture(im.dataset.src, 0).then(s => { im.src = s; }));
     root.querySelector('.mmb-skip').onclick = () => { root.remove(); if (onClose) onClose(); };
