@@ -21,7 +21,7 @@
   const MOVES = { cellW: 617, cellH: 421, foot: 376, scale: .48, rows: { titan: 0, ziggy: 1, filou: 2 }, hands: { filou: [[421.8, 230.3], [380.4, 290.1], [313.3, 188.1], [307.8, 242.3]] } };
   // monstres : [hauteur dans le monde, largeur/hauteur, hauteur du sprite dans sa case] ; 0-4 méchants, 5-9 gentils
   // assets/monsters.webp : cases de 400×264, 5 par ligne. [hauteur dans le jeu, largeur/hauteur, hauteur du dessin dans la case]
-  const MON = [[66, 1.246, 252], [62, 1.044, 252], [72, 2.098, 183], [104, 1.111, 252], [104, .734, 252], [66, 1.056, 252], [62, 1.02, 252], [74, 1.032, 252], [104, 1.242, 252], [104, .841, 252],
+  const MON = [[66, 1.246, 252], [62, 1.044, 252], [72, 2.098, 183], [140, 1.111, 252], [104, .734, 252], [66, 1.056, 252], [62, 1.02, 252], [74, 1.032, 252], [135, 1.242, 252], [104, .841, 252],
     [64, 1.307, 254], [64, 1.224, 254], [68, 1.031, 254], [68, 1, 254], [62, 1.075, 254], [64, 1.031, 254], [58, 1.165, 254], [60, 1.173, 254], [64, 1.22, 254], [62, 1.413, 254],
     [72, 1.252, 254], [72, 1.177, 254], [92, .819, 254], [92, .878, 254], [60, .976, 254], [62, .969, 254], [100, .642, 254], [100, .866, 254], [46, 1.496, 254], [66, 1.11, 254],
     [58, 1.071, 254], [58, 1.094, 254]];
@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '56', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '57', asset = (p) => `${p}?v=${ASSET_V}`;
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
   const monsterImg = new Image(); monsterImg.src = asset('assets/monsters.webp');
   const movesImg = new Image(); movesImg.src = asset('assets/hero-moves.webp');
