@@ -896,3 +896,6 @@ body.peeking .fly-item{visibility:hidden}   /* les objets qui volent vers les co
 .dev-row .pill-btn{padding:8px 16px;min-height:0;font-size:16px}
 .dev-row.on{background:linear-gradient(90deg,#e7fbe9,#fff)}
 @keyframes dev-shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+/* cartes de chapitre : la silhouette de Paris derrière les héros, la ville du grand final derrière les soucoupes */
+.chap-card.c1{--bg:url("assets/bg/city0.webp") center 56% / auto 46% repeat-x,linear-gradient(180deg,#8fdcff 0%,#bdeaff 55%,#7fd36a 56%,#4fb056 100%)}
+.chap-card.c3{--bg:linear-gradient(180deg,rgba(255,176,106,.35),rgba(255,122,138,.25) 60%,rgba(138,90,224,.55)),url("assets/bg/final.webp") center bottom / cover no-repeat}
