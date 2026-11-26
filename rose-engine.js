@@ -91,6 +91,11 @@
       P.push([x0, s.y - 30], [x0 + 8, s.y], [x0 + 24, top - 34], [x0 + 64, top], [x1 - 64, top], [x1 - 24, top - 34], [x1 - 8, s.y], [x1, s.y - 30], [x1 - lw, s.y - 30], [x1 - lw, oy]);
       for (let i = 1; i < 16; i++) { const a = i / 16 * Math.PI; P.push([cx + Math.cos(a) * rx, oy + Math.sin(a) * ry]); }
       P.push([x0 + lw, oy], [x0 + lw, s.y - 30]);
+    } else if (s.kind === 'ramp') {                         // toboggan : pente douce d'un côté, bord arrondi de l'autre
+      const d = s.dir || 1, xa = d > 0 ? x0 : x1, xb = d > 0 ? x1 : x0;
+      for (let i = 0; i <= 16; i++) { const t = i / 16; P.push([xa + (xb - xa) * t, s.y + s.h * (t * t * (3 - 2 * t))]); }
+      P.push([xb + d * 14, s.y + s.h * .6], [xb + d * 8, s.y], [xb + d * 8, s.y - 30], [xa, s.y - 30]);
+      if (d < 0) P.reverse();
     } else if (s.kind === 'pancake') {                      // dôme plat (volcan « crêpe » de Vénus) : bords arrondis, dessus large
       const N = 24;
       for (let i = 0; i <= N; i++) { const t = i / N, a = Math.PI + t * Math.PI, c = Math.cos(a), sn = -Math.sin(a), k = Math.pow(sn, .35);
@@ -322,6 +327,8 @@
       }
     }
     updateWorld(dt); updateMars(dt);
+    // vents (Neptune) : ils poussent Rose tout doucement, jamais assez pour l'empêcher d'avancer
+    if (!finished && rose.mode !== 'trans') for (const w of WD.winds || []) if (rose.x > w[0] && rose.x < w[1]) moveX(w[2] * (rose.mode === 'air' ? 1 : .6) * dt, rose.mode === 'air');
   }
 
   // ================= le reste du monde =================
@@ -450,7 +457,14 @@
     if (WD.cave && c1 > 0 && c0 < W) { const g = ctx.createLinearGradient(0, SY(CEIL), 0, gy); g.addColorStop(0, WD.caveShade[0]); g.addColorStop(1, WD.caveShade[1]); ctx.fillStyle = g; ctx.fillRect(c0, SY(CEIL), c1 - c0, gy - SY(CEIL)); }
   }
   // tourbillons de poussière
+  function drawWinds(time) {
+    for (const w of WD.winds || []) { const a = SX(w[0]), b = SX(w[1]); if (b < 0 || a > W) continue;
+      ctx.strokeStyle = 'rgba(220,240,255,.45)'; ctx.lineWidth = 3 * zoom; ctx.lineCap = 'round';
+      for (let i = 0; i < 14; i++) { const len = (w[1] - w[0]), x = w[0] + (((i * 137 + time * Math.abs(w[2]) * 1.6 * Math.sign(w[2])) % len) + len) % len, y = 40 + (i * 53) % 480;
+        ctx.beginPath(); ctx.moveTo(SX(x), SY(y)); ctx.lineTo(SX(x - Math.sign(w[2]) * 70), SY(y + Math.sin(time * 3 + i) * 6)); ctx.stroke(); } }
+  }
   function drawDevils(time) {
+    drawWinds(time);
     for (const d of devils) { const x = SX(d.x); if (x < -150 || x > W + 150) continue;
       for (let k = 0; k < 12; k++) { const y = SY(k * 34 + 10), r = (18 + k * 6.5) * zoom, off = Math.sin(d.t * 3 + k * .6) * 10 * zoom;
         ctx.strokeStyle = `rgba(${WD.liftRGB || '240,185,140'},${.42 - k * .025})`; ctx.lineWidth = (5 - k * .2) * zoom; ctx.beginPath(); ctx.ellipse(x + off, y, r, r * .28, 0, 0, Math.PI * 2); ctx.stroke(); }
@@ -561,6 +575,7 @@
     const k = zoom * ASCALE * (TSCALE[a.type] || 1), sq = a.type === 'boing' && a.y < 25 ? 1 + (25 - a.y) / 25 * .12 : 1;
     ctx.save(); ctx.translate(x, y); ctx.scale((a.dir < 0 ? -1 : 1) * k * sq, k / sq);
     if (a.type === 'glouglou' && a.state === 'farceur') ctx.rotate(Math.sin(a.t * 6.4) * .06);
+    if (WD.sideways && a.state === 'farceur') { ctx.translate(0, -f.h * .3); ctx.rotate(-Math.PI / 2 * .92); ctx.translate(0, f.h * .3); }   // Uranus : ils se couchent sur le côté « pour se déguiser »
     if (a.type === 'bidou' && a.hitT > 0) { const w = Math.sin(a.hitT * 40) * .08; ctx.scale(1 + w, 1 - w); }        // il boude en tremblotant
     if (a.type === 'zigzag' && a.state === 'farceur') ctx.translate(0, -Math.abs(Math.sin(a.t * 4)) * 8);
     ctx.drawImage(alienImg, f.x, f.y, f.w, f.h, -f.w / 2, -f.h, f.w, f.h);
