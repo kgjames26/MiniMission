@@ -768,3 +768,10 @@ html:lang(ja) .jump-button strong,html:lang(de) .jump-button strong{font-size:.8
 @keyframes hp-bob{50%{transform:translate(-50%,3px)}}
 .hp-flags{padding-bottom:16px}
 body.peeking .fly-item{visibility:hidden}   /* les objets qui volent vers les compteurs ne passent pas sur la fenêtre */
+
+/* Rose (nouvelle héroïne, niveau d'essai de la Lune) */
+.hero-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.hero-card.rose{--edge:#8a5ae0;--edge-dark:#5a36a6;--bg1:#e8dcff;--bg2:#a98ff2;--btn:#8a5ae0;text-decoration:none;color:inherit}
+.hero-card.rose .rose-pic{height:92%;max-height:92cqh;width:auto;object-fit:contain;filter:drop-shadow(0 6px 6px rgba(40,20,90,.25))}
+.hero-card.rose .new-tag{position:absolute;top:6px;right:6px;background:#ff5d8f;color:#fff;font-weight:900;font-size:clamp(10px,1.6vmin,14px);padding:2px 8px;border-radius:999px;transform:rotate(6deg)}
+@media (orientation:portrait){.hero-grid{grid-template-columns:1fr;grid-template-rows:repeat(4,minmax(0,1fr))}.hero-card.rose .rose-pic{height:100%;max-height:100%}}
