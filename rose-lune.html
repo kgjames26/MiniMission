@@ -25,6 +25,15 @@
   .b.fly.on { box-shadow: 0 2px 0 #b4471a; }
   .b.shoot { background: linear-gradient(#8fe3ff, #3aa6e8); box-shadow: 0 6px 0 #1f6fa8, 0 10px 18px rgba(0,0,0,.35); }
   .b.shoot.on { box-shadow: 0 2px 0 #1f6fa8; }
+  #stickzone { position: fixed; left: 0; bottom: 0; width: 55vw; top: 64px; touch-action: none; }
+  .stick { position: fixed; width: clamp(150px, 36vmin, 220px); height: clamp(150px, 36vmin, 220px); margin: calc(clamp(150px, 36vmin, 220px) / -2) 0 0 calc(clamp(150px, 36vmin, 220px) / -2); pointer-events: none; transition: opacity .2s; }
+  .stick .ring { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.18) 0 38%, rgba(255,255,255,.08) 39% 100%); border: 4px solid rgba(255,255,255,.55); box-shadow: 0 0 0 6px rgba(120,90,255,.18); }
+  .stick .knob { position: absolute; left: 50%; top: 50%; width: 44%; height: 44%; margin: -22% 0 0 -22%; border-radius: 50%; background: linear-gradient(#ffb04a, #f2702c); box-shadow: 0 5px 0 #b4471a, 0 8px 16px rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center; font-size: clamp(26px, 7vmin, 40px); }
+  .stick .arrow { position: absolute; left: 50%; top: 50%; width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent; border-bottom: 26px solid rgba(255,255,255,.9); transform-origin: 50% 100%; opacity: 0; margin: -26px 0 0 -16px; }
+  .stick.idle { opacity: .55; }
+  .stick.idle .knob { animation: hint 1.6s ease-in-out infinite; }
+  @keyframes hint { 0%, 100% { transform: translate(0, 0); } 30% { transform: translate(40%, -35%); } 60% { transform: translate(40%, 0); } }
+  .big-shoot { width: clamp(84px, 23vmin, 130px); height: clamp(84px, 23vmin, 130px); font-size: clamp(36px, 10vmin, 56px); }
   .ov { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(15,10,50,.55); z-index: 10; }
   .ov.show { display: flex; }
   .card { background: #fff; border-radius: 28px; padding: clamp(14px, 3vmin, 26px); width: min(92vw, 720px); box-shadow: 0 12px 40px rgba(0,0,0,.4); text-align: center; animation: pop .3s; }
@@ -53,8 +62,9 @@
   <span class="sp"></span>
   <span class="chip">🌙 La Lune</span>
 </div>
-<div class="pad l"><button class="b" id="bl" aria-label="Gauche">◀</button><button class="b" id="br" aria-label="Droite">▶</button></div>
-<div class="pad r"><button class="b shoot" id="bs" aria-label="Bulles">🫧</button><button class="b fly" id="bf" aria-label="Voler">🚀</button></div>
+<div id="stickzone" aria-label="Joystick : glisser le pouce pour marcher et voler"></div>
+<div id="stick" class="stick idle"><div class="ring"></div><div class="arrow" id="sarrow"></div><div class="knob" id="sknob">🚀</div></div>
+<div class="pad r"><button class="b shoot big-shoot" id="bs" aria-label="Bulles">🫧</button></div>
 <div class="ov" id="quiz"><div class="card"><div class="row" style="margin:0 0 6px"><button class="say" id="qsay" aria-label="Écouter">🔊</button></div><div class="q" id="qtext"></div><div class="opts" id="qopts"></div></div></div>
 <div class="ov" id="end"><div class="card"><p class="title">Bravo, Rose !</p><div class="stats" id="estats"></div><div class="row"><button class="big alt" id="again">↻ Rejouer</button><button class="big" id="home">🏠</button></div></div></div>
 <script src="i18n.js"></script>
@@ -181,19 +191,42 @@
   if (!quizPick.includes(1)) quizPick[0] = 1;
 
   // ================= Rose =================
-  const rose = { x: 150, y: 0, vx: 0, vy: 0, face: 1, mode: 'ground', anim: null, walkDist: 0, t: 0, airPose: 'hover', airT: 0, walking: false, base: 0, cool: 0, bump: 0 };
+  const rose = { x: 420, y: 0, vx: 0, vy: 0, face: 1, mode: 'ground', anim: null, walkDist: 0, t: 0, airPose: 'hover', airT: 0, walking: false, base: 0, cool: 0, bump: 0 };
   let shownSet = null, shown = null, fadeFrom = null, fadeT = 9, fadeLen = FADE, fadeGy = 0, lastGy = 0, stopFade = false;
   function play(name, then, opts = {}) { rose.anim = { name, t: 0, then, ...opts }; if (name !== 'win') rose.mode = 'trans'; }
 
   // ================= commandes =================
-  const key = { l: false, r: false, fly: false, shoot: false };
+  const key = { l: false, r: false, fly: false, down: false, shoot: false };
   let paused = false, finished = false;
   const hold = (id, k) => { const b = document.getElementById(id);
     const on = (e) => { e.preventDefault(); key[k] = true; b.classList.add('on'); if (k === 'shoot') shoot(); }, off = (e) => { e.preventDefault(); key[k] = false; b.classList.remove('on'); };
     b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('pointerleave', off); };
-  hold('bl', 'l'); hold('br', 'r'); hold('bf', 'fly'); hold('bs', 'shoot');
-  addEventListener('keydown', (e) => { if (e.repeat) return; if (e.key === 'ArrowLeft') key.l = true; if (e.key === 'ArrowRight') key.r = true; if (e.key === ' ' || e.key === 'ArrowUp') key.fly = true; if (e.key === 'x' || e.key === 'Enter') shoot(); });
-  addEventListener('keyup', (e) => { if (e.key === 'ArrowLeft') key.l = false; if (e.key === 'ArrowRight') key.r = false; if (e.key === ' ' || e.key === 'ArrowUp') key.fly = false; });
+  hold('bs', 'shoot');
+  // ----- joystick flottant : il apparaît là où le pouce se pose (moitié gauche), suit le doigt et disparaît quand on lâche -----
+  // haut = voler, bas = redescendre vite, côtés = marcher / avancer ; grande zone morte au centre pour les petits pouces
+  const zone = $('#stickzone'), stick = $('#stick'), knob = $('#sknob'), arrowEl = $('#sarrow');
+  let sid = null, sx0 = 0, sy0 = 0;
+  const restStick = () => { stick.classList.add('idle'); stick.style.left = (Math.max(110, innerWidth * .14)) + 'px'; stick.style.top = (innerHeight - Math.max(110, innerHeight * .2)) + 'px'; knob.style.transform = ''; arrowEl.style.opacity = 0; };
+  restStick(); addEventListener('resize', () => { if (sid === null) restStick(); });
+  function stickMove(x, y) {
+    const R = stick.offsetWidth * .5, dx = x - sx0, dy = y - sy0, d = Math.hypot(dx, dy), k = Math.min(1, d / R);
+    const nx = d ? dx / d * k : 0, ny = d ? dy / d * k : 0;
+    knob.style.transform = `translate(${nx * R * .62}px, ${ny * R * .62}px)`;
+    const dead = .26;
+    key.l = nx < -dead; key.r = nx > dead; key.fly = ny < -dead * 1.2; key.down = ny > .45;
+    if (k > dead) { arrowEl.style.opacity = 1; arrowEl.style.transform = `rotate(${Math.atan2(dx, -dy)}rad) translateY(${-R * .78}px)`; } else arrowEl.style.opacity = 0;
+  }
+  zone.addEventListener('pointerdown', (e) => { if (sid !== null) return; e.preventDefault(); sid = e.pointerId; zone.setPointerCapture(sid); sx0 = e.clientX; sy0 = e.clientY;
+    stick.classList.remove('idle'); stick.style.left = sx0 + 'px'; stick.style.top = sy0 + 'px'; stickMove(sx0, sy0); });
+  zone.addEventListener('pointermove', (e) => { if (e.pointerId !== sid) return; e.preventDefault();
+    // si le doigt part loin, le joystick le suit (il ne « décroche » jamais)
+    const R = stick.offsetWidth * .5, dx = e.clientX - sx0, dy = e.clientY - sy0, d = Math.hypot(dx, dy);
+    if (d > R * 1.15) { sx0 = e.clientX - dx / d * R * 1.15; sy0 = e.clientY - dy / d * R * 1.15; stick.style.left = sx0 + 'px'; stick.style.top = sy0 + 'px'; }
+    stickMove(e.clientX, e.clientY); });
+  const stickUp = (e) => { if (e.pointerId !== sid) return; sid = null; key.l = key.r = key.fly = key.down = false; restStick(); };
+  zone.addEventListener('pointerup', stickUp); zone.addEventListener('pointercancel', stickUp);
+  addEventListener('keydown', (e) => { if (e.repeat) return; if (e.key === 'ArrowDown') key.down = true; if (e.key === 'ArrowLeft') key.l = true; if (e.key === 'ArrowRight') key.r = true; if (e.key === ' ' || e.key === 'ArrowUp') key.fly = true; if (e.key === 'x' || e.key === 'Enter') shoot(); });
+  addEventListener('keyup', (e) => { if (e.key === 'ArrowDown') key.down = false; if (e.key === 'ArrowLeft') key.l = false; if (e.key === 'ArrowRight') key.r = false; if (e.key === ' ' || e.key === 'ArrowUp') key.fly = false; });
   $('#quit').onclick = () => { location.href = 'index.html'; };
   $('#home').onclick = () => { location.href = 'index.html'; };
   $('#again').onclick = () => { location.reload(); };
@@ -238,7 +271,7 @@
       else rose.base = sf;
       if (key.fly && !a && rose.mode === 'ground') { if (Math.abs(rose.vx) > 60) play('up', 'air', { vx0: rose.vx }); else play('lift', 'air'); rose.walking = false; }
     } else if (rose.mode === 'air') {
-      const ty = key.fly ? RISE : -SINK;
+      const ty = key.fly ? RISE : key.down ? -SINK * 1.8 : -SINK;
       rose.vy += Math.max(-1300 * dt, Math.min(1300 * dt, ty - rose.vy));
       const target = dir * FLY;
       rose.vx += Math.max(-FLY_ACC * dt, Math.min(FLY_ACC * dt, target - rose.vx));
@@ -333,7 +366,7 @@
   // ================= devinettes =================
   let qIndex = 0, curBox = null;
   function openQuiz(b) {
-    curBox = b; b.done = true; paused = true; key.l = key.r = key.fly = false; document.querySelectorAll('.b').forEach(x => x.classList.remove('on'));
+    curBox = b; b.done = true; paused = true; key.l = key.r = key.fly = key.down = false; if (typeof restStick === 'function') { sid = null; restStick(); } document.querySelectorAll('.b').forEach(x => x.classList.remove('on'));
     const r = RIDDLES[quizPick[qIndex++ % quizPick.length]];
     const order = [0, 1, 2].sort(() => Math.random() - .5);
     $('#qtext').textContent = r.q;
