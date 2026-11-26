@@ -19,8 +19,12 @@
 
   // ================= voix et sons =================
   let voiceOn = 'speechSynthesis' in window, speaking = 0;
+  // la voix parle au JOUEUR : « Bravo Rose ! » devient « Bravo Léa ! » (prénom donné par le parent), ou « Bravo ! » sans prénom
+  const KID = (() => { try { const s = JSON.parse(localStorage.getItem('mini-mission-v1') || '{}'); return String(s.childNameSay || s.childName || '').trim(); } catch (e) { return ''; } })();
+  const toKid = (t) => String(t).replace(/(?<!avec)(,)?\s+Rose(\s*!)/g, (m, c, end) => KID ? (c || '') + ' ' + KID + end : end);
   function say(text, important = true) {
     if (!voiceOn) return;
+    text = toKid(text);
     if (!important && performance.now() < speaking) return;
     try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'fr-FR'; u.rate = .95; u.pitch = 1.08;
       const v = speechSynthesis.getVoices().find(v => /^fr/i.test(v.lang)); if (v) u.voice = v; speechSynthesis.speak(u); speaking = performance.now() + 1200 + text.length * 70; } catch {}
