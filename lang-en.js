@@ -17,7 +17,7 @@
       album1: 'My', album2: 'album', aStickerDetail: 'Sticker details', aClose: 'Close', aListen: 'Listen',
       aGame: 'Mission in progress', aCanvas: '2D platform game', pause: 'Pause', aStars: 'Stars collected', aFriends: 'Monsters caught out of 20', aLetters: 'Letters collected',
       aProgress: 'Progress', aMute: 'Sound off', aUnmute: 'Sound on', aLR: 'Go left or right', aLeft: 'Go left', aRight: 'Go right',
-      aAction: 'Action: use the hero’s power and turn a prankster into a friend', aShoot: 'Shoot at the little monsters', aJump: 'Jump', newBadge: 'NEW',
+      aAction: 'Action: use the hero’s power and turn a prankster into a friend', aShoot: 'Shoot at the little monsters', aJump: 'Jump', aBubbles: 'Blow bubbles', aStick: 'Joystick: slide your thumb to walk and fly', newBadge: 'NEW',
       peekLeft: 'Still {parts} to find!', peekAll: 'You found them all, well done!', aPeek: 'What you have found so far', aLeftToFind: 'What you still have to find', resume: 'Continue', restart: 'Start over', stats: 'Stats', quit: 'Leave the mission',
       aStatsScreen: 'Mission stats', aBackPause: 'Back to pause', statStars: '⭐ stars', statFriends: '♥ friends', statLetters: '🔤 letters', statStickers: '🏅 stickers', statPuzzles: '❓ puzzles',
       aPuzzle: 'Choose how to help', aQuit: 'Leave', aListenQ: 'Listen to the question', aListenInstr: 'Listen to the instructions', question: 'Question', super: 'Great!',

@@ -55,17 +55,17 @@
 <body>
 <canvas id="c"></canvas>
 <div class="hud">
-  <button class="close" id="quit" aria-label="Retour">✕</button>
+  <button class="close" id="quit" aria-label="Quitter" data-i18n-aria="aQuit">✕</button>
   <span class="chip" id="cStars">⭐ 0</span>
   <span class="chip" id="cLetters">🔤 0</span>
   <span class="chip" id="cFriends">💛 0</span>
   <span class="sp"></span>
   <span class="chip" id="wchip"></span>
 </div>
-<div id="stickzone" aria-label="Joystick : glisser le pouce pour marcher et voler"></div>
+<div id="stickzone" aria-label="Joystick : glisse le pouce pour marcher et voler" data-i18n-aria="aStick"></div>
 <div id="stick" class="stick idle"><div class="ring"></div><div class="arrow" id="sarrow"></div><div class="knob" id="sknob">🚀</div></div>
-<div class="pad r"><button class="b shoot big-shoot" id="bs" aria-label="Bulles">🫧</button></div>
-<div class="ov" id="quiz"><div class="card"><div class="row" style="margin:0 0 6px"><button class="say" id="qsay" aria-label="Écouter">🔊</button></div><div class="q" id="qtext"></div><div class="opts" id="qopts"></div></div></div>
+<div class="pad r"><button class="b shoot big-shoot" id="bs" aria-label="Lancer des bulles" data-i18n-aria="aBubbles">🫧</button></div>
+<div class="ov" id="quiz"><div class="card"><div class="row" style="margin:0 0 6px"><button class="say" id="qsay" aria-label="Écouter la question" data-i18n-aria="aListenQ">🔊</button></div><div class="q" id="qtext"></div><div class="opts" id="qopts"></div></div></div>
 <div class="ov" id="end"><div class="card"><p class="title">Bravo, Rose !</p><div class="stats" id="estats"></div><div class="row"><button class="big alt" id="again">↻ Rejouer</button><button class="big" id="home">🏠</button><button class="big alt" id="next" aria-label="La Lune">🌙</button></div></div></div>
 <script src="story.js"></script>
 <script src="book-art.js"></script>

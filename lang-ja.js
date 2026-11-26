@@ -18,7 +18,7 @@
       album1: 'シール', album2: 'アルバム', aStickerDetail: 'シールの せつめい', aClose: 'とじる', aListen: 'きく',
       aGame: 'ミッション ちゅう', aCanvas: '2D アクションゲーム', pause: 'ポーズ', aStars: 'あつめた ほし', aFriends: 'つかまえた モンスター（20ぴき ちゅう）', aLetters: 'あつめた もじ',
       aProgress: 'しんちょく', aMute: 'おとを けす', aUnmute: 'おとを だす', aLR: 'ひだりか みぎに いく', aLeft: 'ひだりへ', aRight: 'みぎへ',
-      aAction: 'アクション：ヒーローの ちからで いたずらっこを ともだちに する', aShoot: 'ちいさな モンスターに うつ', aJump: 'ジャンプ', newBadge: 'NEW',
+      aAction: 'アクション：ヒーローの ちからで いたずらっこを ともだちに する', aShoot: 'ちいさな モンスターに うつ', aJump: 'ジャンプ', aBubbles: 'シャボンだまを とばす', aStick: 'ジョイスティック：ゆびを すべらせて あるいたり とんだり', newBadge: 'NEW',
       peekLeft: 'あと {parts} だよ。さがしてみよう！', peekAll: 'ぜんぶ みつけたね！ すごい！', aPeek: 'みつけたもの', aLeftToFind: 'まだ みつけていない もの', resume: 'つづける', restart: 'さいしょから', stats: 'きろく', quit: 'ミッションを やめる',
       aStatsScreen: 'ミッションの きろく', aBackPause: 'ポーズに もどる', statStars: '⭐ ほし', statFriends: '♥ ともだち', statLetters: '🔤 もじ', statStickers: '🏅 シール', statPuzzles: '❓ なぞなぞ',
       aPuzzle: 'どう たすけるか えらぶ', aQuit: 'やめる', aListenQ: 'しつもんを きく', aListenInstr: 'せつめいを きく', question: 'しつもん', super: 'やったね！',

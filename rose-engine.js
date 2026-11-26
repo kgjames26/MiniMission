@@ -7,6 +7,7 @@
   // ================= langue : textes du monde, devinettes et phrases de la voix (story-xx.js) =================
   const LANG = (MM.i18n && MM.i18n.lang) || 'fr', LX = (MM.STORY_L10N || {})[LANG] || null;
   const TTS = (MM.i18n && MM.i18n.info && MM.i18n.info().tts) || 'fr-FR';
+  try { if (MM.i18n && MM.i18n.applyDom) MM.i18n.applyDom(); document.documentElement.lang = LANG; } catch (e) {}
   { const lw = LX && LX.worlds && LX.worlds[WID];
     if (lw) { for (const k of ['name', 'chip', 'on', 'intro', 'outroAll']) if (lw[k]) WD[k] = lw[k];
       (lw.riddles || []).forEach((r, i) => { const R = WD.riddles[i]; if (!R || !r) return; R.q = r[0]; r[1].forEach((o, k) => { if (R.o[k]) R.o[k] = [R.o[k][0], o]; }); R.fact = r[2]; }); } }
@@ -249,7 +250,7 @@
   const BACK = WD.boss ? 'index.html#chapters' : 'index.html#space';   // le grand final revient aux chapitres, les planètes à la carte
   $('#quit').onclick = () => { location.href = BACK; };
   $('#home').onclick = () => { location.href = BACK; };
-  if (WD.next) { $('#next').textContent = WD.nextIcon + ' ➜'; $('#next').onclick = () => { location.href = 'rose-world.html?w=' + WD.next; }; } else $('#next').style.display = 'none';
+  if (WD.next) { $('#next').textContent = WD.nextIcon + ' ➜'; { const nw = (LX && LX.worlds && LX.worlds[WD.next]) || (MM.ROSE_WORLDS || {})[WD.next]; if (nw && nw.name) $('#next').setAttribute('aria-label', nw.name); } $('#next').onclick = () => { location.href = 'rose-world.html?w=' + WD.next; }; } else $('#next').style.display = 'none';
   $('#again').onclick = () => { location.reload(); }; $('#again').textContent = EN.replay;
 
   function shoot() {

@@ -38,7 +38,7 @@
       album1: 'Mon', album2: 'album', aStickerDetail: 'Détail de l’autocollant', aClose: 'Fermer', aListen: 'Écouter',
       aGame: 'Mission en cours', aCanvas: 'Jeu de plateforme 2D', pause: 'Pause', aStars: 'Étoiles ramassées', aFriends: 'Monstres capturés sur 20', aLetters: 'Lettres de l’alphabet récoltées',
       aProgress: 'Progression', aMute: 'Couper les sons', aUnmute: 'Activer les sons', aLR: 'Aller à gauche ou à droite', aLeft: 'Aller à gauche', aRight: 'Aller à droite',
-      aAction: 'Action : utiliser le pouvoir du héros et transformer un farceur en ami', aShoot: 'Tirer sur les petits monstres', aJump: 'Sauter', newBadge: 'NOUVEAU',
+      aAction: 'Action : utiliser le pouvoir du héros et transformer un farceur en ami', aShoot: 'Tirer sur les petits monstres', aJump: 'Sauter', aBubbles: 'Lancer des bulles', aStick: 'Joystick : glisse le pouce pour marcher et voler', newBadge: 'NOUVEAU',
       peekLeft: 'Encore {parts} à trouver !', peekAll: 'Tu as tout trouvé, bravo !', aPeek: 'Ce que tu as déjà trouvé', aLeftToFind: 'Ce qu’il te reste à trouver', resume: 'Reprendre', restart: 'Recommencer', stats: 'Statistiques', quit: 'Quitter la mission',
       aStatsScreen: 'Statistiques de la mission', aBackPause: 'Retour à la pause', statStars: '⭐ étoiles', statFriends: '♥ amis', statLetters: '🔤 lettres', statStickers: '🏅 autocollants', statPuzzles: '❓ énigmes',
       aPuzzle: 'Choisir comment aider', aQuit: 'Quitter', aListenQ: 'Écouter la question', aListenInstr: 'Écouter la consigne', question: 'Question', super: 'Super !',
