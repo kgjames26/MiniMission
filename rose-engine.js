@@ -14,6 +14,7 @@
   const EN = { freed: ['Libéré !', 'Merci Rose !', 'Youpi !', 'Un ami de plus !'], partial: 'Bravo Rose ! Tu as libéré {n} amis. Les autres attendent encore sur {on} !', again: 'Essaie encore !',
     robot: 'Bip bip ! Le petit robot se réveille !', heli: 'Le petit hélicoptère s’envole avec toi !', bossStart: 'Voilà Capitaine Farfouille dans sa soucoupe ! Envoie-lui des bulles !',
     boss: ['Hé hé ! Tu ne m’attraperas pas !', 'Oh ! Encore une bulle ?', 'Non, non, non !'], bossPop: 'Pop ! Capitaine Farfouille est dans une bulle !', endN: 'Bravo, {name} !', end: 'Bravo !', replay: '↻ Rejouer',
+    hintGo: 'Par ici, {name} ! Avance tout droit !', hintCage: 'Un ami attend dans la cage ! Envoie-lui une bulle !', hintAlien: 'Envoie des bulles au farceur !',
     partyN: 'Bravo {name} ! Grâce à toi, tout le monde est ami ! C’est la fête !', party: 'Bravo ! Grâce à toi, tout le monde est ami ! C’est la fête !', dipTitle: 'Diplôme de super-héros', dipLine: 'a sauvé la Terre avec Rose, Ziggy, Filou et Titan', dipLineAnon: 'Tu as sauvé la Terre avec Rose, Ziggy, Filou et Titan', dipSay: 'Voici ton diplôme de super-héros !',
     ...((LX && LX.engine) || {}) };
   document.title = 'Mini Mission · Rose · ' + WD.name; $('#wchip').textContent = WD.chip;
@@ -858,6 +859,30 @@
     } else fadeFrom = null;
   }
 
+  // ================= petits indices à la voix (si l'enfant ne sait plus où aller) =================
+  const hint = { best: 0, idle: 0, n: 0, show: 0, tx: 0, ty: 0, gotSum: 0 };
+  function updateHint(dt) {
+    if (finished || (boss && boss.state === 'fight')) { hint.idle = 0; return; }
+    const sum = got.friends + got.aliens + got.stars + got.letters;
+    if (rose.x > hint.best + 80 || sum !== hint.gotSum) { hint.best = Math.max(hint.best, rose.x); hint.gotSum = sum; hint.idle = 0; hint.n = 0; }
+    hint.show = Math.max(0, hint.show - dt); hint.idle += dt;
+    if (hint.idle < (hint.n ? 18 : 13) || hint.n >= 4) return;
+    hint.idle = 0; hint.n++; hint.show = 4.5; hint.go = false;
+    const cage = cages.filter(c => !c.open && Math.abs(c.x - rose.x) < 650).sort((a, b) => Math.abs(a.x - rose.x) - Math.abs(b.x - rose.x))[0];
+    const al = aliens.filter(a => a.state === 'farceur' && Math.abs(a.x - rose.x) < 700).sort((a, b) => Math.abs(a.x - rose.x) - Math.abs(b.x - rose.x))[0];
+    if (cage) { hint.tx = cage.x; hint.ty = cage.y + 230; say(EN.hintCage, true); }
+    else if (al) { hint.tx = al.x; hint.ty = (al.y || 0) + 260; say(EN.hintAlien, true); }
+    else { hint.go = true; hint.tx = rose.x + 420; hint.ty = (rose.mode === 'air' ? rose.y : rose.base) + 150; say(EN.hintGo, true); }
+  }
+  function drawHint(time) {
+    if (hint.show <= 0) return; const x = SX(hint.tx), y = SY(hint.ty) + Math.sin(time * 8) * 10 * zoom, s = zoom * 1.1, a = Math.min(1, hint.show * 2);
+    ctx.save(); ctx.globalAlpha = a; ctx.translate(Math.max(40, Math.min(W - 40, x)), Math.max(60, y));
+    if (hint.go || x > W - 40) ctx.rotate(-Math.PI / 2);                  // la cible est plus loin à droite : la flèche pointe vers la droite
+    ctx.fillStyle = '#ffd53d'; ctx.strokeStyle = '#a66a00'; ctx.lineWidth = 5 * s; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(-22 * s, -60 * s); ctx.lineTo(22 * s, -60 * s); ctx.lineTo(22 * s, -22 * s); ctx.lineTo(44 * s, -22 * s); ctx.lineTo(0, 18 * s); ctx.lineTo(-44 * s, -22 * s); ctx.lineTo(-22 * s, -22 * s); ctx.closePath(); ctx.stroke(); ctx.fill();
+    ctx.restore();
+  }
+
   // ================= boucle =================
   let last = performance.now(), started = false;
   function loop(now) {
@@ -867,7 +892,7 @@
       if (!started) { started = true; paused = true; MM.say = (t) => say(t, true); MM.hush = () => { try { speechSynthesis.cancel(); } catch (e) {} };
         const go = () => { paused = false; last = performance.now(); say(WD.intro); };
         if (MM.book && !MM.book.seen(WID + '_a')) MM.book.open(WID + '_a', { onDone: go }); else go(); }
-      if (!paused) { update(dt); fadeT += dt; }
+      if (!paused) { update(dt); updateHint(dt); fadeT += dt; }
       const look = rose.face * 120;
       camX += ((rose.x + look - (W * .4) / zoom) - camX) * Math.min(1, dt * 3.5); camX = Math.max(0, Math.min(L - W / zoom, camX));
       const hy = rose.mode === 'air' ? rose.y : rose.base, ty = Math.max(0, Math.min(CEIL - (GY / zoom) + 60, hy + 230 - GY / zoom * .82));
@@ -875,7 +900,7 @@
       const time = now / 1000;
       drawBg(time); drawGround(time); drawDevils(time); drawRover(time); drawSolids(time); drawItems(time);
       cages.forEach(c => drawCage(c, time)); aliens.forEach(a => drawAlien(a, time)); friends.forEach(f => drawFriend(f, time)); drawSparks();
-      drawHelpers(); drawBoss(time); drawRose(); drawHeli(time); drawShots();
+      drawHelpers(); drawBoss(time); drawRose(); drawHeli(time); drawShots(); drawHint(time);
     } else { ctx.fillStyle = WD.theme; ctx.fillRect(0, 0, W, H); }
     requestAnimationFrame(loop);
   }
