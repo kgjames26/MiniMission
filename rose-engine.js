@@ -14,6 +14,7 @@
   const EN = { freed: ['Libéré !', 'Merci Rose !', 'Youpi !', 'Un ami de plus !'], partial: 'Bravo Rose ! Tu as libéré {n} amis. Les autres attendent encore sur {on} !', again: 'Essaie encore !',
     robot: 'Bip bip ! Le petit robot se réveille !', heli: 'Le petit hélicoptère s’envole avec toi !', bossStart: 'Voilà Capitaine Farfouille dans sa soucoupe ! Envoie-lui des bulles !',
     boss: ['Hé hé ! Tu ne m’attraperas pas !', 'Oh ! Encore une bulle ?', 'Non, non, non !'], bossPop: 'Pop ! Capitaine Farfouille est dans une bulle !', endN: 'Bravo, {name} !', end: 'Bravo !', replay: '↻ Rejouer',
+    partyN: 'Bravo {name} ! Grâce à toi, tout le monde est ami ! C’est la fête !', party: 'Bravo ! Grâce à toi, tout le monde est ami ! C’est la fête !', dipTitle: 'Diplôme de super-héros', dipLine: 'a sauvé la Terre avec Rose, Ziggy, Filou et Titan', dipLineAnon: 'Tu as sauvé la Terre avec Rose, Ziggy, Filou et Titan', dipSay: 'Voici ton diplôme de super-héros !',
     ...((LX && LX.engine) || {}) };
   document.title = 'Mini Mission · Rose · ' + WD.name; $('#wchip').textContent = WD.chip;
   document.querySelector('meta[name=theme-color]').setAttribute('content', WD.theme); document.body.style.background = WD.theme;
@@ -528,10 +529,73 @@
     say(WD.boss || got.friends >= 20 ? WD.outroAll : EN.partial.replace('{n}', got.friends).replace('{on}', WD.on));
     setTimeout(() => MM.book && !MM.book.seen(WID + '_c') ? MM.book.open(WID + '_c', { onDone: showEnd }) : showEnd(), 3200);
     function showEnd() {
+      if (WD.boss) { showParty(); return; }   // le grand final : une vraie fête, puis le diplôme
       $('#end .title').textContent = KID ? EN.endN.replace('{name}', KID) : EN.end;   // on félicite le joueur, pas le personnage
       $('#estats').innerHTML = `<span>⭐ ${got.stars}/${stars.length}</span><span>🔤 ${got.letters}/${letters.length}</span>` + (WD.noCages ? '' : `<span>💛 ${got.friends}/${cages.length}</span>`) + `<span>🫧 ${got.aliens}</span>`;
       $('#end').classList.add('show');
     }
+  }
+
+  // ================= la fête de fin (grand final) =================
+  function showParty() {
+    const ov = document.createElement('div'); ov.id = 'party';
+    ov.innerHTML = `<canvas></canvas><div class="pbar"><button class="pbtn" data-a="dip" aria-label="${EN.dipTitle}">📜</button><button class="pbtn" data-a="home" aria-label="🏠">🏠</button><button class="pbtn alt" data-a="again" aria-label="↻">↻</button></div>`;
+    document.body.appendChild(ov);
+    const cv2 = ov.querySelector('canvas'), c = cv2.getContext('2d'); let PW = 0, PH = 0, run = true, t0 = performance.now();
+    const fit = () => { const d = Math.min(2, devicePixelRatio || 1); PW = innerWidth; PH = innerHeight; cv2.width = PW * d; cv2.height = PH * d; c.setTransform(d, 0, 0, d, 0, 0); }; fit(); addEventListener('resize', fit);
+    const conf = Array.from({ length: 90 }, () => ({ x: Math.random(), y: Math.random(), v: .05 + Math.random() * .1, r: Math.random() * 6, s: 5 + Math.random() * 6, h: Math.floor(Math.random() * 360) }));
+    const mons = [0, 3, 7, 11, 15, 19, 24, 28, 33, 38].filter(i => i < 45);
+    const ALI = ['glouglou_ami', 'boing_ami', 'zap_ami', 'zigzag_ami', 'bidou_ami'];
+    const HJ = { ziggy: 'ziggy_j', filou: 'filou_j', titan: 'titan_j' };
+    const nf = (pre) => S2 ? Object.keys(S2).filter(k => k.startsWith(pre)).sort((a, b) => parseInt(a.slice(pre.length)) - parseInt(b.slice(pre.length))) : [];
+    const jumps = {}; const RW = RF ? Object.keys(RF).filter(k => k.startsWith('rose_win')).sort((a, b) => parseInt(a.slice(8)) - parseInt(b.slice(8))) : [];
+    say(KID ? EN.partyN.replace('{name}', KID) : EN.party); sfx.good(); setTimeout(() => sfx.friend(), 500);
+    function frame(now) {
+      if (!run) return; const t = (now - t0) / 1000; requestAnimationFrame(frame);
+      const g = c.createLinearGradient(0, 0, 0, PH); g.addColorStop(0, '#3b2a8f'); g.addColorStop(.55, '#b45ad8'); g.addColorStop(1, '#ffb27a'); c.fillStyle = g; c.fillRect(0, 0, PW, PH);
+      for (let i = 0; i < 40; i++) { const x = (i * 97.3) % PW, y = (i * 53.7) % (PH * .45), tw = .4 + .6 * Math.abs(Math.sin(t * 2 + i)); c.globalAlpha = tw; c.fillStyle = '#fff'; c.beginPath(); c.arc(x, y, 1.6, 0, 7); c.fill(); } c.globalAlpha = 1;
+      // guirlandes de fanions
+      for (let row = 0; row < 2; row++) { const y0 = PH * (.08 + row * .09), sag = PH * .06, n = Math.ceil(PW / 46); c.strokeStyle = '#fff6'; c.lineWidth = 2; c.beginPath();
+        for (let i = 0; i <= n; i++) { const x = i * PW / n, y = y0 + Math.sin(i / n * Math.PI) * sag; i ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke();
+        for (let i = 0; i < n; i++) { const x = (i + .5) * PW / n, y = y0 + Math.sin((i + .5) / n * Math.PI) * sag, sw = Math.sin(t * 3 + i + row) * .15; c.save(); c.translate(x, y); c.rotate(sw); c.fillStyle = `hsl(${(i * 47 + row * 90) % 360} 85% 62%)`; c.beginPath(); c.moveTo(-13, 0); c.lineTo(13, 0); c.lineTo(0, 24); c.closePath(); c.fill(); c.restore(); } }
+      // sol
+      const gy = PH * .86; c.fillStyle = '#7ad36b'; c.fillRect(0, gy, PW, PH - gy); c.fillStyle = '#5cb84f'; c.fillRect(0, gy, PW, 6);
+      const u = Math.min(PH / 600, PW / (PH > PW ? 560 : 900));           // échelle (plus grand en portrait)
+      // rangée du fond : les farceurs devenus gentils
+      if (AF && alienImg.complete) ALI.forEach((n, i) => { const f = AF[n]; if (!f) return; const x = PW * (.12 + i * .19), hop = Math.abs(Math.sin(t * 3 + i * 1.3)) * 30 * u, k = .55 * u * (TSCALE[n.split('_')[0]] || 1);
+        c.save(); c.translate(x, gy - PH * .2 - hop); c.rotate(Math.sin(t * 3 + i) * .12); c.scale((i % 2 ? -1 : 1) * k, k); c.drawImage(alienImg, f.x, f.y, f.w, f.h, -f.w / 2, -f.h, f.w, f.h); c.restore(); });
+      // les petits monstres
+      if (monImg.complete) mons.forEach((m, i) => { const x = PW * (.05 + i * .1), hop = Math.abs(Math.sin(t * 4 + i * .8)) * 24 * u, k = .3 * u; c.save(); c.translate(x, gy - 40 * u - hop); c.scale((i % 2 ? -1 : 1) * k, k); c.drawImage(monImg, (m % 5) * 400, Math.floor(m / 5) * 264, 400, 264, -200, -258, 400, 264); c.restore(); });
+      // Capitaine Farfouille, tout content, au milieu
+      if (farfImg.complete) { const f = FARF.happy, x = PW * .5, y = gy - PH * .34 + Math.sin(t * 2) * 10 * u, k = .55 * u;
+        c.fillStyle = 'rgba(160,220,255,.35)'; c.beginPath(); c.ellipse(x, y - 95 * u, 80 * u, 92 * u, 0, Math.PI, 0); c.fill(); c.fillStyle = '#9aa3c7'; c.beginPath(); c.ellipse(x, y - 8 * u, 150 * u, 30 * u, 0, 0, 7); c.fill(); c.fillStyle = '#c9d0ec'; c.beginPath(); c.ellipse(x, y - 16 * u, 130 * u, 20 * u, 0, 0, 7); c.fill();
+        for (let i = 0; i < 7; i++) { c.fillStyle = Math.floor(t * 4 + i) % 2 ? '#ffe36b' : '#7ef0ff'; c.beginPath(); c.arc(x + (i - 3) * 38 * u, y - 4 * u, 6 * u, 0, 7); c.fill(); }
+        c.save(); c.translate(x, y - 22 * u); c.rotate(Math.sin(t * 2.5) * .08); c.scale(k, k); c.drawImage(farfImg, f.x, 0, f.w, 300, -f.w / 2, -300, f.w, 300); c.restore(); }
+      // au premier rang : Ziggy, Filou, Rose, Titan qui sautent de joie
+      const front = [['ziggy', .2], ['filou', .36], ['rose', .64], ['titan', .8]];
+      front.forEach(([n, fx], i) => { const x = PW * fx, ph = (t * 1.3 + i * .25) % 1, hop = Math.sin(Math.min(1, ph * 1.6) * Math.PI) * 60 * u;
+        c.fillStyle = 'rgba(30,25,70,.25)'; c.beginPath(); c.ellipse(x, gy + 4, 50 * u * (1 - hop / (120 * u)), 10 * u, 0, 0, 7); c.fill();
+        if (n === 'rose') { if (!RF || !roseImg.complete || !RW.length) return; const q = RF[RW[Math.floor(t * 12) % RW.length]], k = .8 * u; c.save(); c.translate(x, gy - hop * .5); c.scale(-k, k); c.drawImage(roseImg, q.x, q.y, q.w, q.h, -q.ax, -q.ay, q.w, q.h); c.restore(); return; }
+        if (!S2 || !s2Img.complete) return; const L = jumps[n] || (jumps[n] = nf(HJ[n])); const q = S2[L.length ? L[Math.min(L.length - 1, Math.floor(ph * L.length))] : HSPR[n][0]]; if (!q) return;
+        const k = .62 * u; c.save(); c.translate(x, gy - hop); c.scale((fx < .5 ? 1 : -1) * k, k); c.drawImage(s2Img, q.x, q.y, q.w, q.h, -q.ax, -q.ay, q.w, q.h); c.restore(); });
+      // confettis
+      for (const p of conf) { p.y += p.v * .016 * 3; if (p.y > 1.05) { p.y = -.05; p.x = Math.random(); } p.r += .05; const x = p.x * PW + Math.sin(t * 2 + p.r) * 12, y = p.y * PH;
+        c.save(); c.translate(x, y); c.rotate(p.r); c.fillStyle = `hsl(${p.h} 90% 62%)`; c.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); c.restore(); }
+      if (Math.floor(t * 1.2) !== Math.floor((t - .016) * 1.2) && t < 20) sfx.star();
+    }
+    requestAnimationFrame(frame);
+    ov.querySelector('.pbar').addEventListener('click', (e) => { const b = e.target.closest('.pbtn'); if (!b) return; const a = b.dataset.a;
+      if (a === 'home') { run = false; location.href = BACK; } else if (a === 'again') { run = false; location.reload(); } else showDiploma(); });
+  }
+  function showDiploma() {
+    let d = document.getElementById('diploma'); if (d) { d.classList.add('show'); return; }
+    d = document.createElement('div'); d.id = 'diploma'; d.className = 'show';
+    const loc = LANG === 'fr' ? 'fr-BE' : LANG, date = new Date().toLocaleDateString(loc, { day: 'numeric', month: 'long', year: 'numeric' });
+    d.innerHTML = `<div class="dcard"><div class="dstar">🏅</div><h1>${EN.dipTitle}</h1>${KID ? `<p class="dname">${KID.replace(/[<>&]/g, '')}</p><p class="dline">${EN.dipLine}</p>` : `<p class="dline">${EN.dipLineAnon}</p>`}
+      <div class="dheroes" aria-hidden="true"><span>🦸</span><span>🧑‍🚀</span><span>💛</span><span>🫧</span><span>🛸</span></div><p class="ddate">${date}</p>
+      <div class="dbar"><button class="pbtn" data-a="print" aria-label="🖨️">🖨️</button><button class="pbtn alt" data-a="close" aria-label="✕">✕</button></div></div>`;
+    document.body.appendChild(d); say(EN.dipSay); sfx.good();
+    d.querySelector('.dbar').addEventListener('click', (e) => { const b = e.target.closest('.pbtn'); if (!b) return; if (b.dataset.a === 'print') { try { window.print(); } catch (er) {} } else d.classList.remove('show'); });
   }
 
   // ================= dessin =================
@@ -817,5 +881,5 @@
   }
   requestAnimationFrame(loop);
   $('#cStars').textContent = '⭐ 0'; $('#cLetters').textContent = '🔤 0'; $('#cFriends').textContent = WD.noCages ? '🫧 0/' + (aliens.length + (boss ? 1 : 0)) : '💛 0/20';
-  window.__rose = { WID, helpers, get boss() { return boss; }, rover, heli, devils, rose, aliens, cages, boxes, stars, letters, friends, key, got, solids, get paused() { return paused; } };
+  window.__rose = { party: () => showParty(), WID, helpers, get boss() { return boss; }, rover, heli, devils, rose, aliens, cages, boxes, stars, letters, friends, key, got, solids, get paused() { return paused; } };
 })();
