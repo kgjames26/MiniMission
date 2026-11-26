@@ -21,7 +21,7 @@
   const MOVES = { cellW: 617, cellH: 421, foot: 376, scale: .48, rows: { titan: 0, ziggy: 1, filou: 2 }, hands: { filou: [[421.8, 230.3], [380.4, 290.1], [313.3, 188.1], [307.8, 242.3]] } };
   // monstres : [hauteur dans le monde, largeur/hauteur, hauteur du sprite dans sa case] ; 0-4 méchants, 5-9 gentils
   // assets/monsters.webp : cases de 400×264, 5 par ligne. [hauteur dans le jeu, largeur/hauteur, hauteur du dessin dans la case]
-  const MON = [[66, 1.246, 252], [62, 1.044, 252], [72, 2.098, 183], [140, 1.111, 252], [104, .734, 252], [66, 1.056, 252], [62, 1.02, 252], [74, 1.032, 252], [135, 1.242, 252], [104, .841, 252],
+  const MON = [[66, 1.246, 252], [62, 1.044, 252], [72, 2.098, 183], [180, 1.111, 252], [104, .734, 252], [66, 1.056, 252], [62, 1.02, 252], [74, 1.032, 252], [165, 1.242, 252], [104, .841, 252],
     [64, 1.307, 254], [64, 1.224, 254], [68, 1.031, 254], [68, 1, 254], [62, 1.075, 254], [64, 1.031, 254], [58, 1.165, 254], [60, 1.173, 254], [64, 1.22, 254], [62, 1.413, 254],
     [72, 1.252, 254], [72, 1.177, 254], [92, .819, 254], [92, .878, 254], [60, .976, 254], [62, .969, 254], [100, .642, 254], [100, .866, 254], [46, 1.496, 254], [66, 1.11, 254],
     [58, 1.071, 254], [58, 1.094, 254]];
@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '57', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '58', asset = (p) => `${p}?v=${ASSET_V}`;
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
   const monsterImg = new Image(); monsterImg.src = asset('assets/monsters.webp');
   const movesImg = new Image(); movesImg.src = asset('assets/hero-moves.webp');
@@ -1842,6 +1842,24 @@
   }
   function initMonsters(level, rnd) {
     const calmDeck = CALM.map((_, i) => i); for (let i = calmDeck.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [calmDeck[i], calmDeck[j]] = [calmDeck[j], calmDeck[i]]; }
+    // le gros golem va là où il ne gêne pas : au sol, loin des trous, sans plateforme basse au-dessus, loin des autres monstres
+    {
+      const fb = [200, ...(level.stations || []).map(x => x - 330), level.width - 900], flagSpots = [...fb];
+      for (let i = 1; i < fb.length; i++) flagSpots.push((fb[i - 1] + fb[i]) / 2);
+      const roomy = (m) => {
+        if (m.id % 4 === 0 || Math.abs(m.y - level.floor) > 4) return -1;
+        let d = 1e9;
+        for (const g of level.gaps) d = Math.min(d, Math.max(g.x - m.x, m.x - (g.x + g.w), 0));
+        for (const p of level.platforms) if (p.y > level.floor - 300) d = Math.min(d, Math.max(p.x - m.x, m.x - (p.x + p.w), 0));
+        for (const o of level.monsters) if (o !== m) d = Math.min(d, Math.abs(o.x - m.x) * .8);
+        for (const x of level.stations || []) d = Math.min(d, Math.abs(x - m.x));
+        for (const x of flagSpots) d = Math.min(d, Math.abs(x - m.x) * .8);   // drapeaux de passage (à peu près : ils sont placés juste après)
+        for (const o of [...(level.bumps || []), ...(level.pads || []), ...(level.tramps || [])]) d = Math.min(d, Math.max(o.x - m.x, m.x - (o.x + (o.w || 0)), 0) * .9);   // barrières, tremplins…
+        return d;
+      };
+      const best = level.monsters.reduce((b, m) => roomy(m) > roomy(b) ? m : b, level.monsters[1]);
+      if (roomy(best) >= 0) { const slot = best.id - 1 - Math.floor(best.id / 4), gi = calmDeck.indexOf(3); [calmDeck[slot], calmDeck[gi]] = [calmDeck[gi], calmDeck[slot]]; }
+    }
     if (!Array.isArray(mission.monsters)) mission.monsters = level.monsters.map(m => {
       // 20 monstres tous différents : 5 lutins de feu (un de chaque couleur, tous les 4) et les 15 petits monstres tranquilles, mélangés
       const imp = m.id % 4 === 0, type = imp ? m.id / 4 : calmDeck[m.id - 1 - Math.floor(m.id / 4)], mv = imp ? -1 : CALM[type][2];
