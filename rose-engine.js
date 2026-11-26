@@ -167,7 +167,8 @@
   const cageSpots = [];
   { const blocked = (x) => solids.some(s => s.y === 0 && x > s.x - 110 && x < s.x + s.w + 110) || Math.abs(x - (L - 280)) < 300;
     for (const s of solids) if (s.kind === 'slab' || s.kind === 'arch' || s.kind === 'mesa' || s.kind === 'pancake') cageSpots.push({ x: s.x + s.w / 2, y: s.y + s.h });
-    for (let x = 1050; cageSpots.length < 20 && x < L - 400; x += 320) if (!blocked(x)) cageSpots.push({ x, y: 0 }); }
+    for (let x = 1050; cageSpots.length < 20 && x < L - 400; x += 320) if (!blocked(x)) cageSpots.push({ x, y: 0 });
+    for (let x = 1210; cageSpots.length < 20 && x < L - 400; x += 320) if (!blocked(x) && !cageSpots.some(p => p.y === 0 && Math.abs(p.x - x) < 150)) cageSpots.push({ x, y: 0 }); }   // toujours 20 cages
   const cages = cageSpots.slice(0, 20).map((p, i) => ({ ...p, ...prisoners[i], open: false, t: 0 }));
   // caisses « ? » : une devinette sur l'espace
   const boxes = WD.boxes.map(b => ({ ...b, done: false }));

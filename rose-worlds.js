@@ -177,7 +177,7 @@
   W.venus = {
     name: 'Vénus', chip: '🟡 Vénus', on: 'Vénus', theme: '#8a5a1a', L: 9400, cave: [4500, 6400], ceil: 600, ceilKind: 'cloudceil', pin: 0,
     intro: 'Bienvenue sur Vénus, la planète la plus chaude ! Les farceurs ont mis des lunettes de soleil. Les jets de vapeur peuvent t’aider à monter !',
-    outroAll: 'Bravo Rose ! Tu as libéré les vingt amis de Vénus ! Prochaine étape : Mercure !', next: null,
+    outroAll: 'Bravo Rose ! Tu as libéré les vingt amis de Vénus ! Prochaine étape : Mercure !', next: 'mercure', nextIcon: '⚪',
     lifts: [700, 2420, 3020, 5450, 7700], liftRGB: '255,244,225', liftDot: 'rgba(255,255,255,.8)', shades: true,
     caveShade: ['rgba(150,90,20,.5)', 'rgba(190,130,50,.2)'],
     colors: { ceil: ['#c88a3a', '#f0c070', '#ffe0a0'], crystal: '255,240,200', cloud: ['#f2c46e', '#ffe2a6'], slab: ['#7a4a2e', '#b07a50'], tite: '#5a3628', mesa: '#7a4a2e', arch: '#6e4028', mesaTop: '#c08a5a', rock: ['#6a4434', '#8a5a44'], mite: ['#5a3628', '#7a4a38'], ice: ['#e3f2fc', '#fff'], pancake: ['#8a5a3a', '#b07a52'] },
@@ -251,6 +251,79 @@
       for (const c of craters) { const sx = SX(c.x); if (sx < -200 || sx > W + 200) continue; const y = gy + (18 + c.r * .35) * zoom;
         ctx.beginPath(); ctx.moveTo(sx - c.r * zoom, y); ctx.lineTo(sx - c.r * .3 * zoom, y - 8 * zoom); ctx.lineTo(sx + c.r * .4 * zoom, y + 6 * zoom); ctx.lineTo(sx + c.r * zoom, y - 4 * zoom); ctx.stroke(); }
       for (const p of pebbles) { const sx = SX(p.x); if (sx < -20 || sx > W + 20) continue; ctx.fillStyle = '#6a3e22'; ctx.beginPath(); ctx.ellipse(sx, gy + p.d * zoom, p.r * zoom, p.r * .6 * zoom, 0, 0, 7); ctx.fill(); }
+    },
+  };
+  // ================= Mercure =================
+  W.mercure = {
+    name: 'Mercure', chip: '⚪ Mercure', on: 'Mercure', theme: '#0e0b1e', L: 9200, cave: [4600, 6300], ceil: 620, pin: 0,
+    intro: 'Bienvenue sur Mercure, la plus petite planète, tout près du Soleil ! Les farceurs ont caché les cages près des cratères. Regarde : le jour brûlant, puis la nuit glacée !',
+    outroAll: 'Bravo Rose ! Tu as libéré les vingt amis de Mercure ! Prochaine étape : Jupiter !', next: null,
+    caveShade: ['rgba(10,8,24,.85)', 'rgba(30,26,50,.35)'],
+    colors: { ceil: ['#2a2630', '#5e5660', '#6e666e'], crystal: '255,240,180', cloud: ['#fff', '#fff'], slab: ['#857a74', '#b8aea6'], tite: '#4a4248', mesa: '#8a7f78', arch: '#7a706a', mesaTop: '#bdb2aa', rock: ['#8a7f78', '#a89c94'], mite: ['#5e5660', '#766d76'], ice: ['#e3f2fc', '#fff'], pancake: ['#8a7f78', '#a89c94'] },
+    solids: [
+      { x: 860, y: 0, w: 130, h: 90, kind: 'rock' },
+      { x: 1290, y: 0, w: 130, h: 90, kind: 'rock' },
+      { x: 2100, y: 0, w: 380, h: 200, kind: 'mesa' },
+      { x: 2800, y: 250, w: 300, h: 40, kind: 'slab' },
+      { x: 3400, y: 0, w: 220, h: 320, kind: 'rock' },
+      { x: 4900, y: 0, w: 160, h: 260, kind: 'mite' },
+      { x: 5300, y: 300, w: 150, h: 'ceil', kind: 'tite' },
+      { x: 5700, y: 0, w: 170, h: 280, kind: 'mite' },
+      { x: 6800, y: 0, w: 130, h: 100, kind: 'rock' },
+      { x: 7260, y: 0, w: 130, h: 100, kind: 'rock' },
+      { x: 7700, y: 0, w: 360, h: 180, kind: 'mesa' },
+      { x: 8300, y: 250, w: 300, h: 40, kind: 'slab' },
+    ],
+    stars: [[300, 650, 60, 60, 5], [880, 960, 160, 30, 2], [1310, 1390, 160, 30, 2], [2160, 2420, 250, 40, 5], [2820, 3080, 330, 30, 4], [3420, 3600, 400, 60, 4], [4750, 4850, 80, 60, 3], [5000, 5250, 380, 60, 5], [5500, 5900, 380, 40, 5], [6050, 6250, 150, 50, 3], [6950, 7200, 60, 80, 4], [7760, 8000, 230, 40, 5], [8320, 8580, 330, 30, 4], [8800, 8950, 60, 60, 3]],
+    aliens: [
+      { type: 'boing', x: 1100, x0: 1020, x1: 1260, y: 0 },
+      { type: 'glouglou', x: 1700, x0: 1520, x1: 2000, y: 0 },
+      { type: 'boing', x: 2700, x0: 2560, x1: 2780, y: 0 },
+      { type: 'zap', x: 3950, y0: 330, y: 330 },
+      { type: 'zigzag', x: 5450, x0: 5120, x1: 5640, y: 0 },
+      { type: 'zap', x: 6100, y0: 360, y: 360 },
+      { type: 'boing', x: 7050, x0: 6960, x1: 7230, y: 0 },
+      { type: 'bidou', x: 8150, x0: 8080, x1: 8280, y: 0 },
+      { type: 'zap', x: 8900, y0: 340, y: 340 },
+    ],
+    boxes: [{ x: 1140, y: 230 }, { x: 2290, y: 290 }, { x: 7880, y: 270 }],
+    riddles: [
+      { q: 'Quelle est la plus petite planète ?', o: [['⚪', 'Mercure'], ['🟠', 'Jupiter'], ['🪐', 'Saturne']], a: 0, fact: 'Oui ! Mercure est la plus petite planète. Elle est à peine plus grande que notre Lune.' },
+      { q: 'Quelle planète est la plus proche du Soleil ?', o: [['⚪', 'Mercure'], ['🔵', 'Neptune'], ['🌍', 'la Terre']], a: 0, fact: 'Bravo ! Mercure est la planète la plus proche du Soleil.' },
+      { q: 'Sur Mercure, comment est la nuit ?', o: [['🥶', 'glacée'], ['🔥', 'brûlante'], ['🌤️', 'toute douce']], a: 0, fact: 'Oui ! Le jour, il fait brûlant, mais la nuit, il fait glacé, car il n’y a pas d’air pour garder la chaleur.' },
+      { q: 'Combien de temps dure une année sur Mercure ?', o: [['🏃', 'moins de trois mois'], ['🐢', 'cent ans'], ['⏱️', 'une minute']], a: 0, fact: 'Bravo ! Mercure fait le tour du Soleil en moins de trois mois. C’est la plus rapide de toutes les planètes.' },
+      { q: 'À quoi ressemble le sol de Mercure ?', o: [['🕳️', 'plein de cratères'], ['🌳', 'plein d’arbres'], ['🌊', 'plein d’eau']], a: 0, fact: 'Oui ! Mercure est couverte de cratères, comme la Lune.' },
+      { q: 'Combien de lunes tournent autour de Mercure ?', o: [['0️⃣', 'aucune'], ['1️⃣', 'une'], ['💯', 'cent']], a: 0, fact: 'Bravo ! Mercure n’a aucune lune, comme Vénus.' },
+      { q: 'De quelle couleur est le ciel de Mercure, même le jour ?', o: [['⚫', 'noir'], ['🔵', 'bleu'], ['🩷', 'rose']], a: 0, fact: 'Oui ! Il n’y a pas d’air sur Mercure, alors le ciel reste noir, même en plein jour.' },
+      { q: 'Vu de Mercure, comment est le Soleil ?', o: [['☀️', 'beaucoup plus gros'], ['🔸', 'tout petit'], ['🟥', 'carré']], a: 0, fact: 'Bravo ! Vu de Mercure, le Soleil paraît environ trois fois plus gros que chez nous.' },
+      { q: 'Mercure porte le nom d’un personnage des légendes romaines. Qui était-ce ?', o: [['🏃', 'un messager très rapide'], ['🐌', 'un escargot'], ['🧙', 'un sorcier']], a: 0, fact: 'Oui ! Mercure était le messager des dieux, qui courait très vite. Comme la planète !' },
+      { q: 'Qu’est-ce qui a tourné autour de Mercure pour la photographier ?', o: [['🛰️', 'une sonde spatiale'], ['🦅', 'un aigle'], ['🎈', 'un ballon']], a: 0, fact: 'Bravo ! Des sondes spatiales envoyées depuis la Terre ont photographié Mercure de tout près.' },
+      { q: 'Y a-t-il de la glace sur Mercure ?', o: [['🧊', 'oui, dans des cratères'], ['🚫', 'non, jamais'], ['⛸️', 'partout']], a: 0, fact: 'Oui ! Même tout près du Soleil, il y a de la glace au fond de cratères qui restent toujours à l’ombre.' },
+      { q: 'Comment Mercure tourne-t-elle autour du Soleil ?', o: [['💨', 'très vite'], ['🐢', 'très lentement'], ['🛑', 'elle ne bouge pas']], a: 0, fact: 'Bravo ! Mercure file autour du Soleil plus vite que toutes les autres planètes.' },
+    ],
+    // du jour brûlant à la nuit glacée : plus on avance, plus le Soleil s'en va et plus les étoiles brillent
+    drawBg(A, time) {
+      const { ctx, W, H, GY, zoom, camX, camY, SY, L, bgStars, hills } = A;
+      const n = Math.max(0, Math.min(1, (camX - L * .4) / (L * .3)));
+      ctx.fillStyle = '#07060f'; ctx.fillRect(0, 0, W, H);
+      for (const s of bgStars) { const x = ((s.x * W * 2 - camX * zoom * .05) % W + W) % W; ctx.globalAlpha = (.15 + .85 * n) * (.5 + .5 * Math.sin(time * 2 + s.tw)); ctx.fillStyle = '#fff6d8'; ctx.fillRect(x, s.y * GY * .95, s.r, s.r); }
+      ctx.globalAlpha = 1;
+      if (n < 1) { const sx = W * .78, sy = H * (.18 + n * .5) + camY * zoom * .04, sr = Math.min(W, H) * .16;
+        const sg = ctx.createRadialGradient(sx, sy, sr * .5, sx, sy, sr * 2.2); sg.addColorStop(0, `rgba(255,250,215,${1 - n})`); sg.addColorStop(.4, `rgba(255,220,140,${.4 * (1 - n)})`); sg.addColorStop(1, 'rgba(255,200,120,0)');
+        ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sx, sy, sr * 2.2, 0, 7); ctx.fill();
+        ctx.fillStyle = `rgba(255,248,220,${1 - n})`; ctx.beginPath(); ctx.arc(sx, sy, sr * .55, 0, 7); ctx.fill(); }
+      const k = 1 - n * .6; ctx.fillStyle = `rgb(${Math.round(120 * k)},${Math.round(110 * k)},${Math.round(108 * k + n * 20)})`;
+      for (const h of hills) { const x = (h.x - camX * .4) * zoom; if (x > W + 400 || x + h.w * zoom < -400) continue; const by = SY(0) + camY * zoom * .6;
+        ctx.beginPath(); ctx.moveTo(x - h.w * zoom * .5, by); ctx.quadraticCurveTo(x, by - h.h * zoom * 1.2, x + h.w * zoom * .5, by); ctx.fill(); }
+    },
+    drawGround(A, time) {
+      const { ctx, W, H, zoom, SX, SY, L, craters } = A;
+      const gy = SY(0), g = ctx.createLinearGradient(SX(L * .45), 0, SX(L * .72), 0);
+      g.addColorStop(0, '#a3968e'); g.addColorStop(1, '#3a3848'); ctx.fillStyle = g; ctx.fillRect(0, gy, W, H - gy + 10);
+      ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fillRect(0, gy, W, 5 * zoom + 2);
+      for (const c of craters) { const sx = SX(c.x); if (sx < -200 || sx > W + 200) continue;
+        ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(sx, gy + (24 + c.r * .2) * zoom, c.r * zoom, c.r * .22 * zoom, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.beginPath(); ctx.ellipse(sx, gy + (20 + c.r * .2) * zoom, c.r * .85 * zoom, c.r * .16 * zoom, 0, 0, Math.PI); ctx.fill(); }
     },
   };
 })();
