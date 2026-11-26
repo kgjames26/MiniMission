@@ -67,7 +67,7 @@
   CITY.forEach((c, i) => {
     S['c' + i + 'a'] = { bg: 'city', city: i, pages: c.a };
     S['c' + i + 'c'] = { bg: 'city', city: i, pages: c.c };
-    for (const h in c.h) S['c' + i + h] = { bg: 'city', city: i, hero: h, pages: [P(c.h[h], h === 'ziggy' ? '⚡' : h === 'filou' ? '🕸️' : '💪')] };
+    for (const h in c.h) S['c' + i + h] = { bg: 'city', city: i, hero: h, art: ['img'], pages: [P(c.h[h], h === 'ziggy' ? '⚡' : h === 'filou' ? '🕸️' : '💪')] };
   });
   S.ch1end = { bg: 'night', pages: [
     P('Pour fêter ça, tout le monde fait une grande fête dans le jardin de Rose. Les vingt petits monstres chantent, les flammes de couleur font un feu d’artifice. Quelle belle journée !', '🎉🎆💛'),
