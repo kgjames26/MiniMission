@@ -770,8 +770,74 @@ html:lang(ja) .jump-button strong,html:lang(de) .jump-button strong{font-size:.8
 body.peeking .fly-item{visibility:hidden}   /* les objets qui volent vers les compteurs ne passent pas sur la fenêtre */
 
 /* Rose (nouvelle héroïne, niveau d'essai de la Lune) */
-.hero-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
 .hero-card.rose{--edge:#8a5ae0;--edge-dark:#5a36a6;--bg1:#e8dcff;--bg2:#a98ff2;--btn:#8a5ae0;text-decoration:none;color:inherit}
 .hero-card.rose .rose-pic{height:92%;max-height:92cqh;width:auto;object-fit:contain;filter:drop-shadow(0 6px 6px rgba(40,20,90,.25))}
 .hero-card.rose .new-tag{position:absolute;top:6px;right:6px;background:#ff5d8f;color:#fff;font-weight:900;font-size:clamp(10px,1.6vmin,14px);padding:2px 8px;border-radius:999px;transform:rotate(6deg)}
-@media (orientation:portrait){.hero-grid{grid-template-columns:1fr;grid-template-rows:repeat(4,minmax(0,1fr))}.hero-card.rose .rose-pic{height:100%;max-height:100%}}
+
+
+/* ----- chapitres (v0.71) ----- */
+.chap-grid{flex:1;min-height:0;width:min(1320px,100%);margin:0 auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(10px,2.2vw,28px);padding-bottom:6px}
+.chap-card{position:relative;overflow:hidden;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;padding:10px 10px 14px;border-radius:clamp(20px,3vw,34px);border:4px solid #fff;box-shadow:0 7px 0 var(--d),0 14px 26px #1d4d7a40;background:var(--bg);color:#fff;font:inherit;cursor:pointer;transition:transform .15s}
+.chap-card:active{transform:translateY(5px);box-shadow:0 2px 0 var(--d)}
+.chap-card.c1{--bg:linear-gradient(180deg,#8fdcff 0%,#bdeaff 55%,#7fd36a 56%,#4fb056 100%);--d:#2f8a3f}
+.chap-card.c2{--bg:radial-gradient(circle at 30% 20%,#4a3aa8 0,#1c1460 55%,#0d0930 100%);--d:#120c44}
+.chap-card.c3{--bg:linear-gradient(180deg,#ffb06a,#ff7a8a 60%,#8a5ae0);--d:#6a3aa6}
+.chap-card.c3.locked{filter:saturate(.7)}
+.chap-num{position:absolute;left:12px;top:10px;width:40px;height:40px;border-radius:50%;background:#fff;color:#e4741a;font-weight:1000;font-size:24px;display:grid;place-items:center;box-shadow:0 3px 0 #ffd9a8;z-index:2}
+.chap-art{position:relative;flex:1;width:100%;min-height:0;display:flex;align-items:flex-end;justify-content:center;container-type:size}
+.chap-name{font-size:clamp(20px,4vmin,34px);font-weight:1000;text-shadow:0 3px 0 rgba(0,0,0,.25);line-height:1}
+.chap-globe{position:absolute;right:8%;top:6%;width:30cqh;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 35%,#7fe08a 0 18%,transparent 19%),radial-gradient(circle at 68% 62%,#7fe08a 0 14%,transparent 15%),radial-gradient(circle at 40% 35%,#7fd0ff,#2f7fe0);box-shadow:0 4px 0 rgba(0,0,0,.15)}
+.chap-heroes{display:flex;align-items:flex-end;gap:2%;height:70cqh}
+.chap-heroes .sprite{--sh:70cqh;margin:0 -6%}
+.chap-heroes .sprite:nth-child(2){--sh:76cqh;z-index:1}
+.chap-heroes .sprite:nth-child(3){transform:scaleX(-1)}
+.chap-planet{position:absolute;border-radius:50%}
+.chap-planet.p1{width:22cqh;height:22cqh;left:8%;top:10%;background:radial-gradient(circle at 35% 35%,#ffb08a,#c4502a)}
+.chap-planet.p2{width:34cqh;height:34cqh;right:6%;top:4%;background:radial-gradient(circle at 35% 35%,#fff0c0,#d8b46a);box-shadow:0 0 0 4cqh rgba(255,236,180,.0)}
+.chap-planet.p2::after{content:'';position:absolute;left:-30%;right:-30%;top:42%;height:16%;border-radius:50%;border:3px solid #ffe7a8;transform:rotate(-14deg)}
+.chap-planet.p3{width:12cqh;height:12cqh;left:40%;top:6%;background:radial-gradient(circle at 35% 35%,#f4f4fa,#a6a4c0)}
+.chap-rose{position:relative;height:78cqh;width:auto;filter:drop-shadow(0 6px 8px rgba(0,0,0,.35));animation:float 3s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-4%)}}
+.chap-ufo{position:absolute;font-size:30cqh;left:14%;top:12%;animation:float 2.4s ease-in-out infinite}
+.chap-ufo.u2{font-size:20cqh;left:auto;right:12%;top:30%;animation-delay:-1s}
+.chap-lock{font-size:30cqh;margin-bottom:6cqh}
+.chap-soon{position:absolute;top:12px;right:12px;background:#fff;color:#8a5ae0;font-weight:1000;padding:3px 10px;border-radius:999px;font-size:clamp(12px,2vmin,16px)}
+.chap-card.shake{animation:shake-x .35s}
+@media (orientation:portrait){.chap-grid{grid-template-columns:1fr;grid-template-rows:repeat(3,minmax(0,1fr));width:min(560px,100%)}}
+.hero-city{margin-right:6px}
+.hero-prog{display:block;margin-top:4px;font-size:clamp(11px,1.9vmin,15px);font-weight:900;color:#4a6478}
+.hero-card.city-done::after{content:'✓';position:absolute;right:12px;top:10px;width:34px;height:34px;border-radius:50%;background:#4cc36a;color:#fff;font-weight:1000;font-size:20px;display:grid;place-items:center;box-shadow:0 3px 0 #2b8a46;z-index:3}
+.lv-heroes{display:flex;justify-content:center;gap:2px;margin-top:2px}
+.lv-h{position:relative;width:clamp(30px,5.6vh,44px);height:clamp(34px,6.4vh,50px);border-radius:12px;background:rgba(255,255,255,.55);display:flex;align-items:flex-end;justify-content:center;overflow:hidden}
+.lv-h .sprite{--sh:100%;filter:grayscale(.9) opacity(.55)}
+.lv-h.go .sprite{filter:none;opacity:.85}
+.lv-h.ok{background:#dff5e2}
+.lv-h.ok .sprite{filter:none}
+.lv-h.ok::after{content:'✓';position:absolute;right:1px;top:1px;width:15px;height:15px;border-radius:50%;background:#4cc36a;color:#fff;font-size:10px;font-weight:1000;display:grid;place-items:center}
+/* carte des planètes */
+.space-screen{background:radial-gradient(circle at 20% 10%,#3a2c98 0,#160f50 50%,#0b0828 100%)}
+.space-rose{height:clamp(40px,8vh,64px);vertical-align:middle;margin-right:8px}
+.space-map{flex:1;min-height:0;display:flex;align-items:center;gap:clamp(6px,2vw,22px);overflow-x:auto;overflow-y:hidden;padding:10px clamp(10px,3vw,30px);scroll-snap-type:x proximity;background-image:radial-gradient(1.5px 1.5px at 10% 20%,#fff,transparent),radial-gradient(1px 1px at 30% 70%,#fff,transparent),radial-gradient(1.5px 1.5px at 60% 30%,#fff,transparent),radial-gradient(1px 1px at 85% 80%,#fff,transparent),radial-gradient(1px 1px at 45% 50%,#fffbe0,transparent);background-size:220px 220px}
+.planet{flex:none;position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;border:0;background:none;font:inherit;color:#fff;cursor:pointer;transform:translateY(var(--y));scroll-snap-align:center}
+.pl-ball{position:relative;width:calc(clamp(70px,24vh,170px)*var(--s));aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 32%,var(--c1),var(--c2) 75%);box-shadow:inset -10px -10px 22px rgba(0,0,0,.28),0 0 22px rgba(255,255,255,.12);transition:transform .2s}
+.planet:active .pl-ball{transform:scale(.94)}
+.pl-ball.band{background:repeating-linear-gradient(170deg,#f6d6a8 0 9%,#d99a62 9% 15%,#fff0d0 15% 22%,#c27a4a 22% 26%);box-shadow:inset -12px -12px 26px rgba(0,0,0,.3)}
+.pl-ball.band::after{content:'';position:absolute;left:58%;top:58%;width:22%;height:13%;border-radius:50%;background:#c0452e}
+.pl-ball.earth{background:radial-gradient(circle at 34% 36%,#7fe08a 0 14%,transparent 15%),radial-gradient(circle at 66% 60%,#7fe08a 0 12%,transparent 13%),radial-gradient(circle at 50% 12%,#fff 0 9%,transparent 10%),radial-gradient(circle at 35% 32%,var(--c1),var(--c2) 75%)}
+.pl-ball.sun{box-shadow:0 0 30px 10px rgba(255,190,60,.55),0 0 80px 20px rgba(255,140,30,.3)}
+.pl-ring{position:absolute;left:-28%;right:-28%;top:40%;height:20%;border-radius:50%;border:5px solid rgba(255,236,190,.9);transform:rotate(-16deg)}
+.pl-ring.r2{left:38%;right:38%;top:-22%;bottom:-22%;height:auto;border-width:3px;border-color:rgba(200,250,255,.8);transform:rotate(10deg)}
+.pl-name{font-size:clamp(14px,2.6vmin,20px);font-weight:1000;text-shadow:0 2px 0 rgba(0,0,0,.4);white-space:nowrap}
+.pl-badge{position:absolute;top:-6px;right:-6px;font-size:22px}
+.pl-badge.soon{font-size:clamp(10px,1.7vmin,13px);background:#fff;color:#5b47d6;font-weight:1000;padding:2px 8px;border-radius:999px;top:0;right:-10px}
+.planet.locked .pl-ball,.planet.soon .pl-ball{filter:saturate(.45) brightness(.75)}
+.planet.done .pl-name::after{content:' ✓';color:#7fe08a}
+.planet.shake{animation:shake-x .35s}
+.chapter-screen,.space-screen{flex-direction:column;padding:calc(var(--sat) + 12px) calc(var(--sar) + 16px) calc(var(--sab) + 10px) calc(var(--sal) + 16px);gap:clamp(8px,2vh,18px)}
+.chapter-screen.active,.space-screen.active{display:flex}
+.space-screen .screen-title{display:flex;align-items:center;justify-content:center;gap:8px}
+.level-grid{grid-auto-rows:max-content}
+.chap-heroes .sprite{--sh:60cqh;margin:0 -3%}
+.chap-heroes .sprite:nth-child(2){--sh:66cqh}
+.chap-heroes .sprite{--sh:min(60cqh,36cqw)}
+.chap-heroes .sprite:nth-child(2){--sh:min(66cqh,40cqw)}

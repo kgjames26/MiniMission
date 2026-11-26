@@ -311,8 +311,8 @@
   zone.addEventListener('pointerup', stickUp); zone.addEventListener('pointercancel', stickUp);
   addEventListener('keydown', (e) => { if (e.repeat) return; if (e.key === 'ArrowDown') key.down = true; if (e.key === 'ArrowLeft') key.l = true; if (e.key === 'ArrowRight') key.r = true; if (e.key === ' ' || e.key === 'ArrowUp') key.fly = true; if (e.key === 'x' || e.key === 'Enter') shoot(); });
   addEventListener('keyup', (e) => { if (e.key === 'ArrowDown') key.down = false; if (e.key === 'ArrowLeft') key.l = false; if (e.key === 'ArrowRight') key.r = false; if (e.key === ' ' || e.key === 'ArrowUp') key.fly = false; });
-  $('#quit').onclick = () => { location.href = 'index.html'; };
-  $('#home').onclick = () => { location.href = 'index.html'; };
+  $('#quit').onclick = () => { location.href = 'index.html#space'; };
+  $('#home').onclick = () => { location.href = 'index.html#space'; };
   $('#next').onclick = () => { location.href = 'rose-lune.html'; };
   $('#again').onclick = () => { location.reload(); };
 
@@ -515,6 +515,7 @@
 
   function finish() {
     try { localStorage.setItem('mm.rose.world', 'rose-mars.html'); } catch (e) {}
+    try { const d = JSON.parse(localStorage.getItem('mm.rose.done') || '[]'); if (!d.includes('mars')) { d.push('mars'); localStorage.setItem('mm.rose.done', JSON.stringify(d)); } } catch (e) {}
     finished = true; rose.vx = 0; rose.walking = false; play('win', 'ground'); rose.mode = 'ground'; sfx.good();
     say(got.friends >= 20 ? 'Bravo Rose ! Tu as libéré les vingt amis de Mars ! Prochaine étape : Vénus !' : 'Bravo Rose ! Tu as libéré ' + got.friends + ' amis. Les autres attendent encore sur Mars !');
     setTimeout(() => {
