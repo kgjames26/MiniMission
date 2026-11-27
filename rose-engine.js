@@ -624,7 +624,7 @@
     if (WD.bgOver) WD.bgOver(api(), time);
   }
   // texture peinte du sol (assets/ground/*.webp, en « multiplier » : garde les couleurs du monde et ajoute cailloux, glace, plaques…)
-  const GTEX = { lune: 'rock', mars: 'rock', venus: 'rock', mercure: 'rock', soleil: 'rock', jupiter: 'ice', saturne: 'ice', uranus: 'ice', neptune: 'ice', terre: 'metal' }[WID];
+  const GTEX = null && { lune: 'rock', mars: 'rock', venus: 'rock', mercure: 'rock', soleil: 'rock', jupiter: 'ice', saturne: 'ice', uranus: 'ice', neptune: 'ice', terre: 'metal' }[WID];
   const GTI = new Image(); let gPat = null; if (GTEX) { GTI.onload = () => { try { gPat = ctx.createPattern(GTI, 'repeat'); } catch (e) {} }; GTI.src = 'assets/ground/' + GTEX + '.webp?v=' + V; }
   function drawGround(time) {
     WD.drawGround(api(), time);
