@@ -201,3 +201,16 @@
   MM.voice = { score, list, pick, tune, LIVELY };
   if (window.speechSynthesis) try { speechSynthesis.getVoices(); speechSynthesis.addEventListener && speechSynthesis.addEventListener('voiceschanged', () => {}); } catch (e) {}
 })();
+
+// L'histoire traduite (story-xx.js) n'est chargée que pour la langue choisie, et à la demande si l'enfant change de langue.
+(function () {
+  const MM = window.MM, done = {};
+  function loadStory(l) {
+    if (!/^(en|es|de|ja|ko)$/.test(l) || done[l] || (MM.STORY_L10N && MM.STORY_L10N[l])) return;
+    done[l] = true; const s = document.createElement('script'); s.src = 'story-' + l + '.js'; s.async = true; document.head.appendChild(s);
+  }
+  MM.loadStory = loadStory;
+  const go = () => { try { loadStory(localStorage.getItem('mini-mission-lang') || ''); } catch (e) {} };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+  if (MM.i18n && MM.i18n.onChange) MM.i18n.onChange(() => loadStory(MM.i18n.lang));
+})();
