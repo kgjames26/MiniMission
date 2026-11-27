@@ -934,3 +934,7 @@ body.peeking .fly-item{visibility:hidden}   /* les objets qui volent vers les co
 .level-card.done{border-color:#ffd23f;box-shadow:0 5px 0 #d29a12,0 0 18px rgba(255,205,50,.75)}
 .level-card.done::after{content:'🏆';width:34px;height:34px;right:6px;top:4px;font-size:20px;background:linear-gradient(#fff3b0,#ffcf2e);box-shadow:0 2px 0 #c98f00}
 .level-card.done .lv-name{background:linear-gradient(#fff6c8,#ffe27a)}
+/* chapitre 2 fermé tant que Pékin n'est pas fini */
+.chap-card.c2 .chap-lock{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;display:none;filter:drop-shadow(0 4px 6px rgba(0,0,0,.4))}
+.chap-card.c2.locked .chap-lock{display:block}
+.chap-card.c2.locked .chap-art{filter:grayscale(.75) brightness(.8)}
