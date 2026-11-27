@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '123', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '124', asset = (p) => `${p}?v=${ASSET_V}`;
   // la soucoupe des farceurs passe de temps en temps dans le ciel des villes (l'indice de l'histoire, chapitre 1)
   const ufoImg = new Image(); let UFO = null; ufoImg.src = asset('assets/aliens.webp'); fetch(asset('assets/aliens.json')).then(r => r.json()).then(j => { UFO = j.zap_f1; }).catch(() => {});
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
@@ -595,6 +595,7 @@
     // nuage d'aide : après 2 chutes dans le même trou, un nuage tout doux attend dedans et fait rebondir le héros de l'autre côté
     { const g = gapUnder(), key = g && Math.round(g.x);
       if (g && cloudHelp[key] >= 2 && player.vy > 0 && player.y + player.h > world.floor + 24) cloudBounce(g); }
+    gapSplash();
     if (player.y > 650) { const g = gapUnder(); if (g) { const key = Math.round(g.x); cloudHelp[key] = (cloudHelp[key] || 0) + 1; } respawn(fallSpot()); }
     // la maison au bout du chemin termine la mission, qu'on ait ouvert toutes les caisses ou non
     if (player.x + player.w >= world.width - 150 && player.grounded && !swing) { finishMission(); return; }
@@ -673,7 +674,7 @@
     drawSky(time);
     if (!drawStreet()) { ctx.save(); ctx.translate(0, world.floor - 426 + (world.camY || 0) * .4); drawHills(); drawTown(time); ctx.restore(); }   // décor peint de la ville, sinon décors dessinés
     ctx.save(); ctx.translate(0, world.camY || 0);
-    drawWorld(time); drawPlayer(time); drawShots(time); FX.draw(ctx, world.camera);
+    drawWorld(time); drawPlayer(time); drawGapFront(time); drawShots(time); FX.draw(ctx, world.camera);
     ctx.restore(); drawAmbient(time);
   }
   // BETA : la rue peinte de chaque ville (assets/bg/street<N>.webp) : ciel, monuments et maisons, posée sur le sol du jeu
@@ -850,37 +851,141 @@
     ctx.restore();
   }
   const gapLava = (g) => (hash('g' + Math.round(g.x)) & 1) === 0;
-  function drawWater(gap, x, t) {
-    const F = world.floor, gw = gap.w, surf = (px) => F + 18 + Math.sin(t * 2 + (gap.x + px) * .05) * 3 + Math.sin(t * 1.1 + (gap.x + px) * .13) * 1.5;
-    ctx.fillStyle = '#4a3a2c'; ctx.fillRect(x, F, gw, 270);
-    ctx.save(); ctx.translate(0, LV.LIQ - 18);
-    ctx.fillStyle = '#2d6f93'; ctx.fillRect(x, F, gw, 170);
-    const g = ctx.createLinearGradient(0, F + 14, 0, F + 150); g.addColorStop(0, '#7fe0f6'); g.addColorStop(.35, '#3fb0dc'); g.addColorStop(1, '#1f6f9e');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x, F + 170); for (let px = 0; px <= gw; px += 8) ctx.lineTo(x + px, surf(px)); ctx.lineTo(x + gw, F + 170); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 3; ctx.beginPath(); for (let px = 0; px <= gw; px += 8) ctx[px ? 'lineTo' : 'moveTo'](x + px, surf(px)); ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,.25)'; for (let i = 0; i < Math.ceil(gw / 60); i++) { ctx.beginPath(); ctx.ellipse(x + 24 + i * 60 + Math.sin(t + i) * 8, F + 60 + (i % 3) * 22, 18, 3.5, 0, 0, Math.PI * 2); ctx.fill(); }
-    // le requin : ailerons qui patrouillent, et de temps en temps un grand saut
-    const cyc = (t * .16 + gap.x * .0031) % 1, leap = cyc < .2 ? cyc / .2 : -1;
-    const sx = x + gw * (.5 + .38 * Math.sin(t * .55 + gap.x * .01)), dirR = Math.cos(t * .55 + gap.x * .01) >= 0 ? 1 : -1;
-    ctx.save();
-    if (leap >= 0) {
-      const lx = x + gw * (.2 + .6 * leap), ly = surf(lx - x) + 8 - Math.sin(leap * Math.PI) * 96, ang = Math.cos(leap * Math.PI) * -.9;
-      ctx.translate(lx, ly); ctx.rotate(ang);
-      ctx.fillStyle = '#7f98ad'; ctx.strokeStyle = '#2b3a4a'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.moveTo(-34, 0); ctx.quadraticCurveTo(-4, -22, 34, -2); ctx.quadraticCurveTo(10, 20, -34, 8); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#f1f6fa'; ctx.beginPath(); ctx.moveTo(-26, 6); ctx.quadraticCurveTo(4, 14, 30, 2); ctx.quadraticCurveTo(6, 20, -26, 8); ctx.fill();
-      ctx.fillStyle = '#7f98ad'; ctx.beginPath(); ctx.moveTo(-34, 3); ctx.lineTo(-52, -16); ctx.lineTo(-48, 6); ctx.lineTo(-54, 20); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(-6, -14); ctx.lineTo(-14, -34); ctx.lineTo(8, -12); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(20, -4, 4.5, 0, 6.3); ctx.fill(); ctx.fillStyle = '#1b2430'; ctx.beginPath(); ctx.arc(21, -4, 2.2, 0, 6.3); ctx.fill();
-      ctx.strokeStyle = '#1b2430'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(26, 6, 6, .2, 2.6); ctx.stroke();
-      FX.dots(lx, surf(lx - x), 1, ['#ffffff', '#bfeaff'], 70);
+  /* ----- les trous de la ville : un canal (eau) ou un chantier (tranchée) -----
+     Ils sont taillés dans la coupe de terrain du sol peint (herbe, bordures en pierre, terre sableuse) et dessinés
+     dans le même style (formes arrondies, contour sombre). La partie fixe de chaque trou est dessinée UNE fois dans
+     une image à part (à l'échelle view.base) ; à chaque image, on ne dessine que l'eau qui bouge, le canard, le poisson,
+     les lampes. Le héros qui tombe dans le canal fait « plouf » et s'enfonce sous l'eau. */
+  const GAP_M = 46, GAP_TOP = 70, GAP_D = 300, WATER_Y = 50;       // marges autour du trou, hauteur au-dessus du sol, profondeur, niveau de l'eau sous le sol
+  const gapWorks = gapLava;                                        // les anciens trous de lave deviennent des chantiers (plus de lave en ville)
+  const GAP_CACHE = new Map();
+  const shade = (rgb, k, a = 1) => `rgba(${Math.round(rgb[0] * k)},${Math.round(rgb[1] * k)},${Math.round(rgb[2] * k)},${a})`;
+  const rnd = (seed) => { let s = seed >>> 0 || 1; return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296; };
+  let DARK_SOIL = null;                                            // la terre du sol peint, assombrie (fond de la tranchée)
+  function darkSoil() {
+    if (DARK_SOIL || !GSTREET.complete || !GSTREET.naturalWidth) return DARK_SOIL;
+    try { const w = GSTREET.naturalWidth, h = GSTREET.naturalHeight, y0 = Math.round(h * .22), c = document.createElement('canvas'); c.width = w; c.height = h - y0;
+      const x = c.getContext('2d'); x.drawImage(GSTREET, 0, -y0); const d = x.getImageData(0, 0, c.width, c.height), p = d.data;
+      for (let i = 0; i < p.length; i += 4) { p[i] *= .52; p[i + 1] *= .45; p[i + 2] *= .42; }
+      x.putImageData(d, 0, 0); DARK_SOIL = c; } catch (e) { DARK_SOIL = null; }
+    return DARK_SOIL;
+  }
+  function roundBox(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+  function stone(c, x, y, w, h, rgb, k, R) {                       // une pierre arrondie comme les bordures du sol peint
+    const g = c.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, shade(rgb, k * 1.08)); g.addColorStop(1, shade(rgb, k * .86));
+    roundBox(c, x, y, w, h, Math.min(7, h * .3)); c.fillStyle = g; c.fill();
+    c.lineWidth = 2.2; c.strokeStyle = shade([70, 60, 78], 1, .75); c.stroke();
+    c.strokeStyle = shade(rgb, k * 1.25, .55); c.lineWidth = 1.6; c.beginPath(); c.moveTo(x + 6, y + 3.5); c.lineTo(x + w - 6, y + 3.5); c.stroke();
+    if (R() < .35) { c.fillStyle = shade(rgb, k * .78, .5); c.beginPath(); c.ellipse(x + w * (.25 + R() * .5), y + h * (.4 + R() * .3), 3 + R() * 3, 2, 0, 0, 7); c.fill(); }
+  }
+  function buildGap(g, works) {
+    const S = view.base, W = g.w + GAP_M * 2, H = GAP_TOP + GAP_D, cv = document.createElement('canvas');
+    cv.width = Math.ceil(W * S); cv.height = Math.ceil(H * S); const c = cv.getContext('2d'); c.scale(S, S);
+    const R = rnd(Math.round(g.x) * 7 + 3), F = GAP_TOP, x0 = GAP_M, x1 = GAP_M + g.w, OUT = 'rgba(70,52,44,.9)';
+    c.save(); c.beginPath(); c.rect(x0, F - 2, g.w, GAP_D + 2); c.clip();
+    if (!works) {
+      // le mur du quai, au fond : les mêmes pierres que les bordures, de plus en plus dans l'ombre vers le bas
+      const STONE = [196, 188, 182];
+      for (let row = 0, y = F + 2; y < H; row++, y += 25) { const k = Math.max(.42, .96 - row * .07);
+        for (let x = x0 - (row % 2 ? 30 : 6) - R() * 20; x < x1; ) { const w = 44 + R() * 30; stone(c, x, y, w - 3, 22, STONE, k, R); x += w; } }
+      // l'ombre sous le bord de la rue, et la bande mouillée + mousse juste au-dessus de l'eau
+      let sh = c.createLinearGradient(0, F, 0, F + 46); sh.addColorStop(0, 'rgba(25,20,40,.38)'); sh.addColorStop(1, 'rgba(25,20,40,0)'); c.fillStyle = sh; c.fillRect(x0, F, g.w, 30);
+      c.fillStyle = 'rgba(30,45,60,.35)'; c.fillRect(x0, F + WATER_Y - 12, g.w, 14);
+      for (let x = x0 + 4; x < x1; x += 9 + R() * 14) { c.fillStyle = R() < .5 ? '#6f9a4a' : '#5b8a3e'; c.beginPath(); c.ellipse(x, F + WATER_Y - 3 - R() * 5, 4 + R() * 5, 2.5 + R() * 2.5, 0, 0, 7); c.fill(); }
     } else {
-      ctx.translate(sx, surf(sx - x) + 3); ctx.scale(dirR, 1);
-      ctx.fillStyle = '#7f98ad'; ctx.strokeStyle = '#2b3a4a'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.moveTo(-14, 2); ctx.quadraticCurveTo(-8, -26, 6, -34); ctx.quadraticCurveTo(8, -12, 16, 2); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(-26, 4); ctx.quadraticCurveTo(-34, 7, -42, 4); ctx.moveTo(22, 4); ctx.quadraticCurveTo(30, 8, 38, 4); ctx.stroke();
+      // le fond de la tranchée : la terre du sol peint, dans l'ombre
+      const ds = darkSoil(), th = 175 * .78;
+      c.fillStyle = '#5c4434'; c.fillRect(x0, F - 2, g.w, 44);
+      if (ds) { const tw = ds.width * th / ds.height; for (let x = x0 - ((g.x * .37) % tw); x < x1; x += tw) c.drawImage(ds, x, F + 175 * .22 - 4, tw + 1, th); }
+      else { c.fillStyle = '#6e5440'; c.fillRect(x0, F, g.w, GAP_D); }
+      c.fillStyle = '#4a3529'; c.fillRect(x0, F + 171, g.w, GAP_D);
+      // un gros tuyau qui traverse, et quelques racines
+      const py = F + 92; c.fillStyle = '#5f86a6'; c.fillRect(x0 - 4, py, g.w + 8, 24); c.fillStyle = '#86aecb'; c.fillRect(x0 - 4, py + 3, g.w + 8, 6);
+      c.strokeStyle = OUT; c.lineWidth = 2.4; c.strokeRect(x0 - 4, py, g.w + 8, 24);
+      for (let x = x0 + 60 + R() * 60; x < x1 - 30; x += 150 + R() * 120) { c.fillStyle = '#4c7393'; roundBox(c, x, py - 4, 16, 32, 4); c.fill(); c.stroke(); c.fillStyle = '#a9c6db'; c.beginPath(); c.arc(x + 8, py + 2, 2, 0, 7); c.arc(x + 8, py + 22, 2, 0, 7); c.fill(); }
+      c.strokeStyle = 'rgba(60,40,28,.8)'; c.lineWidth = 2.5; c.lineCap = 'round';
+      for (let x = x0 + 30 + R() * 50; x < x1 - 20; x += 90 + R() * 110) { c.beginPath(); c.moveTo(x, F + 20); c.quadraticCurveTo(x + 10 - R() * 20, F + 40, x + 14 - R() * 28, F + 58 + R() * 20); c.stroke(); }
+      // une flaque tout au fond
+      const pg = c.createLinearGradient(0, F + 178, 0, F + 200); pg.addColorStop(0, '#8fb8d0'); pg.addColorStop(1, '#4c6f8a'); c.fillStyle = pg; roundBox(c, x0 + 8, F + 182, g.w - 16, 30, 12); c.fill();
+      let sh = c.createLinearGradient(0, F, 0, F + GAP_D); sh.addColorStop(0, 'rgba(25,18,28,.5)'); sh.addColorStop(.18, 'rgba(25,18,28,.05)'); sh.addColorStop(.6, 'rgba(25,18,28,.25)'); sh.addColorStop(1, 'rgba(25,18,28,.85)'); c.fillStyle = sh; c.fillRect(x0, F, g.w, GAP_D);
     }
-    ctx.restore(); ctx.restore();
+    c.restore();
+    // les deux bords : l'herbe qui dépasse, la bordure en pierre arrondie au bout, puis le mur (pierres du quai ou planches)
+    for (const side of [-1, 1]) {
+      const ex = side < 0 ? x0 : x1, inX = side < 0 ? ex - 18 : ex, R2 = rnd(Math.round(g.x) + side * 91);
+      if (!works) { for (let row = 0, y = F + 34; y < H; row++, y += 30) stone(c, inX + (row % 2) * 2 - 1, y, 18, 27, [190, 182, 178], Math.max(.5, .95 - row * .06), R2); }
+      else { for (let k = 0; k < 2; k++) { const bx = side < 0 ? ex - 9 - k * 9 : ex + k * 9; const gg = c.createLinearGradient(bx, 0, bx + 9, 0); gg.addColorStop(0, '#c8955c'); gg.addColorStop(1, '#a47240');
+          c.fillStyle = gg; c.fillRect(bx, F + 30, 9, 170); c.strokeStyle = OUT; c.lineWidth = 1.8; c.strokeRect(bx, F + 30, 9, 170); c.fillStyle = '#6b4a2c'; c.beginPath(); c.arc(bx + 4.5, F + 44, 1.6, 0, 7); c.arc(bx + 4.5, F + 150, 1.6, 0, 7); c.fill(); } }
+      // la bordure du sol peint s'arrête sur une pierre arrondie
+      const cw = 34, cx = side < 0 ? ex - cw + 4 : ex - 4; stone(c, cx, F + 12, cw, 21, [214, 208, 200], 1, R2);
+      // la touffe d'herbe du bord
+      c.fillStyle = '#86c45e'; roundBox(c, side < 0 ? ex - 24 : ex - 4, F - 4, 28, 16, 7); c.fill(); c.strokeStyle = 'rgba(60,100,40,.8)'; c.lineWidth = 1.8; c.stroke();
+      c.strokeStyle = '#5e9c3c'; c.lineWidth = 2; c.lineCap = 'round'; for (let k = 0; k < 4; k++) { const gx = ex + side * (2 + k * 5) * -1 + side * 6, h = 6 + R2() * 7; c.beginPath(); c.moveTo(gx, F + 2); c.lineTo(gx + side * 3, F - h); c.stroke(); }
+      // chantier : une barrière rouge et blanche de chaque côté, et un cône
+      if (works) { const bx = side < 0 ? ex - 46 : ex + 10, top = F - 44;   // barrière (en unités du monde)
+        c.strokeStyle = OUT; c.lineWidth = 2.2; c.fillStyle = '#e9e4dc'; for (const lx of [bx + 4, bx + 28]) { c.fillRect(lx, top + 8, 5, 38); c.strokeRect(lx, top + 8, 5, 38); }
+        c.save(); roundBox(c, bx - 2, top + 12, 40, 12, 3); c.clip(); c.fillStyle = '#fff'; c.fillRect(bx - 2, top + 12, 40, 12); c.fillStyle = '#e8463c'; for (let k = -2; k < 6; k++) { c.beginPath(); c.moveTo(bx + k * 10, top + 24); c.lineTo(bx + k * 10 + 6, top + 24); c.lineTo(bx + k * 10 + 18, top + 12); c.lineTo(bx + k * 10 + 12, top + 12); c.closePath(); c.fill(); } c.restore();
+        roundBox(c, bx - 2, top + 12, 40, 12, 3); c.stroke(); c.fillStyle = '#3b3340'; c.fillRect(bx + 15, top + 4, 6, 8);
+        if (side > 0) { const kx = ex + 60, ky = F; c.fillStyle = '#ff8a2a'; c.beginPath(); c.moveTo(kx - 11, ky); c.lineTo(kx - 3, ky - 30); c.lineTo(kx + 3, ky - 30); c.lineTo(kx + 11, ky); c.closePath(); c.fill(); c.stroke();
+          c.fillStyle = '#fff'; c.beginPath(); c.moveTo(kx - 7, ky - 12); c.lineTo(kx - 5, ky - 19); c.lineTo(kx + 5, ky - 19); c.lineTo(kx + 7, ky - 12); c.closePath(); c.fill(); c.fillStyle = '#e06a18'; c.fillRect(kx - 14, ky - 3, 28, 4); } }
+    }
+    return { cv, S };
+  }
+  function gapArt(g, works) {
+    const key = Math.round(g.x) + ':' + view.base.toFixed(3) + ':' + (works ? 1 : 0) + ':' + (DARK_SOIL ? 1 : 0);
+    let e = GAP_CACHE.get(key); if (!e) { e = buildGap(g, works); GAP_CACHE.set(key, e); if (GAP_CACHE.size > 5) GAP_CACHE.delete(GAP_CACHE.keys().next().value); }
+    return e;
+  }
+  const waterSurf = (g, px, t) => world.floor + WATER_Y + Math.sin(t * 2 + (g.x + px) * .05) * 2.2 + Math.sin(t * 1.1 + (g.x + px) * .13) * 1.2;
+  function waterBody(g, x, t, alpha) {                             // l'eau du canal (vivante)
+    const F = world.floor, gw = g.w, bot = F + GAP_D;
+    const gr = ctx.createLinearGradient(0, F + WATER_Y - 4, 0, F + 200); gr.addColorStop(0, `rgba(120,214,240,${alpha})`); gr.addColorStop(.3, `rgba(52,160,212,${alpha})`); gr.addColorStop(1, `rgba(20,82,128,${Math.min(1, alpha + .1)})`);
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(x, bot); for (let px = 0; px <= gw; px += 8) ctx.lineTo(x + px, waterSurf(g, px, t)); ctx.lineTo(x + gw, waterSurf(g, gw, t)); ctx.lineTo(x + gw, bot); ctx.closePath(); ctx.fill();
+  }
+  function drawGap(g, t) {
+    const x = g.x - world.camera, F = world.floor; if (x + g.w + GAP_M < 0 || x - GAP_M > view.w) return;
+    const works = gapWorks(g), A = gapArt(g, works);
+    ctx.drawImage(A.cv, x - GAP_M, F - GAP_TOP, A.cv.width / A.S, A.cv.height / A.S);
+    if (works) {                                                     // les lampes des barrières qui clignotent
+      for (const side of [-1, 1]) { const lx = side < 0 ? x - 46 + 18 : x + g.w + 10 + 18, ly = F - 44 + 2, on = Math.floor(t * 2.2 + (side > 0 ? .5 : 0)) % 2 === 0;
+        ctx.fillStyle = on ? '#ffd23a' : '#a8742a'; ctx.beginPath(); ctx.arc(lx, ly, 5.5, 0, 7); ctx.fill(); ctx.strokeStyle = 'rgba(70,52,44,.9)'; ctx.lineWidth = 2; ctx.stroke();
+        if (on) { const gl = ctx.createRadialGradient(lx, ly, 2, lx, ly, 22); gl.addColorStop(0, 'rgba(255,220,90,.55)'); gl.addColorStop(1, 'rgba(255,220,90,0)'); ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(lx, ly, 22, 0, 7); ctx.fill(); } }
+      return;
+    }
+    waterBody(g, x, t, .9);
+    // la ligne claire de la surface, et des reflets qui glissent
+    ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 2.6; ctx.lineCap = 'round'; ctx.beginPath(); for (let px = 0; px <= g.w; px += 8) ctx[px ? 'lineTo' : 'moveTo'](x + px, waterSurf(g, px, t)); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.35)'; for (let i = 0; i < Math.ceil(g.w / 70); i++) { const px = (i * 70 + 20 + ((t * 14 + i * 23) % 50)) % g.w; ctx.beginPath(); ctx.ellipse(x + px, waterSurf(g, px, t) + 10 + (i % 3) * 13, 12 + (i % 2) * 6, 2.2, 0, 0, 7); ctx.fill(); }
+    ctx.fillStyle = 'rgba(255,255,255,.9)'; for (let i = 0; i < Math.ceil(g.w / 120); i++) { const ph = (t * .6 + i * .41) % 1, px = (i * 120 + 50) % g.w; if (ph < .5) { ctx.globalAlpha = Math.sin(ph / .5 * Math.PI); ctx.beginPath(); ctx.arc(x + px, waterSurf(g, px, t) + 4, 2.4, 0, 7); ctx.fill(); ctx.globalAlpha = 1; } }
+    // un petit canard qui se laisse porter (canaux assez larges)
+    if (g.w >= 260) { const px = g.w * (.5 + .36 * Math.sin(t * .18 + g.x * .01)), dir = Math.cos(t * .18 + g.x * .01) >= 0 ? 1 : -1, sy = waterSurf(g, px, t), bob = Math.sin(t * 2.4) * 1.5;
+      ctx.save(); ctx.translate(x + px, sy - 2 + bob); ctx.scale(dir, 1); ctx.rotate(Math.sin(t * 2) * .05);
+      ctx.fillStyle = '#ffd84a'; ctx.strokeStyle = 'rgba(90,60,30,.85)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(0, -6, 15, 9, 0, 0, 7); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.arc(9, -17, 7, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ff9a2a'; ctx.beginPath(); ctx.moveTo(15, -18); ctx.lineTo(22, -16); ctx.lineTo(15, -14); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#2b2238'; ctx.beginPath(); ctx.arc(11, -19, 1.6, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.beginPath(); ctx.ellipse(-3, -8, 6, 3, -.3, 0, 7); ctx.fill(); ctx.restore(); }
+    // un poisson rouge qui saute de temps en temps
+    const cyc = (t * .14 + g.x * .0031) % 1;
+    if (cyc < .16) { const k = cyc / .16, lx = x + g.w * (.22 + .5 * k), ly = waterSurf(g, lx - x, t) + 6 - Math.sin(k * Math.PI) * 70, ang = Math.cos(k * Math.PI) * -.9;
+      ctx.save(); ctx.translate(lx, ly); ctx.rotate(ang); ctx.fillStyle = '#ff7a3a'; ctx.strokeStyle = 'rgba(110,40,20,.9)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(0, 0, 14, 8, 0, 0, 7); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(-22, -8); ctx.lineTo(-22, 8); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(7, -2, 3, 0, 7); ctx.fill(); ctx.fillStyle = '#2b2238'; ctx.beginPath(); ctx.arc(7.6, -2, 1.5, 0, 7); ctx.fill(); ctx.restore();
+      if (k < .08 || k > .92) FX.dots(lx, waterSurf(g, lx - x, t), 1, ['#ffffff', '#bfeaff'], 60); }
+  }
+  // par-dessus le héros : s'il est tombé dans le canal, l'eau le recouvre ; dans la tranchée, l'ombre le recouvre
+  let splashGap = null;
+  function drawGapFront(t) {
+    const cx = player.x + player.w / 2, F = world.floor, g = world.gaps.find(q => cx > q.x && cx < q.x + q.w); if (!g || player.y + player.h < F + 4) return;
+    const x = g.x - world.camera;
+    if (gapWorks(g)) { const sh = ctx.createLinearGradient(0, F + 10, 0, F + 160); sh.addColorStop(0, 'rgba(25,18,28,0)'); sh.addColorStop(1, 'rgba(25,18,28,.9)'); ctx.fillStyle = sh; ctx.fillRect(x, F + 10, g.w, GAP_D); return; }
+    waterBody(g, x, t, .62);
+  }
+  function gapSplash() {                                            // « plouf » quand le héros touche l'eau du canal
+    const cx = player.x + player.w / 2, F = world.floor, g = world.gaps.find(q => cx > q.x && cx < q.x + q.w);
+    if (!g || gapWorks(g)) { splashGap = null; return; }
+    const below = player.y + player.h > F + WATER_Y; if (below && splashGap !== g && player.vy > 0) { splashGap = g;
+      FX.sparkle(cx, F + WATER_Y, 16, ['#ffffff', '#bfeaff', '#7fd8f0'], 240); FX.ring(cx, F + WATER_Y, '#ffffff', 56, .45, 5); sound('splash'); MM.haptic && MM.haptic('oops'); }
+    if (!below) splashGap = null;
   }
   function drawWorld(time) {
     const W = view.w, p = mission?.palette || [], F = world.floor, cam = world.camera;
@@ -889,39 +994,9 @@
     const TH = theme();
     ctx.fillStyle = TH.edge; ctx.fillRect(0, F+13, W, 7);
     ctx.fillStyle = TH.dirt; ctx.fillRect(0, F+25, W, 145);
-    const gcv = street() && groundCanvas(); if (gcv) { blitRow(gcv, -cam * .9, F - 4); ctx.fillStyle = 'rgba(35,22,55,.55)'; ctx.fillRect(0, F - 5, W, 3); }   // sol peint, pré-rendu
+    const gcv = street() && groundCanvas(); if (gcv) { const deep = ctx.createLinearGradient(0, F + 160, 0, F + 320); deep.addColorStop(0, '#cfa97f'); deep.addColorStop(1, '#a7825d'); ctx.fillStyle = deep; ctx.fillRect(0, F + 160, W, 400); blitRow(gcv, -cam * .9, F - 4); ctx.fillStyle = 'rgba(35,22,55,.55)'; ctx.fillRect(0, F - 5, W, 3); }   // sol peint, pré-rendu
     else { ctx.fillStyle = TH.line; for (let i = -1; i < Math.ceil(W/80)+2; i++) { const x = ((i*80 - cam*.9) % (W+80)); ctx.fillRect(x, F+42, 48, 3); } }
-    world.gaps.forEach(gap => {
-      const x = gap.x - cam; if (x + gap.w < 0 || x > W) return;
-      if (gapLava(gap)) {
-        const gw = gap.w, t = time;
-        ctx.fillStyle = '#4a1c14'; ctx.fillRect(x, F, gw, 260);
-        ctx.save(); ctx.translate(0, LV.LIQ - 16);
-        const lg = ctx.createLinearGradient(0, F + 14, 0, F + 150); lg.addColorStop(0, '#ffd23a'); lg.addColorStop(.25, '#ff7a1f'); lg.addColorStop(1, '#b81f0c');
-        ctx.fillStyle = lg; ctx.beginPath(); ctx.moveTo(x, F + 150);
-        for (let px = 0; px <= gw; px += 8) ctx.lineTo(x + px, F + 16 + Math.sin(t * 2.4 + (x + px) * .045) * 4 + Math.sin(t * 1.3 + (x + px) * .11) * 2);
-        ctx.lineTo(x + gw, F + 150); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = 'rgba(255,240,150,.8)'; ctx.beginPath();
-        for (let px = 0; px <= gw; px += 8) ctx.lineTo(x + px, F + 16 + Math.sin(t * 2.4 + (x + px) * .045) * 4 + Math.sin(t * 1.3 + (x + px) * .11) * 2);
-        for (let px = gw; px >= 0; px -= 8) ctx.lineTo(x + px, F + 24 + Math.sin(t * 2.4 + (x + px) * .045) * 4 + Math.sin(t * 1.3 + (x + px) * .11) * 2);
-        ctx.closePath(); ctx.fill();
-        ctx.fillStyle = '#ffc13a'; for (let i = 0; i < Math.ceil(gw / 52); i++) { ctx.beginPath(); ctx.ellipse(x + 22 + i * 52 + Math.sin(t * .8 + i) * 8, F + 56 + (i % 3) * 20, 22, 5, 0, 0, Math.PI * 2); ctx.fill(); }
-        for (let i = 0; i < Math.ceil(gw / 70); i++) {                       // grosses bulles qui éclatent + étincelles qui montent
-          const ph = (t * .7 + i * .37) % 1, bx = x + 26 + i * 70 + Math.sin(i * 3) * 14, by = F + 40 - ph * 90;
-          ctx.globalAlpha = 1 - ph; ctx.fillStyle = ph < .85 ? '#ffe07a' : '#fff'; ctx.beginPath(); ctx.arc(bx, by, 5 + (1 - ph) * 5, 0, Math.PI * 2); ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-        ctx.globalCompositeOperation = 'lighter'; const glow = ctx.createLinearGradient(0, F - 90, 0, F + 20); glow.addColorStop(0, 'rgba(255,120,30,0)'); glow.addColorStop(1, 'rgba(255,140,40,.4)'); ctx.fillStyle = glow; ctx.fillRect(x - 10, F - 90, gw + 20, 110);
-        for (let i = 0; i < Math.ceil(gw / 90); i++) {                       // petites flammes qui lèchent le bord
-          const fx0 = x + 30 + i * 90 + Math.sin(i * 5) * 18, h = 20 + Math.sin(t * 7 + i * 2) * 8;
-          ctx.fillStyle = 'rgba(255,170,40,.75)'; ctx.beginPath(); ctx.moveTo(fx0 - 9, F + 14); ctx.quadraticCurveTo(fx0 - 4, F + 14 - h * .6, fx0 + Math.sin(t * 9 + i) * 4, F + 14 - h); ctx.quadraticCurveTo(fx0 + 6, F + 14 - h * .5, fx0 + 9, F + 14); ctx.closePath(); ctx.fill();
-        }
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.restore();
-        return;
-      }
-      drawWater(gap, x, time);
-    });
+    world.gaps.forEach(gap => drawGap(gap, time));
     for (let i = 0; i < Math.ceil(W/120)+2; i++) { const x = (i*120 + 35 - cam*.9) % (W+120); if (!inGap(x + cam, 10)) flower(x, F+7, i%4); }
     world.platforms.forEach(pl => { if (pl.bld) drawBuilding(pl); });
     world.passPts.forEach((cp, i) => {       // drapeaux : points de passage (rouge = à atteindre, vert = c'est là qu'on repartira)
@@ -2661,6 +2736,15 @@
       if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
       if (audio.state === 'suspended') audio.resume();
       const t0 = audio.currentTime;
+      if (kind === 'splash') {                     // plouf : un souffle d'eau qui descend, et une petite goutte
+        const len = audio.sampleRate * .45, buf = audio.createBuffer(1, len, audio.sampleRate), data = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.4);
+        const src = audio.createBufferSource(), ng = audio.createGain(), lp = audio.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(2600, t0); lp.frequency.exponentialRampToValueAtTime(380, t0 + .4);
+        ng.gain.value = .2; src.buffer = buf; src.connect(lp); lp.connect(ng); ng.connect(audio.destination); src.start(t0);
+        const o = audio.createOscillator(), og = audio.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(900, t0 + .05); o.frequency.exponentialRampToValueAtTime(1500, t0 + .14);
+        og.gain.setValueAtTime(.0001, t0); og.gain.setValueAtTime(.08, t0 + .05); og.gain.exponentialRampToValueAtTime(.0001, t0 + .18); o.connect(og); og.connect(audio.destination); o.start(t0); o.stop(t0 + .2);
+        return;
+      }
       if (kind === 'punch' || kind === 'smash') {
         const osc = audio.createOscillator(), gain = audio.createGain();
         osc.type = 'triangle'; osc.frequency.setValueAtTime(kind === 'smash' ? 190 : 150, t0); osc.frequency.exponentialRampToValueAtTime(45, t0 + .22);
@@ -2893,7 +2977,7 @@
   $('#lang-select').addEventListener('change', e => { MM.i18n.setLang(e.target.value); sayText(T('newVoice')); setTimeout(() => { if (!hasVoiceFor()) showToast(T('noVoice', { lang: MM.i18n.info().name })); }, 600); });
   MM.i18n.localizeData(); MM.i18n.applyDom(); buildLangUI(); fillVoiceSelect(); setAudioEnabled(audioEnabled, true);
   updateNameSetting();
-  window.__mm = { startLevel, view, world, get rebuilds() { return (STREET_CACHE.n || 0) + '/' + (GROUND_CACHE.n || 0); } };   // pour les tests automatiques
+  window.__mm = { startLevel, view, world, get player() { return player; }, get rebuilds() { return (STREET_CACHE.n || 0) + '/' + (GROUND_CACHE.n || 0); } };   // pour les tests automatiques
   if (!MM.i18n.chosen) { const g = MM.i18n.guess(); $('#lang-grid').querySelector(`[data-lang="${g}"]`)?.classList.add('guess'); setScreen('lang-screen'); }
   else if (!save.nameAsked) openNameScreen('home');
   else if (location.hash === '#space' && !restLocked()) openSpace();       // retour d'un monde de Rose : on revient sur la carte des planètes
