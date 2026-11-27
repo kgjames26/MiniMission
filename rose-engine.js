@@ -14,6 +14,7 @@
   const EN = { freed: ['Libéré !', 'Merci Rose !', 'Youpi !', 'Un ami de plus !'], partial: 'Bravo Rose ! Tu as libéré {n} amis. Les autres attendent encore sur {on} !', again: 'Essaie encore !',
     robot: 'Bip bip ! Le petit robot se réveille !', heli: 'Le petit hélicoptère s’envole avec toi !', bossStart: 'Voilà Capitaine Farfouille dans sa soucoupe ! Envoie-lui des bulles !',
     boss: ['Hé hé ! Tu ne m’attraperas pas !', 'Oh ! Encore une bulle ?', 'Non, non, non !'], bossPop: 'Pop ! Capitaine Farfouille est dans une bulle !', endN: 'Bravo, {name} !', end: 'Bravo !', replay: '↻ Rejouer',
+    tStars: 'Étoiles ramassées : {n} sur {t} !', tLetters: 'Lettres trouvées : {n} sur {t} !', tFriends: 'Amis libérés : {n} sur {t} !', tBubbles: 'Farceurs dans une bulle : {n} sur {t} !', tWorld: '{w} : libère tous les amis, puis monte dans la fusée !', tWorldBoss: '{w} : mets les farceurs dans des bulles, puis aide Capitaine Farfouille à devenir gentil !',
     hintGo: 'Par ici, {name} ! Avance tout droit !', hintCage: 'Un ami attend dans la cage ! Envoie-lui une bulle !', hintAlien: 'Envoie des bulles au farceur !',
     partyN: 'Bravo {name} ! Grâce à toi, tout le monde est ami ! C’est la fête !', party: 'Bravo ! Grâce à toi, tout le monde est ami ! C’est la fête !', dipTitle: 'Diplôme de super-héros', dipLine: 'a sauvé la Terre avec Rose, Ziggy, Filou et Titan', dipLineAnon: 'Tu as sauvé la Terre avec Rose, Ziggy, Filou et Titan', dipSay: 'Voici ton diplôme de super-héros !',
     ...((LX && LX.engine) || {}) };
@@ -893,6 +894,22 @@
       if (a > .01) { const q = RF[fadeFrom]; ctx.save(); ctx.globalAlpha = a; ctx.translate(px, fadeGy - fadePivot * zoom); ctx.rotate(rot(d * k)); ctx.translate(0, fadePivot * zoom); ctx.scale(rose.face * zoom, zoom); ctx.drawImage(roseImg, q.x, q.y, q.w, q.h, -q.ax, -q.ay, q.w, q.h); ctx.restore(); }
     } else fadeFrom = null;
   }
+
+  // ================= tuiles d'information (toucher un compteur en haut de l'écran) =================
+  function showTile(kind) {
+    let ic, n, t, line, extra = '';
+    const plan = WID === 'final' ? null : 'assets/planets/' + WID + '.webp?v=' + V;
+    if (kind === 'stars') { ic = '⭐'; n = got.stars; t = stars.length; line = EN.tStars; }
+    else if (kind === 'letters') { ic = '🔤'; n = got.letters; t = letters.length; line = EN.tLetters; extra = '<div class="tl-letters">' + letters.map((l, i) => `<b class="${l.got ? 'on' : ''}" style="--c:${COLS[i % 5]}">${l.got ? l.l : '?'}</b>`).join('') + '</div>'; }
+    else if (kind === 'friends') { if (WD.noCages) { ic = '🫧'; n = got.aliens; t = aliens.length + (boss ? 1 : 0); line = EN.tBubbles; } else { ic = '💛'; n = got.friends; t = 20; line = EN.tFriends; } }
+    else { ic = plan ? `<img src="${plan}" alt="">` : '🏙️'; n = -1; line = (WD.boss ? EN.tWorldBoss : EN.tWorld).replace('{w}', WD.name); }
+    const txt = line.replace('{n}', n).replace('{t}', t);
+    let d = document.getElementById('tile'); if (!d) { d = document.createElement('div'); d.id = 'tile'; document.body.appendChild(d); d.addEventListener('pointerdown', (e) => { e.preventDefault(); d.classList.remove('show'); paused = d.dataset.wasPaused === '1'; }); }
+    d.dataset.wasPaused = paused ? '1' : '0'; paused = true;
+    d.innerHTML = `<div class="tcard"><div class="tic">${ic}</div>${n >= 0 ? `<div class="tnum">${n}<small> / ${t}</small></div><div class="tbar"><i style="width:${t ? Math.round(n / t * 100) : 0}%"></i></div>` : `<div class="tname">${WD.name}</div>`}${extra}<p>${txt}</p><div class="tok">👍</div></div>`;
+    d.classList.add('show'); say(txt, true); sfx.good && sfx.good();
+  }
+  [['#cStars', 'stars'], ['#cLetters', 'letters'], ['#cFriends', 'friends'], ['#wchip', 'world']].forEach(([sel, k]) => { const el = $(sel); if (!el) return; el.setAttribute('role', 'button'); el.tabIndex = 0; el.addEventListener('click', (e) => { e.stopPropagation(); showTile(k); }); });
 
   // ================= petits indices à la voix (si l'enfant ne sait plus où aller) =================
   const hint = { best: 0, idle: 0, n: 0, show: 0, tx: 0, ty: 0, gotSum: 0 };
