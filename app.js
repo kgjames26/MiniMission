@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '120', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '121', asset = (p) => `${p}?v=${ASSET_V}`;
   // la soucoupe des farceurs passe de temps en temps dans le ciel des villes (l'indice de l'histoire, chapitre 1)
   const ufoImg = new Image(); let UFO = null; ufoImg.src = asset('assets/aliens.webp'); fetch(asset('assets/aliens.json')).then(r => r.json()).then(j => { UFO = j.zap_f1; }).catch(() => {});
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
@@ -350,12 +350,14 @@
   const bookChain = (ids, then) => { const next = () => { const id = ids.shift(); if (id) book(id, next); else if (then) then(); }; next(); };
   function chooseChapter(n) {
     if (n === 1) { book('prologue', openCities); return; }
-    if (n === 2) { book('ch1end', openSpace); return; }
+    if (n === 2) { if (ch2Open()) { book('ch1end', openSpace); return; } const c2 = $('.chap-card.c2'); c2.classList.remove('shake'); void c2.offsetWidth; c2.classList.add('shake'); MM.haptic('oops'); sayText(T('spaceLockedSay')); return; }
     // chapitre 3 : le grand final, ouvert quand Rose a fini le Soleil
     if (DEV() || roseDone().includes('soleil')) { location.href = 'rose-world.html?w=final'; return; }
     const card = $('.chap-card.c3'); card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake'); MM.haptic('oops'); sayText(T('finalLockedSay'));
   }
-  function updateChapters() { const c3 = $('.chap-card.c3'); if (c3) c3.classList.toggle('locked', !(DEV() || roseDone().includes('soleil'))); }
+  // chapitre 2 : ouvert quand la dernière ville du chapitre 1 (Pékin) est finie avec au moins un héros
+  const ch2Open = () => DEV() || cityDone(MM.cities.length - 1);
+  function updateChapters() { const c2 = $('.chap-card.c2'); if (c2) c2.classList.toggle('locked', !ch2Open()); const c3 = $('.chap-card.c3'); if (c3) c3.classList.toggle('locked', !(DEV() || roseDone().includes('soleil'))); }
   // ----- chapitre 2 : les 10 mondes de Rose (chaque monde s'ouvre quand le précédent est fini) -----
   const PLANETS = [
     { id: 'lune', k: 'pLune', file: 'rose-world.html?w=lune', s: .62, c: ['#f4f4fa', '#a6a4c0'] },
