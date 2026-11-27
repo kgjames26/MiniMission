@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '126', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '127', asset = (p) => `${p}?v=${ASSET_V}`;
   // la soucoupe des farceurs passe de temps en temps dans le ciel des villes (l'indice de l'histoire, chapitre 1)
   const ufoImg = new Image(); let UFO = null; ufoImg.src = asset('assets/aliens.webp'); fetch(asset('assets/aliens.json')).then(r => r.json()).then(j => { UFO = j.zap_f1; }).catch(() => {});
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
@@ -317,7 +317,21 @@
   }
   function hash(value) { let h = 2166136261; for (let i=0;i<value.length;i++) { h ^= value.charCodeAt(i); h = Math.imul(h,16777619); } return h >>> 0; }
   function seeded(seed) { let s = seed || 1; return () => { s += 0x6D2B79F5; let t = s; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-  function setScreen(id) { if (id === 'home' && MM.updateBooksBadge) MM.updateBooksBadge(); if(hudPeek){hudPeek=null;$('#hud-peek')?.classList.add('hidden');document.body.classList.remove('peeking');} if(id!=='puzzle-screen')cancelSpeech(); if(id!=='game-screen'){$('#toast')?.classList.remove('show');$('#award-banner')?.classList.remove('show');} if (id === 'pause-screen') renderPauseCollect(); screens.forEach(s => s.classList.toggle('active', s.id === id)); scene = id; if (id !== 'game-screen') releaseControls(); if (!['game-screen','puzzle-screen'].includes(id)) lastActiveTick=performance.now(); if (id === 'game-screen') resizeCanvas(); updateMusic(); }
+  function setScreen(id) { if (id === 'home' && MM.updateBooksBadge) MM.updateBooksBadge(); if(hudPeek){hudPeek=null;$('#hud-peek')?.classList.add('hidden');document.body.classList.remove('peeking');} if(id!=='puzzle-screen')cancelSpeech(); if(id!=='game-screen'){$('#toast')?.classList.remove('show');$('#award-banner')?.classList.remove('show');} if (id === 'pause-screen') renderPauseCollect(); screens.forEach(s => s.classList.toggle('active', s.id === id)); scene = id; fitSoon(); if (id !== 'game-screen') releaseControls(); if (!['game-screen','puzzle-screen'].includes(id)) lastActiveTick=performance.now(); if (id === 'game-screen') resizeCanvas(); updateMusic(); }
+  /* ----- aucun écran hors jeu ne déborde sous l'écran : s'il manque de place, son contenu rétrécit juste assez (zoom) ----- */
+  function fitScreen() {
+    const s = screens.find(x => x.id === scene); if (!s || s.id === 'game-screen' || s.classList.contains('modal-screen')) return;
+    const kids = [...s.children].filter(k => { const p = getComputedStyle(k).position; return p !== 'absolute' && p !== 'fixed'; }); if (!kids.length) return;
+    kids.forEach(k => { k.style.zoom = ''; });
+    // on mesure les vraies boîtes des éléments (pas leurs décorations qui dépassent, comme les héros qui sautillent)
+    const cs = getComputedStyle(s), pt = parseFloat(cs.paddingTop), pb = parseFloat(cs.paddingBottom), avail = s.clientHeight - pt - pb;
+    const need = () => { const top = s.getBoundingClientRect().top + pt; let b = 0; kids.forEach(k => { b = Math.max(b, k.getBoundingClientRect().bottom); }); return b - top; };
+    let z = 1;
+    for (let i = 0; i < 4; i++) { const h = need(); if (h <= avail + 1) break; z = Math.max(.5, z * avail / h - .004); kids.forEach(k => { k.style.zoom = z; }); }
+  }
+  let fitT = [];
+  function fitSoon() { fitT.forEach(clearTimeout); requestAnimationFrame(fitScreen); fitT = [150, 600, 1600].map(ms => setTimeout(fitScreen, ms)); }   // le contenu (stats, autocollants, images) arrive parfois un peu après
+  addEventListener('resize', fitSoon); addEventListener('orientationchange', fitSoon);
   // la musique accompagne la partie ; elle se met en pause avec le jeu
   function updateMusic() {
     const should = audioEnabled && musicEnabled && !document.hidden && !idleMuted && (scene === 'game-screen' || scene === 'puzzle-screen');
@@ -2981,7 +2995,7 @@
   $('#lang-select').addEventListener('change', e => { MM.i18n.setLang(e.target.value); sayText(T('newVoice')); setTimeout(() => { if (!hasVoiceFor()) showToast(T('noVoice', { lang: MM.i18n.info().name })); }, 600); });
   MM.i18n.localizeData(); MM.i18n.applyDom(); buildLangUI(); fillVoiceSelect(); setAudioEnabled(audioEnabled, true);
   updateNameSetting();
-  window.__mm = { startLevel, view, world, get player() { return player; }, get rebuilds() { return (STREET_CACHE.n || 0) + '/' + (GROUND_CACHE.n || 0); } };   // pour les tests automatiques
+  window.__mm = { startLevel, finishMission, setScreen, view, world, get player() { return player; }, get rebuilds() { return (STREET_CACHE.n || 0) + '/' + (GROUND_CACHE.n || 0); } };   // pour les tests automatiques
   if (!MM.i18n.chosen) { const g = MM.i18n.guess(); $('#lang-grid').querySelector(`[data-lang="${g}"]`)?.classList.add('guess'); setScreen('lang-screen'); }
   else if (!save.nameAsked) openNameScreen('home');
   else if (location.hash === '#space' && !restLocked()) openSpace();       // retour d'un monde de Rose : on revient sur la carte des planètes
