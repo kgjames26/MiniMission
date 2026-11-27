@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '115', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '116', asset = (p) => `${p}?v=${ASSET_V}`;
   // la soucoupe des farceurs passe de temps en temps dans le ciel des villes (l'indice de l'histoire, chapitre 1)
   const ufoImg = new Image(); let UFO = null; ufoImg.src = asset('assets/aliens.webp'); fetch(asset('assets/aliens.json')).then(r => r.json()).then(j => { UFO = j.zap_f1; }).catch(() => {});
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
@@ -669,15 +669,34 @@
     ctx.restore(); drawAmbient(time);
   }
   // BETA : la rue peinte de chaque ville (assets/bg/street<N>.webp) : ciel, monuments et maisons, posée sur le sol du jeu
-  const STREET = {}, GSTREET = new Image(); let gStreetPat = null; GSTREET.onload = () => { try { gStreetPat = ctx.createPattern(GSTREET, 'repeat'); } catch (e) {} }; GSTREET.src = asset('assets/ground/street.webp');
+  const STREET = {}, GSTREET = new Image(); GSTREET.src = asset('assets/ground/street.webp');
   function street() { const i = (mission && mission.city) || 0; if (!(i in STREET)) { const im = new Image(); im.src = asset(`assets/bg/street${i}.webp`); STREET[i] = im; } const im = STREET[i]; return im.complete && im.naturalWidth ? im : null; }
+  // pré-rendu à la taille exacte de l'écran (une seule fois par taille) : ensuite, chaque image ne fait qu'une copie sans
+  // redimensionner. Redimensionner une grande image 60 fois par seconde (en qualité « haute ») faisait saccader.
+  const STREET_CACHE = { key: '', cv: null };
+  function streetCanvas(im, tw, th) {
+    const S = view.scale, key = (mission ? mission.city : 0) + '|' + Math.round(tw * S) + 'x' + Math.round(th * S);
+    if (STREET_CACHE.key !== key) { const cv = STREET_CACHE.cv || document.createElement('canvas'); cv.width = Math.round(tw * S) * 2; cv.height = Math.round(th * S); const c = cv.getContext('2d');
+      c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high'; const w1 = Math.round(tw * S); c.drawImage(im, 0, 0, w1, cv.height); c.save(); c.translate(w1 * 2, 0); c.scale(-1, 1); c.drawImage(im, 0, 0, w1, cv.height); c.restore();   // une image + son miroir : pas de couture
+      const g = c.createLinearGradient(0, 0, 0, 70 * S); const sk = (mission && mission.palette && mission.palette[0]) || '#70d0f4'; g.addColorStop(0, sk); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0, 0, cv.width, 70 * S);
+      c.fillStyle = 'rgba(255,255,255,.2)'; c.fillRect(0, 0, cv.width, cv.height);   // le voile est cuit dans l'image
+      STREET_CACHE.cv = cv; STREET_CACHE.key = key; }
+    return STREET_CACHE.cv;
+  }
+  const GROUND_CACHE = { key: '', cv: null };
+  function groundCanvas() {
+    if (!GSTREET.complete || !GSTREET.naturalWidth) return null; const S = view.scale, h = Math.round(175 * S), w = Math.round(GSTREET.naturalWidth * 175 / 300 * S), key = w + 'x' + h;
+    if (GROUND_CACHE.key !== key) { const cv = GROUND_CACHE.cv || document.createElement('canvas'); cv.width = w; cv.height = h; const c = cv.getContext('2d'); c.imageSmoothingQuality = 'high'; c.drawImage(GSTREET, 0, 0, w, h); GROUND_CACHE.cv = cv; GROUND_CACHE.key = key; }
+    return GROUND_CACHE.cv;
+  }
+  function blitRow(cv, xWorld, yWorld) {   // copie une bande pré-rendue, répétée sur toute la largeur, en pixels de l'écran
+    const T = ctx.getTransform(), y = Math.round(T.d * yWorld + T.f); let x = Math.round(T.a * xWorld + T.e) % cv.width; if (x > 0) x -= cv.width;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); for (; x < canvas.width; x += cv.width) ctx.drawImage(cv, x, y); ctx.restore();
+  }
   function drawStreet() {
-    const im = street(); if (!im) return false; const W = view.w, extra = Math.max(0, -viewTop0()), bot = world.floor + 6 + (world.camY || 0);
+    const im = street(); if (!im) return false; const extra = Math.max(0, -viewTop0()), bot = world.floor + 6 + (world.camY || 0);
     const th = Math.min(Math.max(bot + extra, 420), 520), tw = im.naturalWidth * th / im.naturalHeight, top = bot - th;
-    let x0 = -((world.camera * .3) % (tw * 2)); if (x0 > 0) x0 -= tw * 2;
-    for (let i = 0, x = x0; x < W; i++, x += tw) { ctx.save(); if (i % 2) { ctx.translate(x + tw, top); ctx.scale(-1, 1); } else ctx.translate(x, top); ctx.drawImage(im, 0, 0, tw + (i % 2 ? 0 : 1), th); ctx.restore(); }
-    if (top > -extra) { const sk = (mission && mission.palette && mission.palette[0]) || '#70d0f4', g = ctx.createLinearGradient(0, top, 0, top + 70); g.addColorStop(0, sk); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.fillRect(0, top - 1, W, 71); }   // le haut de l'image se fond dans le ciel
-    ctx.fillStyle = 'rgba(255,255,255,.2)'; ctx.fillRect(0, top, W, th);   // léger voile : les éléments de jeu ressortent
+    blitRow(streetCanvas(im, tw, th), -world.camera * .3, top);
     return true;
   }
   // la silhouette peinte de la ville, tout au loin (assets/bg/city<N>.webp), posée sur l'horizon et qui défile très lentement
@@ -852,7 +871,7 @@
     const TH = theme();
     ctx.fillStyle = TH.edge; ctx.fillRect(0, F+13, W, 7);
     ctx.fillStyle = TH.dirt; ctx.fillRect(0, F+25, W, 145);
-    if (gStreetPat && street()) { const k = 170 / 300; try { gStreetPat.setTransform(new DOMMatrix([k, 0, 0, k, -cam * .9 % (537 * k * 2), F - 4])); } catch (e) {} ctx.fillStyle = gStreetPat; ctx.fillRect(0, F - 4, W, 175); ctx.fillStyle = 'rgba(35,22,55,.55)'; ctx.fillRect(0, F - 5, W, 3); }   // sol peint (un seul remplissage : léger)
+    const gcv = street() && groundCanvas(); if (gcv) { blitRow(gcv, -cam * .9, F - 4); ctx.fillStyle = 'rgba(35,22,55,.55)'; ctx.fillRect(0, F - 5, W, 3); }   // sol peint, pré-rendu
     else { ctx.fillStyle = TH.line; for (let i = -1; i < Math.ceil(W/80)+2; i++) { const x = ((i*80 - cam*.9) % (W+80)); ctx.fillRect(x, F+42, 48, 3); } }
     world.gaps.forEach(gap => {
       const x = gap.x - cam; if (x + gap.w < 0 || x > W) return;
