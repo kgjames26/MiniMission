@@ -199,7 +199,14 @@
   function pick() { const l = list(); if (!l.length) return null; const n = saved(); return (n && l.find(v => v.name === n)) || l[0]; }
   // ce que la voix lit : sans émojis ni symboles (certaines voix les décrivent : « visage souriant »), et les mots en MAJUSCULES
   // (« OUI ! », « NOS amis ») en minuscules pour qu'ils ne soient pas épelés lettre par lettre ; les sigles connus restent.
+  // les noms français du jeu, écrits pour être bien prononcés par les voix anglaise, espagnole et allemande
+  const SAY = {
+    en: [[/Farfouille/g, 'Far-fooey'], [/Filou/g, 'Feeloo'], [/Glouglou/g, 'Gloo-gloo'], [/Bidou/g, 'Beedoo']],
+    es: [[/Farfouille/g, 'Farfuy'], [/Filou/g, 'Filú'], [/Glouglou/g, 'Glu-glu'], [/Bidou/g, 'Bidú'], [/Ziggy/g, 'Zigui'], [/Boing/g, 'Boin']],
+    de: [[/Farfouille/g, 'Farfuj'], [/Filou/g, 'Filu'], [/Glouglou/g, 'Glu-glu'], [/Bidou/g, 'Bidu']]
+  };
   function clean(t) {
+    for (const [re, w] of SAY[MM.i18n.lang] || []) t = String(t || '').replace(re, w);
     return String(t || '').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu, ' ')
       .replace(/(?<!\p{L})\p{Lu}{2,}(?!\p{L})/gu, (w) => /^(USA|UK|ONU|OK)$/.test(w) ? w : w.toLowerCase()).replace(/[#*_~|<>]/g, ' ').replace(/\s{2,}/g, ' ').trim();
   }
