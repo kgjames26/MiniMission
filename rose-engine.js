@@ -587,7 +587,7 @@
     const jumps = {}; let RW = [];   // calculés dès que les planches sont chargées (sinon Rose et les héros manqueraient à la fête)
     say(KID ? EN.partyN.replace('{name}', KID) : EN.party); sfx.good(); setTimeout(() => sfx.friend(), 500);
     function frame(now) {
-      if (!run) return; const t = (now - t0) / 1000; requestAnimationFrame(frame);
+      if (!run) return; requestAnimationFrame(frame); if (now - (frame.last || 0) < 1000 / 30 - 4) return; frame.last = now; const t = (now - t0) / 1000;
       const g = c.createLinearGradient(0, 0, 0, PH); g.addColorStop(0, '#3b2a8f'); g.addColorStop(.55, '#b45ad8'); g.addColorStop(1, '#ffb27a'); c.fillStyle = g; c.fillRect(0, 0, PW, PH);
       for (let i = 0; i < 40; i++) { const x = (i * 97.3) % PW, y = (i * 53.7) % (PH * .45), tw = .4 + .6 * Math.abs(Math.sin(t * 2 + i)); c.globalAlpha = tw; c.fillStyle = '#fff'; c.beginPath(); c.arc(x, y, 1.6, 0, 7); c.fill(); } c.globalAlpha = 1;
       // guirlandes de fanions
@@ -985,7 +985,10 @@
   // ================= boucle =================
   let last = performance.now(), started = false;
   let loopErr = 0;
+  const FRAME_MS = 1000 / 30; let lastFrame = 0;   // limité à 30 images par seconde, comme le reste du jeu
   function loop(now) {
+    if (now - lastFrame < FRAME_MS - 4) { requestAnimationFrame(loop); return; }
+    lastFrame = now;
     // une image qui rate ne doit jamais figer le jeu : on note l'erreur et on continue à l'image suivante
     try { tick(now); } catch (e) { if (loopErr++ < 3) console.error(e); }
     requestAnimationFrame(loop);
