@@ -1,5 +1,5 @@
 /* Mini Mission — styles. Tout est dessiné en CSS/SVG/canvas : aucun écran n'est une image figée, donc tout remplit n'importe quel support. */
-:root{--font:ui-rounded,'Baloo 2','Nunito','Trebuchet MS','Segoe UI',system-ui,sans-serif;--ink:#22405e;--navy:#244764;--sat:env(safe-area-inset-top,0px);--sar:env(safe-area-inset-right,0px);--sab:env(safe-area-inset-bottom,0px);--sal:env(safe-area-inset-left,0px)}
+:root{--font:ui-rounded,'Baloo 2','Nunito','Trebuchet MS','Segoe UI',system-ui,sans-serif;--ink:#22405e;--navy:#244764;--sat:env(safe-area-inset-top,0px);--sar:env(safe-area-inset-right,0px);--sab:max(env(safe-area-inset-bottom,0px),14px);--sal:env(safe-area-inset-left,0px)}
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:#8fd9f5}
 body{font-family:var(--font);color:var(--ink);text-rendering:optimizeLegibility;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
@@ -42,9 +42,10 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
 .logo-mini{--fs:clamp(44px,min(11vw,13vh),118px)}
 .logo-mission{--fs:clamp(50px,min(13.4vw,16vh),146px)}
 .home-heroes{flex:1;min-height:0;width:100%;display:flex;justify-content:center;align-items:flex-end;gap:clamp(4px,3vw,56px);--hh:clamp(100px,min(36vh,36vw),390px)}
-.home-hero{position:relative;display:block;margin-inline:calc(var(--hh)*-.04);animation:hero-bob 2.6s ease-in-out infinite}
-.home-hero .sprite{--sh:var(--hh)}
-.hh-ziggy{animation-delay:-.4s}.hh-filou{animation-delay:-1.2s}.hh-filou .sprite{--sh:calc(var(--hh)*1.08)}.hh-titan{animation-delay:-2s}.hh-titan .sprite{transform:scaleX(-1)}
+.home-heroes{container-type:size}
+.home-hero{--hh2:min(var(--hh),94cqh);position:relative;display:block;margin-inline:calc(var(--hh2)*-.04);animation:hero-bob 2.6s ease-in-out infinite}
+.home-hero .sprite{--sh:var(--hh2)}
+.hh-ziggy{animation-delay:-.4s}.hh-filou{animation-delay:-1.2s}.hh-filou .sprite{--sh:calc(var(--hh2)*1.08)}.hh-titan{animation-delay:-2s}.hh-titan .sprite{transform:scaleX(-1)}
 @keyframes hero-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3%)}}
 .play-button{position:relative;z-index:3;margin-top:clamp(6px,1.4vh,16px);min-width:min(86vw,360px);height:clamp(56px,9.5vh,88px);padding:0 28px;border-radius:26px;background:linear-gradient(#ffb23a,#ff7a1a);border:4px solid #fff;color:#fff;font-weight:900;font-size:clamp(26px,4.6vh,42px);letter-spacing:.02em;text-shadow:0 3px 0 #c2540c;box-shadow:0 0 0 4px #ff9a2e,0 8px 0 5px #c4610f,0 14px 26px #7a3b0a55;animation:play-pulse 1.8s ease-in-out infinite;transition:transform .1s}
 .play-button:active{transform:translateY(5px);animation:none;box-shadow:0 0 0 4px #ff9a2e,0 3px 0 5px #c4610f}
@@ -79,7 +80,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
 .session-timer-row select{border:1px solid #cfe0e7;border-radius:10px;background:#fff;padding:6px 10px;color:#4d6b7c;font:inherit;font-size:12px;font-weight:700}
 
 /* ---------- Mode d'emploi ---------- */
-.howto-screen{flex-direction:column;overflow-y:auto;padding:calc(var(--sat) + 12px) calc(var(--sar) + 16px) calc(var(--sab) + 12px) calc(var(--sal) + 16px);gap:clamp(8px,1.6vh,16px);--demo-pad:clamp(112px,min(40vh,28vw),300px);--demo-btn:clamp(88px,min(28vh,20vw),210px)}
+.howto-screen{flex-direction:column;overflow:hidden;padding:calc(var(--sat) + 12px) calc(var(--sar) + 16px) calc(var(--sab) + 12px) calc(var(--sal) + 16px);gap:clamp(8px,1.6vh,16px);--demo-pad:clamp(112px,min(40vh,28vw),300px);--demo-btn:clamp(88px,min(28vh,20vw),210px)}
 .howto-board{margin:auto;width:min(1180px,100%);display:grid;grid-template-columns:1fr 1.3fr;gap:clamp(10px,2.4vw,36px);align-items:stretch}
 .howto-block{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(6px,1.6vh,14px);padding:clamp(10px,2vh,22px);background:rgba(255,255,255,.62);border:3px solid rgba(255,255,255,.95);border-radius:28px;box-shadow:0 10px 26px #1d4d7a2b;text-align:center}
 .howto-label{margin:0;font-weight:900;font-size:clamp(20px,min(3.2vw,4.6vh),38px);color:#ef4b43;-webkit-text-stroke:.14em #fff;paint-order:stroke fill;filter:drop-shadow(0 .05em 0 rgba(26,62,118,.3))}
@@ -224,7 +225,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid 
 .puzzle-reward .primary-button{margin-top:10px}
 
 /* ---------- Fin de mission ---------- */
-.ending-screen{overflow-y:auto;background:radial-gradient(ellipse at 50% 5%,#fff9d7,#d5f4ff 56%,#a8ddf4);padding:calc(var(--sat) + 14px) calc(var(--sar) + 16px) calc(var(--sab) + 14px) calc(var(--sal) + 16px)}
+.ending-screen{overflow:hidden;background:radial-gradient(ellipse at 50% 5%,#fff9d7,#d5f4ff 56%,#a8ddf4);padding:calc(var(--sat) + 14px) calc(var(--sar) + 16px) calc(var(--sab) + 14px) calc(var(--sal) + 16px)}
 .ending-inner{position:relative;z-index:1;margin:auto;display:flex;align-items:center;justify-content:center;gap:clamp(12px,4vw,56px);width:min(1100px,100%)}
 .ending-hero{flex:none;display:grid;place-items:end center}
 .ending-hero .sprite{--sh:clamp(150px,min(46vh,34vw),400px)}
@@ -846,7 +847,7 @@ body.peeking .fly-item{visibility:hidden}   /* les objets qui volent vers les co
 .ending-gifts{margin:4px 0;font-weight:900;color:#7a4a9a;font-size:clamp(14px,2.4vmin,18px)}.ending-gifts b{font-size:1.5em;letter-spacing:.06em}
 
 /* ---------- Accueil (v0.86) : la ville en bas, l'espace en haut, la soucoupe des farceurs, Rose avec les trois héros ---------- */
-.home-screen{position:relative;overflow:hidden}
+.home-screen{overflow:hidden}   /* reste en position absolue (cadre de l’écran) : en « relative », l’accueil grandissait plus haut que l’écran */
 .home-screen>*:not(.home-deco):not(.home-version){position:relative;z-index:1}
 .home-version{z-index:1}
 .home-deco{position:absolute;inset:0;pointer-events:none;z-index:0}
@@ -870,7 +871,7 @@ body.peeking .fly-item{visibility:hidden}   /* les objets qui volent vers les co
 .hd-bub.b1{left:8%;animation-delay:-1s}.hd-bub.b2{left:22%;animation-delay:-5s;width:clamp(12px,2.6vmin,26px)}.hd-bub.b3{left:70%;animation-delay:-3s}.hd-bub.b4{left:86%;animation-delay:-7s;width:clamp(14px,3vmin,30px)}.hd-bub.b5{left:46%;animation-delay:-8.5s;width:clamp(10px,2vmin,20px)}
 @keyframes hd-rise{0%{transform:translate(0,0);opacity:0}10%{opacity:1}50%{transform:translate(20px,-55vh)}100%{transform:translate(-10px,-110vh);opacity:0}}
 .hh-rose{animation-delay:-.8s}
-.hh-rose img{display:block;height:calc(var(--hh)*.98);width:auto;filter:drop-shadow(0 6px 6px rgba(0,0,0,.25));user-select:none;-webkit-user-drag:none}
+.hh-rose img{display:block;height:calc(var(--hh2)*.98);width:auto;filter:drop-shadow(0 6px 6px rgba(0,0,0,.25));user-select:none;-webkit-user-drag:none}
 .home-album-row{gap:clamp(10px,2vw,22px);flex-wrap:wrap}
 .pill-btn.home-books{position:relative;background:linear-gradient(#8fd6ff,#3a8fe0);color:#fff;border:4px solid #fff;border-radius:999px;font-weight:1000;display:inline-flex;align-items:center;gap:10px;text-shadow:0 2px 0 #1f5fa6;min-height:58px;padding:10px 26px;font-size:clamp(20px,3.2vh,28px);box-shadow:0 6px 0 #1f5fa6,0 0 0 4px #fff;width:auto;height:auto}
 .book-ico{position:relative;display:inline-block;width:1.25em;height:1.55em;flex:none;animation:book-nod 3.2s ease-in-out infinite;transform-origin:50% 90%}
@@ -880,7 +881,7 @@ body.peeking .fly-item{visibility:hidden}   /* les objets qui volent vers les co
 @keyframes book-nod{0%,70%,100%{transform:rotate(0)}78%{transform:rotate(-10deg)}86%{transform:rotate(8deg)}94%{transform:rotate(-3deg)}}
 .home-books .album-badge{background:#ff8a1c;box-shadow:0 2px 0 #b0560a}
 .home-screen .home-tagline{display:none}
-@media (orientation:portrait){.home-heroes{display:grid;grid-template-columns:repeat(2,auto);justify-content:center;align-content:center;justify-items:center;--hh:clamp(90px,min(22vh,40vw),260px)}.home-album-row .pill-btn{font-size:clamp(17px,2.6vh,24px);padding:8px 18px;min-height:50px}}
+@media (orientation:portrait){.home-hero{--hh2:min(var(--hh),46cqh)}.home-heroes{display:grid;grid-template-columns:repeat(2,auto);justify-content:center;align-content:center;justify-items:center;--hh:clamp(90px,min(22vh,40vw),260px)}.home-album-row .pill-btn{font-size:clamp(17px,2.6vh,24px);padding:8px 18px;min-height:50px}}
 @media(max-height:460px){.pill-btn.home-books{min-height:44px;padding:6px 18px;font-size:18px}}
 @media (orientation:landscape){.home-heroes{--hh:clamp(84px,min(30vh,24vw),330px)}}
 @media (orientation:landscape) and (max-height:460px){.home-heroes{--hh:clamp(70px,27vh,200px)}}
@@ -938,3 +939,5 @@ body.peeking .fly-item{visibility:hidden}   /* les objets qui volent vers les co
 .chap-card.c2 .chap-lock{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;display:none;filter:drop-shadow(0 4px 6px rgba(0,0,0,.4))}
 .chap-card.c2.locked .chap-lock{display:block}
 .chap-card.c2.locked .chap-art{filter:grayscale(.75) brightness(.8)}
+/* paysage peu haut (téléphone couché) : le logo sur une seule ligne, pour laisser de la place aux héros sans rien couper en bas */
+@media (orientation:landscape) and (max-height:500px){.logo{flex-direction:row;align-items:baseline;gap:.22em;margin-top:-4px}.logo-mini,.logo-mission{--fs:clamp(34px,min(8vw,15vh),78px)}}
