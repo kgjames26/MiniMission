@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '100', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '101', asset = (p) => `${p}?v=${ASSET_V}`;
   // la soucoupe des farceurs passe de temps en temps dans le ciel des villes (l'indice de l'histoire, chapitre 1)
   const ufoImg = new Image(); let UFO = null; ufoImg.src = asset('assets/aliens.webp'); fetch(asset('assets/aliens.json')).then(r => r.json()).then(j => { UFO = j.zap_f1; }).catch(() => {});
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
@@ -368,7 +368,7 @@
     const done = roseDone();
     $('#space-map').innerHTML = PLANETS.map((p, i) => {
       const open = i === 0 || DEV() || done.includes(PLANETS[i - 1].id), ready = !!p.file;
-      return `<button type="button" role="listitem" class="planet ${open ? '' : 'locked'} ${ready ? '' : 'soon'} ${done.includes(p.id) ? 'done' : ''}" data-i="${i}" style="--s:${p.s};--c1:${p.c[0]};--c2:${p.c[1]};--y:${(i % 2 ? 1 : -1) * 18}%"><span class="pl-ball ${p.band ? 'band' : ''} ${p.earth ? 'earth' : ''} ${p.sun ? 'sun' : ''}">${p.ring ? `<i class="pl-ring r${p.ring}"></i>` : ''}</span><b class="pl-name">${escapeHtml(T(p.k))}</b>${!open ? '<span class="pl-badge">🔒</span>' : !ready ? `<span class="pl-badge soon">${escapeHtml(T('soon'))}</span>` : ''}</button>`;
+      return `<button type="button" role="listitem" class="planet ${open ? '' : 'locked'} ${ready ? '' : 'soon'} ${done.includes(p.id) ? 'done' : ''}" data-i="${i}" style="--s:${p.s};--c1:${p.c[0]};--c2:${p.c[1]};--y:${(i % 2 ? 1 : -1) * 18}%"><span class="pl-ball pic ${p.ring ? 'ringed r' + p.ring : ''}"><img src="${asset('assets/planets/' + p.id + '.webp')}" alt="" draggable="false" onerror="this.parentNode.classList.remove('pic');this.remove()"></span><b class="pl-name">${escapeHtml(T(p.k))}</b>${!open ? '<span class="pl-badge">🔒</span>' : !ready ? `<span class="pl-badge soon">${escapeHtml(T('soon'))}</span>` : ''}</button>`;
     }).join('');
     setScreen('space-screen');
     if (!timerNoticePlaying) sayText(T('sayChoosePlanet'), null, true);
