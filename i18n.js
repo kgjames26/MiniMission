@@ -45,7 +45,7 @@
       aEnd: 'Niveau terminé', bravo: 'Bravo !', aAlphabet: 'Alphabet récolté', aMenu: 'Menu principal', aReplay: 'Rejouer cette ville', aCityAlbum: 'Voir l’album de la ville', aNext: 'Ville suivante',
       aTimer: 'Minuteur de jeu', howLong: '⏱️ Combien de temps ?', timerNote: 'Ensuite, les héros vont dormir.', aRest: 'Les héros dorment', restTitle: 'Chut… les héros dorment !',
       aSettings: 'Réglages adulte', settings: '⚙ Réglages', sounds: '🔊 Sons', music: '🎵 Musique', sfx: '💥 Bruitages', vibr: '📳 Vibrations', oneBtn: '👶 Un seul bouton', oneBtnHint: '(3-4 ans : le pouvoir part tout seul)',
-      voice: '🗣️ Voix', aVoice: 'Choisir la voix', auto: 'Automatique', autoBest: 'Automatique (la plus agréable)',
+      voice: '🗣️ Voix', aVoice: 'Choisir la voix', auto: 'Automatique', autoBest: 'Automatique (la plus agréable)', gameVoice: 'Voix du jeu (enregistrée)',
       resetTimer: '⏱️ Réinitialiser le minuteur', holdHint: '(garder appuyé)', aResetTimer: 'Réinitialiser le minuteur : garder appuyé 3 secondes', resetAll: '🗑️ Tout réinitialiser', aResetAll: 'Réinitialiser le jeu : garder appuyé 3 secondes',
       // textes du jeu
       sayChooseCity: 'Choisis une ville !', lockedToast: 'Termine la ville d’avant !', lockedSay: 'Termine d’abord la ville d’avant !',

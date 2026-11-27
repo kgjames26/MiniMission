@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '122', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '123', asset = (p) => `${p}?v=${ASSET_V}`;
   // la soucoupe des farceurs passe de temps en temps dans le ciel des villes (l'indice de l'histoire, chapitre 1)
   const ufoImg = new Image(); let UFO = null; ufoImg.src = asset('assets/aliens.webp'); fetch(asset('assets/aliens.json')).then(r => r.json()).then(j => { UFO = j.zap_f1; }).catch(() => {});
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
@@ -1281,7 +1281,7 @@
     c.restore();
   }
   function roundRect(x,y,w,h,r,fill=true){ctx.beginPath();if(typeof ctx.roundRect==='function')ctx.roundRect(x,y,w,h,Math.min(r,w/2,h/2));else{ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);}if(fill)ctx.fill();else ctx.stroke();}
-  function cancelSpeech(requeueTimer=true){speechToken++;speechBusy=0;MM.music.duck(false);if(timerNoticePlaying){timerNoticePlaying=false;if(requeueTimer){timerAnnouncementPending=true;save.timerAnnouncementPending=true;writeSave();}}if('speechSynthesis'in window)window.speechSynthesis.cancel();}
+  function cancelSpeech(requeueTimer=true){speechToken++;speechBusy=0;MM.music.duck(false);if(timerNoticePlaying){timerNoticePlaying=false;if(requeueTimer){timerAnnouncementPending=true;save.timerAnnouncementPending=true;writeSave();}}MM.clips?.stop();if('speechSynthesis'in window)window.speechSynthesis.cancel();}
   /* ----- voix : on choisit la plus agréable disponible (voix naturelles/neuronales d'abord), ou celle choisie dans les réglages ----- */
   function voiceScore(v) {
     const n = v.name || '', l = v.lang || '', code = MM.i18n.lang, want = MM.i18n.info().tts;
@@ -1307,24 +1307,38 @@
   function fillVoiceSelect() {
     const sel = $('#voice-select'); if (!sel) return;
     const list = frenchVoices(), cur = savedVoice();
-    sel.innerHTML = `<option value="">${escapeHtml(T('autoBest'))}</option>` + list.map(v => `<option value="${escapeHtml(v.name)}" ${v.name === cur ? 'selected' : ''}>${escapeHtml(v.name)} (${escapeHtml(v.lang)})</option>`).join('');
+    sel.innerHTML = `<option value="">${escapeHtml(T(MM.clips?.has() ? 'gameVoice' : 'autoBest'))}</option>` + list.map(v => `<option value="${escapeHtml(v.name)}" ${v.name === cur ? 'selected' : ''}>${escapeHtml(v.name)} (${escapeHtml(v.lang)})</option>`).join('');
   }
   if ('speechSynthesis' in window) { try { speechSynthesis.addEventListener('voiceschanged', fillVoiceSelect); } catch {} }
+  window.addEventListener('mm-clips', fillVoiceSelect);   // les voix enregistrées viennent d'arriver
   // minor = phrase secondaire du jeu (lettre, encouragement…) : si une voix parle déjà, on ne la coupe pas, la nouvelle phrase est abandonnée.
   // Sans minor (action de l'enfant ou de l'adulte, devinette, minuteur, fin de mission) : la phrase passe toujours.
   let speechBusy=0;   // heure (ms) jusqu'à laquelle on considère qu'une voix parle (sécurité si « fin » n'arrive jamais)
-  function sayText(text,onComplete,minor=false){if(!('speechSynthesis'in window)||!('SpeechSynthesisUtterance'in window))return false;if(minor&&performance.now()<speechBusy)return false;cancelSpeech(false);speechBusy=performance.now()+1500+text.length*110;const token=++speechToken;const utterance=new SpeechSynthesisUtterance(text);utterance.volume=1;MM.voice.tune(utterance);MM.music.duck(true);utterance.onend=()=>{if(token===speechToken){speechBusy=0;MM.music.duck(false);onComplete?.(true);}};utterance.onerror=()=>{if(token===speechToken){speechBusy=0;MM.music.duck(false);onComplete?.(false);}};window.speechSynthesis.speak(utterance);return true;}
+  // la voix : d'abord les fichiers enregistrés (voice-clips.js), sinon la synthèse vocale du navigateur (secours).
+  // parts (facultatif) : les morceaux de la phrase, quand le jeu l'assemble (question + réponses mélangées…)
+  function sayText(text,onComplete,minor=false,parts=null){
+    const tts=('speechSynthesis'in window)&&('SpeechSynthesisUtterance'in window), clips=MM.clips?.plan(parts||text);
+    if(!tts&&!clips)return false;if(minor&&performance.now()<speechBusy)return false;
+    cancelSpeech(false);speechBusy=performance.now()+1500+text.length*110;const token=++speechToken;MM.music.duck(true);
+    const done=(ok)=>{if(token===speechToken){speechBusy=0;MM.music.duck(false);onComplete?.(ok);}};
+    const browser=()=>{if(token!==speechToken)return;if(!tts){done(false);return;}const utterance=new SpeechSynthesisUtterance(text);utterance.volume=1;MM.voice.tune(utterance);utterance.onend=()=>done(true);utterance.onerror=()=>done(false);window.speechSynthesis.speak(utterance);};
+    if(clips)MM.clips.play(clips,{onend:()=>done(true),onfail:browser});else browser();
+    return true;
+  }
   function speakTimerNotice(onComplete){if(!timerAnnouncementPending){onComplete?.();return;}timerAnnouncementPending=false;const started=sayText(T('timerNotice'),()=>{timerNoticePlaying=false;save.timerAnnouncementPending=false;save.sessionElapsed=sessionElapsed;writeSave();onComplete?.();if(scene==='puzzle-screen'&&puzzleTask&&!puzzleResolved&&!onComplete)readPuzzleAloud();});timerNoticePlaying=started;if(!started){save.timerAnnouncementPending=false;writeSave();onComplete?.();}}
   function readPuzzleAloud() {
     if (!puzzleTask || puzzleResolved || timerNoticePlaying) return;
     const kind = puzzleTask.kind || 'quiz';
     const btn = $(kind === 'quiz' ? '#puzzle-read-button' : '#game-read-button');
     const text = kind === 'quiz' ? T('chooseAnswer', { q: puzzleTask.say || puzzleTask.prompt, opts: puzzleTask.options.map(option => option[1]).join(MM.i18n.lang === 'ja' ? '、' : '. ') }) : puzzleTask.say;
+    // pour les voix enregistrées : la question, « Choisis une réponse : », puis chaque réponse (un fichier chacune)
+    const mid = (/\{q\}(.*)\{opts\}/.exec(T('chooseAnswer')) || [])[1];
+    const parts = kind === 'quiz' && mid != null ? [puzzleTask.say || puzzleTask.prompt, mid.trim(), ...puzzleTask.options.map(option => option[1])] : null;
     const started = sayText(text, () => {
       btn.classList.remove('speaking');
       if (scene !== 'puzzle-screen' || puzzleResolved) return;
       if (timerAnnouncementPending) speakTimerNotice();
-    });
+    }, false, parts);
     // les réponses restent toujours cliquables : on peut répondre sans attendre la fin de la lecture
     btn.classList.toggle('speaking', started);
   }
@@ -2704,7 +2718,7 @@
       el.addEventListener('animationend', (e) => { if (e.animationName === 'hero-hop') el.classList.remove('hop'); }); }); }
   $('#library-open').addEventListener('click',()=>{cancelSpeech();if(MM.book)MM.book.library(MM.STORY_ORDER||[], updateBooksBadge);});
   updateBooksBadge(); addEventListener('pageshow', updateBooksBadge); MM.updateBooksBadge = updateBooksBadge;
-  MM.say=(t)=>sayText(t); MM.hush=()=>cancelSpeech();
+  MM.say=(t,parts)=>sayText(t,null,false,parts); MM.hush=()=>cancelSpeech();
   $('#hero-back').addEventListener('click',()=>{renderLevels();setScreen('level-screen');});
   $('#level-grid').addEventListener('click',e=>{const card=e.target.closest('.level-card');if(card)pickLevel(Number(card.dataset.i));});
   $('#album-grid').addEventListener('click',e=>{const slot=e.target.closest('.album-slot.got');if(slot)openStickerDetail(Number(slot.dataset.id));});

@@ -25,7 +25,7 @@
       aEnd: 'クリア', bravo: 'すごい！', aAlphabet: 'あつめた もじ', aMenu: 'メニュー', aReplay: 'この まちを もういちど', aCityAlbum: 'この まちの アルバムを みる', aNext: 'つぎの まち',
       aTimer: 'プレイタイマー', howLong: '⏱️ どのくらい あそぶ？', timerNote: 'その あと、ヒーローたちは ねむります。', aRest: 'ヒーローたちは おやすみちゅう', restTitle: 'しーっ… ヒーローたちは おやすみちゅう！',
       aSettings: '保護者向け設定', settings: '⚙ 設定', sounds: '🔊 サウンド', music: '🎵 音楽', sfx: '💥 効果音', vibr: '📳 振動', oneBtn: '👶 ボタン ひとつ', oneBtnHint: '（3〜4さい：ちからが じどうで でる）',
-      voice: '🗣️ 声', aVoice: '声を選ぶ', auto: '自動', autoBest: '自動（いちばん聞きやすい声）',
+      voice: '🗣️ 声', aVoice: '声を選ぶ', auto: '自動', autoBest: '自動（いちばん聞きやすい声）', gameVoice: 'ゲームの声（録音）',
       resetTimer: '⏱️ タイマーを リセット', holdHint: '（長押し）', aResetTimer: 'タイマーをリセット：3秒間 長押し', resetAll: '🗑️ すべて リセット', aResetAll: 'ゲームをリセット：3秒間 長押し',
       sayChooseCity: 'まちを えらんでね！', lockedToast: 'まえの まちを クリアしてね！', lockedSay: 'さきに、まえの まちを クリアしてね！',
       aDifficulty: 'むずかしさ {n}', aAgain: 'もっと むずかしく もういちど', aLevel: 'ステージ {n}：{city}', aLocked: '、まだ あそべません', aLevelLeft: ' のこり：ほし {s}こ、もじ {l}こ、モンスター {m}ひき。',

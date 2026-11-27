@@ -115,13 +115,13 @@
   }
   let styled = false;
   const style = () => { if (styled) return; styled = true; const s = document.createElement('style'); s.textContent = css; document.head.appendChild(s); };
-  const speak = (t) => { if (MM.say) MM.say(t); else { try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); if (MM.voice) MM.voice.tune(u); else u.lang = (MM.i18n && MM.i18n.info().tts) || 'fr-FR'; speechSynthesis.speak(u); } catch (e) {} } };
+  const speak = (t, parts) => { if (MM.say) MM.say(t, parts); else { try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); if (MM.voice) MM.voice.tune(u); else u.lang = (MM.i18n && MM.i18n.info().tts) || 'fr-FR'; speechSynthesis.speak(u); } catch (e) {} } };
   // traductions de l'histoire (story-xx.js) : on garde le français si une page manque
   const LX = () => (MM.STORY_L10N || {})[(MM.i18n && MM.i18n.lang) || 'fr'];
   const ptext = (id, i, fr) => { const l = LX(); return (l && l.story && l.story[id] && l.story[id].pages && l.story[id].pages[i]) || fr; };
   const ttext = (id, fr) => { const l = LX(); return (l && l.story && l.story[id] && l.story[id].title) || fr; };
   const uitext = (k, fr) => { const l = LX(); return (l && l.ui && l.ui[k]) || fr; };
-  const hush = () => { if (MM.hush) MM.hush(); else { try { speechSynthesis.cancel(); } catch (e) {} } };
+  const hush = () => { if (MM.hush) MM.hush(); else { if (MM.clips) MM.clips.stop(); try { speechSynthesis.cancel(); } catch (e) {} } };
   const esc = (v) => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   function open(id, opts = {}) {
@@ -253,7 +253,7 @@
     area.addEventListener('pointerup', up); area.addEventListener('pointercancel', up);
     root.addEventListener('click', e => { const a = e.target.closest('[data-a]'); if (!a) return;
       if (a.dataset.a === 'close') close();
-      else if (a.dataset.a === 'say') speak((two ? pages.slice(at, at + 2) : pages.slice(at, at + 1)).map((p, k) => ptext(id, at + k, p.s || p.t)).join(' '));   // la voix ne lit que si on appuie sur 🔊
+      else if (a.dataset.a === 'say') { const said = (two ? pages.slice(at, at + 2) : pages.slice(at, at + 1)).map((p, k) => ptext(id, at + k, p.s || p.t)); speak(said.join(' '), said); }   // une page = un fichier de voix   // la voix ne lit que si on appuie sur 🔊
     });
     addEventListener('keydown', function kd(e) { if (closed) return removeEventListener('keydown', kd); if (e.key === 'ArrowRight') turn(1); else if (e.key === 'ArrowLeft') turn(-1); else if (e.key === 'Escape') close(); });
     addEventListener('resize', render);

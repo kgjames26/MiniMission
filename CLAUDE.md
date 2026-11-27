@@ -20,3 +20,9 @@ PWA de plateforme 2D en français pour un enfant de 6 ans. Voir README.md.
 - Tout ce que la voix dit doit être écrit pour être bien PRONONCÉ par la synthèse vocale de la langue, pas seulement bien orthographié.
 - Coréen : écrire les particules {은} {이} {을} {과} après une variable, i18n.js choisit la bonne forme selon le 받침.
 - Toute nouvelle phrase : l'ajouter dans les 6 langues ; écouter avec la voix du téléphone ; faire relire par une personne dont c'est la langue maternelle.
+
+## Voix enregistrées (Google Cloud TTS, français pour l'instant)
+- Le jeu joue `voice/fr/<code>.mp3` (via `voice-clips.js`), sinon la synthèse du navigateur ; voir `tools/voice/README.md`.
+- Après tout changement d'une phrase dite : `node tools/voice/extract.mjs` (met à jour `tools/voice/phrases.csv`), puis `node tools/voice/generate.mjs` sur le poste de Ludo (accès Google Cloud).
+- Une phrase assemblée dans le code (question + réponses mélangées…) : passer aussi ses morceaux à la voix (`sayText(text, cb, minor, parts)`, `MM.say(text, parts)`).
+

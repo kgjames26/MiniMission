@@ -24,7 +24,7 @@
       aEnd: 'Level geschafft', bravo: 'Super gemacht!', aAlphabet: 'Gesammelte Buchstaben', aMenu: 'Hauptmenü', aReplay: 'Diese Stadt nochmal spielen', aCityAlbum: 'Album der Stadt ansehen', aNext: 'Nächste Stadt',
       aTimer: 'Spielzeit-Timer', howLong: '⏱️ Wie lange?', timerNote: 'Danach gehen die Helden schlafen.', aRest: 'Die Helden schlafen', restTitle: 'Pssst… die Helden schlafen!',
       aSettings: 'Einstellungen für Erwachsene', settings: '⚙ Einstellungen', sounds: '🔊 Ton', music: '🎵 Musik', sfx: '💥 Geräusche', vibr: '📳 Vibration', oneBtn: '👶 Nur ein Knopf', oneBtnHint: '(3–4 Jahre: die Kraft startet von allein)',
-      voice: '🗣️ Stimme', aVoice: 'Stimme wählen', auto: 'Automatisch', autoBest: 'Automatisch (die angenehmste)',
+      voice: '🗣️ Stimme', aVoice: 'Stimme wählen', auto: 'Automatisch', autoBest: 'Automatisch (die angenehmste)', gameVoice: 'Stimme des Spiels (aufgenommen)',
       resetTimer: '⏱️ Timer zurücksetzen', holdHint: '(gedrückt halten)', aResetTimer: 'Timer zurücksetzen: 3 Sekunden gedrückt halten', resetAll: '🗑️ Alles zurücksetzen', aResetAll: 'Spiel zurücksetzen: 3 Sekunden gedrückt halten',
       sayChooseCity: 'Wähle eine Stadt!', lockedToast: 'Schaffe erst die Stadt davor!', lockedSay: 'Schaffe zuerst die Stadt davor!',
       aDifficulty: 'Schwierigkeit {n}', aAgain: 'Nochmal, schwieriger', aLevel: 'Level {n}: {city}', aLocked: ', gesperrt', aLevelLeft: ' Noch zu finden: {s} Sterne, {l} Buchstaben, {m} Monster.',

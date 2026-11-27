@@ -25,7 +25,7 @@
       aEnd: '단계 완료', bravo: '잘했어!', aAlphabet: '모은 글자', aMenu: '메뉴', aReplay: '이 도시 다시 하기', aCityAlbum: '이 도시 앨범 보기', aNext: '다음 도시',
       aTimer: '놀이 타이머', howLong: '⏱️ 얼마나 놀까?', timerNote: '그다음엔 영웅들이 잠을 자요.', aRest: '영웅들이 자고 있어요', restTitle: '쉿… 영웅들이 자고 있어!',
       aSettings: '보호자 설정', settings: '⚙ 설정', sounds: '🔊 소리', music: '🎵 음악', sfx: '💥 효과음', vibr: '📳 진동', oneBtn: '👶 버튼 하나', oneBtnHint: '(3~4세: 힘이 저절로 나가요)',
-      voice: '🗣️ 목소리', aVoice: '목소리 선택', auto: '자동', autoBest: '자동 (가장 듣기 좋은 목소리)',
+      voice: '🗣️ 목소리', aVoice: '목소리 선택', auto: '자동', autoBest: '자동 (가장 듣기 좋은 목소리)', gameVoice: '게임 목소리 (녹음)',
       resetTimer: '⏱️ 타이머 초기화', holdHint: '(길게 누르기)', aResetTimer: '타이머 초기화: 3초 동안 길게 누르세요', resetAll: '🗑️ 모두 초기화', aResetAll: '게임 초기화: 3초 동안 길게 누르세요',
       sayChooseCity: '도시를 골라 봐!', lockedToast: '앞 도시를 먼저 끝내 줘!', lockedSay: '앞에 있는 도시를 먼저 끝내 줘!',
       aDifficulty: '난이도 {n}', aAgain: '더 어렵게 다시 하기', aLevel: '{n}단계: {city}', aLocked: ', 잠겨 있어요', aLevelLeft: ' 남은 것: 별 {s}개, 글자 {l}개, 몬스터 {m}마리.',

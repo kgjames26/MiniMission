@@ -24,7 +24,7 @@
       aEnd: 'Level complete', bravo: 'Well done!', aAlphabet: 'Letters collected', aMenu: 'Main menu', aReplay: 'Play this city again', aCityAlbum: 'See this city’s album', aNext: 'Next city',
       aTimer: 'Play timer', howLong: '⏱️ How long?', timerNote: 'Then the heroes will go to sleep.', aRest: 'The heroes are sleeping', restTitle: 'Shh… the heroes are sleeping!',
       aSettings: 'Grown-up settings', settings: '⚙ Settings', sounds: '🔊 Sound', music: '🎵 Music', sfx: '💥 Sound effects', vibr: '📳 Vibration', oneBtn: '👶 One button', oneBtnHint: '(ages 3-4: the power goes off by itself)',
-      voice: '🗣️ Voice', aVoice: 'Choose the voice', auto: 'Automatic', autoBest: 'Automatic (the nicest one)',
+      voice: '🗣️ Voice', aVoice: 'Choose the voice', auto: 'Automatic', autoBest: 'Automatic (the nicest one)', gameVoice: 'Game voice (recorded)',
       resetTimer: '⏱️ Reset the timer', holdHint: '(hold down)', aResetTimer: 'Reset the timer: hold for 3 seconds', resetAll: '🗑️ Reset everything', aResetAll: 'Reset the game: hold for 3 seconds',
       sayChooseCity: 'Choose a city!', lockedToast: 'Finish the city before!', lockedSay: 'Finish the city before this one first!',
       aDifficulty: 'Difficulty {n}', aAgain: 'Play again, harder', aLevel: 'Level {n}: {city}', aLocked: ', locked', aLevelLeft: ' Still to find: {s} stars, {l} letters, {m} monsters.',

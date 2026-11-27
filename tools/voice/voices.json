@@ -1,0 +1,13 @@
+{
+  "_lisez_moi": "Une voix française par personnage. 'voix' = nom de la voix Google (les mêmes 30 voix servent à Gemini-TTS et à Chirp 3 HD). 'role' est donné à Gemini-TTS pour jouer le personnage. Pour essayer d'autres voix : node tools/voice/generate.mjs --audition guide Laomedeia,Leda,Aoede",
+  "langue": "fr-FR",
+  "personnages": {
+    "guide":      { "voix": "Laomedeia", "role": "la voix-guide de Mini Mission, une jeune femme enjouée et bienveillante qui accompagne un enfant de 3 à 6 ans pendant qu'il joue" },
+    "conteuse":   { "voix": "Sulafat",   "role": "une conteuse chaleureuse qui lit un livre d'images à un enfant de 3 à 6 ans" },
+    "farfouille": { "voix": "Algenib",   "role": "Capitaine Farfouille, le chef des extraterrestres farceurs : un méchant de dessin animé, rigolo et grognon, jamais effrayant pour un tout-petit" },
+    "amis":       { "voix": "Leda",      "role": "un petit ami tout content qu'on vienne de le libérer de sa cage" },
+    "ziggy":      { "voix": "Puck",      "role": "Ziggy la Comète, un super-héros rapide et joyeux" },
+    "filou":      { "voix": "Sadachbia", "role": "Filou le Tisseur, un super-héros agile et malicieux" },
+    "titan":      { "voix": "Orus",      "role": "Titan Puce, un super-héros très fort et très doux" }
+  }
+}

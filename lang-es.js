@@ -24,7 +24,7 @@
       aEnd: 'Nivel terminado', bravo: '¡Muy bien!', aAlphabet: 'Letras recogidas', aMenu: 'Menú principal', aReplay: 'Volver a jugar esta ciudad', aCityAlbum: 'Ver el álbum de la ciudad', aNext: 'Siguiente ciudad',
       aTimer: 'Temporizador de juego', howLong: '⏱️ ¿Cuánto tiempo?', timerNote: 'Después, los héroes se irán a dormir.', aRest: 'Los héroes duermen', restTitle: '¡Chis… los héroes duermen!',
       aSettings: 'Ajustes para adultos', settings: '⚙ Ajustes', sounds: '🔊 Sonido', music: '🎵 Música', sfx: '💥 Efectos', vibr: '📳 Vibración', oneBtn: '👶 Un solo botón', oneBtnHint: '(3-4 años: el poder sale solo)',
-      voice: '🗣️ Voz', aVoice: 'Elegir la voz', auto: 'Automática', autoBest: 'Automática (la más agradable)',
+      voice: '🗣️ Voz', aVoice: 'Elegir la voz', auto: 'Automática', autoBest: 'Automática (la más agradable)', gameVoice: 'Voz del juego (grabada)',
       resetTimer: '⏱️ Reiniciar el temporizador', holdHint: '(mantén pulsado)', aResetTimer: 'Reiniciar el temporizador: mantén pulsado 3 segundos', resetAll: '🗑️ Borrarlo todo', aResetAll: 'Reiniciar el juego: mantén pulsado 3 segundos',
       sayChooseCity: '¡Elige una ciudad!', lockedToast: '¡Termina la ciudad de antes!', lockedSay: '¡Primero termina la ciudad de antes!',
       aDifficulty: 'Dificultad {n}', aAgain: 'Volver a jugar, más difícil', aLevel: 'Nivel {n}: {city}', aLocked: ', bloqueado', aLevelLeft: ' Quedan {s} estrellas, {l} letras y {m} monstruos.',

@@ -47,12 +47,18 @@
   // la voix parle au JOUEUR : « Bravo Rose ! » devient « Bravo Léa ! » (prénom donné par le parent), ou « Bravo ! » sans prénom
   const KID = (() => { try { const s = JSON.parse(localStorage.getItem('mini-mission-v1') || '{}'); return String(s.childNameSay || s.childName || '').trim(); } catch (e) { return ''; } })();
   const toKid = (t) => String(t).replace(/([,、，]?\s*)\{name\}/g, (m, pre) => KID ? pre + KID : '').replace(/(?<!avec)(,)?\s+Rose(\s*!)/g, (m, c, end) => KID ? (c || '') + ' ' + KID + end : end);
-  function say(text, important = true) {
-    if (!voiceOn) return;
+  // d'abord les voix enregistrées (voice-clips.js), sinon la synthèse vocale du navigateur ; parts : les morceaux d'une phrase assemblée
+  function say(text, important = true, parts = null) {
+    if (!voiceOn && !MM.clips) return;
     text = toKid(text);
     if (!important && performance.now() < speaking) return;
-    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); if (MM.voice) MM.voice.tune(u); else { u.lang = TTS; u.pitch = 1.14; u.rate = .96; }
-      speechSynthesis.speak(u); speaking = performance.now() + 1200 + text.length * 70; } catch {}
+    const browser = () => { if (!voiceOn) return; try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); if (MM.voice) MM.voice.tune(u); else { u.lang = TTS; u.pitch = 1.14; u.rate = .96; }
+      speechSynthesis.speak(u); } catch {} };
+    const clips = MM.clips && MM.clips.plan(parts ? parts.map(toKid) : text);
+    try { if (voiceOn) speechSynthesis.cancel(); } catch {}
+    if (MM.clips) MM.clips.stop();
+    speaking = performance.now() + 1200 + text.length * 70;
+    if (clips) MM.clips.play(clips, { onfail: browser }); else browser();
   }
   // les réglages du parent (sons, bruitages, musique) valent aussi dans les mondes de Rose
   const SND = (() => { try { const s = JSON.parse(localStorage.getItem('mini-mission-v1') || '{}'); const on = s.audioEnabled !== false; return { fx: on && s.effectsEnabled !== false, music: on && s.musicEnabled !== false }; } catch (e) { return { fx: true, music: true }; } })();
@@ -542,7 +548,7 @@
     const order = [0, 1, 2].sort(() => Math.random() - .5);
     $('#qtext').textContent = r.q;
     $('#qopts').innerHTML = order.map(i => `<button class="opt" data-i="${i}"><i>${r.o[i][0]}</i>${r.o[i][1]}</button>`).join('');
-    const speakQ = () => say(r.q + ' ' + order.map(i => r.o[i][1]).join(', ') + ' ?');
+    const speakQ = () => say(r.q + ' ' + order.map(i => r.o[i][1]).join(', ') + ' ?', true, [r.q, ...order.map((i, k) => r.o[i][1] + (k === order.length - 1 ? ' ?' : ','))]);
     $('#qsay').onclick = speakQ; speakQ();
     $('#qopts').querySelectorAll('.opt').forEach(btn => btn.onclick = () => {
       const i = +btn.dataset.i;
@@ -988,7 +994,7 @@
     const dt = Math.min(.05, (now - last) / 1000); last = now;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (RF && AF && roseImg.complete && alienImg.complete) {
-      if (!started) { started = true; paused = true; MM.say = (t) => say(t, true); MM.hush = () => { try { speechSynthesis.cancel(); } catch (e) {} };
+      if (!started) { started = true; paused = true; MM.say = (t, parts) => say(t, true, parts); MM.hush = () => { if (MM.clips) MM.clips.stop(); try { speechSynthesis.cancel(); } catch (e) {} };
         const go = () => { paused = false; last = performance.now(); if (EP) EP.start(); else say(WD.intro); };
         if (MM.book && !MM.book.seen(WID + '_a')) MM.book.open(WID + '_a', { onDone: go }); else go(); }
       if (!paused) { update(dt); updateHint(dt); fadeT += dt; }
