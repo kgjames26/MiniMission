@@ -115,7 +115,7 @@
   }
   let styled = false;
   const style = () => { if (styled) return; styled = true; const s = document.createElement('style'); s.textContent = css; document.head.appendChild(s); };
-  const speak = (t) => { if (MM.say) MM.say(t); else { try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = (MM.i18n && MM.i18n.info().tts) || 'fr-FR'; speechSynthesis.speak(u); } catch (e) {} } };
+  const speak = (t) => { if (MM.say) MM.say(t); else { try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); if (MM.voice) MM.voice.tune(u); else u.lang = (MM.i18n && MM.i18n.info().tts) || 'fr-FR'; speechSynthesis.speak(u); } catch (e) {} } };
   // traductions de l'histoire (story-xx.js) : on garde le français si une page manque
   const LX = () => (MM.STORY_L10N || {})[(MM.i18n && MM.i18n.lang) || 'fr'];
   const ptext = (id, i, fr) => { const l = LX(); return (l && l.story && l.story[id] && l.story[id].pages && l.story[id].pages[i]) || fr; };

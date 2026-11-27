@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '105', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '106', asset = (p) => `${p}?v=${ASSET_V}`;
   // la soucoupe des farceurs passe de temps en temps dans le ciel des villes (l'indice de l'histoire, chapitre 1)
   const ufoImg = new Image(); let UFO = null; ufoImg.src = asset('assets/aliens.webp'); fetch(asset('assets/aliens.json')).then(r => r.json()).then(j => { UFO = j.zap_f1; }).catch(() => {});
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
@@ -1268,7 +1268,7 @@
   // minor = phrase secondaire du jeu (lettre, encouragement…) : si une voix parle déjà, on ne la coupe pas, la nouvelle phrase est abandonnée.
   // Sans minor (action de l'enfant ou de l'adulte, devinette, minuteur, fin de mission) : la phrase passe toujours.
   let speechBusy=0;   // heure (ms) jusqu'à laquelle on considère qu'une voix parle (sécurité si « fin » n'arrive jamais)
-  function sayText(text,onComplete,minor=false){if(!('speechSynthesis'in window)||!('SpeechSynthesisUtterance'in window))return false;if(minor&&performance.now()<speechBusy)return false;cancelSpeech(false);speechBusy=performance.now()+1500+text.length*110;const token=++speechToken;const utterance=new SpeechSynthesisUtterance(text);utterance.rate=.92;utterance.pitch=1.06;utterance.volume=1;const voice=pickVoice();utterance.voice=voice;utterance.lang=voice?.lang||MM.i18n.info().tts;MM.music.duck(true);utterance.onend=()=>{if(token===speechToken){speechBusy=0;MM.music.duck(false);onComplete?.(true);}};utterance.onerror=()=>{if(token===speechToken){speechBusy=0;MM.music.duck(false);onComplete?.(false);}};window.speechSynthesis.speak(utterance);return true;}
+  function sayText(text,onComplete,minor=false){if(!('speechSynthesis'in window)||!('SpeechSynthesisUtterance'in window))return false;if(minor&&performance.now()<speechBusy)return false;cancelSpeech(false);speechBusy=performance.now()+1500+text.length*110;const token=++speechToken;const utterance=new SpeechSynthesisUtterance(text);utterance.volume=1;MM.voice.tune(utterance);MM.music.duck(true);utterance.onend=()=>{if(token===speechToken){speechBusy=0;MM.music.duck(false);onComplete?.(true);}};utterance.onerror=()=>{if(token===speechToken){speechBusy=0;MM.music.duck(false);onComplete?.(false);}};window.speechSynthesis.speak(utterance);return true;}
   function speakTimerNotice(onComplete){if(!timerAnnouncementPending){onComplete?.();return;}timerAnnouncementPending=false;const started=sayText(T('timerNotice'),()=>{timerNoticePlaying=false;save.timerAnnouncementPending=false;save.sessionElapsed=sessionElapsed;writeSave();onComplete?.();if(scene==='puzzle-screen'&&puzzleTask&&!puzzleResolved&&!onComplete)readPuzzleAloud();});timerNoticePlaying=started;if(!started){save.timerAnnouncementPending=false;writeSave();onComplete?.();}}
   function readPuzzleAloud() {
     if (!puzzleTask || puzzleResolved || timerNoticePlaying) return;

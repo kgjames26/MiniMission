@@ -175,3 +175,29 @@
     get lang() { return lang || 'fr'; }, get chosen() { return !!lang; }, onChange(fn) { listeners.push(fn); }
   };
 })();
+
+// Voix commune à tout le jeu (accueil, villes, livres, mondes de Rose) : la plus naturelle de la langue choisie,
+// ou celle que l'adulte a choisie dans les réglages, avec un ton un peu plus haut et enjoué.
+(function () {
+  const MM = window.MM;
+  const LIVELY = { pitch: 1.14, rate: .96 };
+  function score(v) {
+    const n = v.name || '', l = v.lang || '', code = MM.i18n.lang, want = MM.i18n.info().tts;
+    if (l.slice(0, 2).toLowerCase() !== code) return -1e9;
+    let sc = 0;
+    if (code !== 'fr' && l.replace('_', '-').toLowerCase() === want.toLowerCase()) sc += 80;
+    if (/natural|neural|online|premium|enhanced|améliorée|siri/i.test(n)) sc += 60;
+    if (/google/i.test(n)) sc += 35;
+    if (/denise|eloise|élo|amélie|amelie|audrey|marie|julie|hortense|céline|celine|vivienne|brigitte|chloé|chloe|jenny|aria|ana|sonia|elvira|katja|nanami|sun-hi|sunhi/i.test(n)) sc += 15;
+    if (/espeak|compact|robot|novelty/i.test(n)) sc -= 80;
+    if (code === 'fr') { if (/^fr[-_]FR/i.test(l)) sc += 80; else if (/^fr[-_]CA/i.test(l)) sc -= 40; else if (/^fr[-_](BE|CH|LU)/i.test(l)) sc += 10; if (/canad|québ|quebec|sylvie|antoine|nicolas/i.test(n)) sc -= 40; }
+    if (!v.localService) sc += 4;
+    return sc;
+  }
+  function list() { return (window.speechSynthesis ? speechSynthesis.getVoices() : []).filter(v => (v.lang || '').slice(0, 2).toLowerCase() === MM.i18n.lang).sort((a, b) => score(b) - score(a)); }
+  function saved() { try { const s = JSON.parse(localStorage.getItem('mini-mission-v1') || '{}'); return (s.voices && s.voices[MM.i18n.lang]) || (MM.i18n.lang === 'fr' ? s.voiceName : '') || ''; } catch (e) { return ''; } }
+  function pick() { const l = list(); if (!l.length) return null; const n = saved(); return (n && l.find(v => v.name === n)) || l[0]; }
+  function tune(u) { const v = pick(); if (v) u.voice = v; u.lang = (v && v.lang) || MM.i18n.info().tts; u.pitch = LIVELY.pitch; u.rate = LIVELY.rate; return u; }
+  MM.voice = { score, list, pick, tune, LIVELY };
+  if (window.speechSynthesis) try { speechSynthesis.getVoices(); speechSynthesis.addEventListener && speechSynthesis.addEventListener('voiceschanged', () => {}); } catch (e) {}
+})();
