@@ -419,7 +419,7 @@
         if (B.x1 > ab.x0 && B.x0 < ab.x1 && B.y1 > ab.y0 && B.y0 < ab.y1 && rose.bump <= 0) { rose.vx = (rose.x < a.x ? -1 : 1) * 220; rose.bump = .6; sfx.bonk(); puffs.push({ x: (rose.x + a.x) / 2, y: B.y0 + 100, t: 0, c: '#fff' }); }
       } else if (a.state === 'bubble') {
         a.bt += dt; a.vy += 140 * dt; a.y += a.vy * dt; a.x += (a.vx + Math.sin(a.bt * 3) * 40) * dt;     // il s'envole dans sa bulle
-        a.nt = (a.nt || .2) - dt; if (a.nt <= 0 && a.y < 900) { a.nt = .45; sparks.push({ x: a.x + (Math.random() - .5) * 80, y: a.y + 140, vx: (Math.random() - .5) * 40, vy: 70, t: 0, life: 1.4, kind: Math.random() < .5 ? 'heart' : 'note' }); }
+        a.nt = (a.nt || .2) - dt; if (a.nt <= 0 && a.y < 900) { a.nt = .45; sparks.push({ x: a.x + (Math.random() - .5) * 80, y: a.y + 140, vx: (Math.random() - .5) * 40, vy: 70, t: 0, life: 1.4, kind: WD.boss && Math.random() < .5 ? 'heart' : 'note' }); }   // dans l'histoire, les farceurs boudent dans leur bulle jusqu'au grand final : des notes d'abord, des cœurs à la fin
         if (a.y > 1400) a.state = 'gone';
       }
     }
@@ -751,6 +751,7 @@
       else if (a.type === 'zigzag') name = (a.throwT || 0) > 0 ? 'zigzag_f2' : 'zigzag_f1';
       else if (a.type === 'bidou') name = a.hitT > 0 ? 'bidou_f1' : Math.floor(a.t * 2.2) % 2 ? 'bidou_f2' : 'bidou_f1'; else name = Math.floor(a.t * 3.2) % 2 ? 'glouglou_f2' : 'glouglou_f1'; }
     else if (a.state === 'gone') return;
+    else if (a.state === 'bubble' && WD.boss && AF[a.type + '_ami']) name = a.type + '_ami';   // au grand final, ils deviennent amis : sourire dans la bulle
     const f = AF[name], x = SX(a.x), y = SY(a.y); if (x < -150 || x > W + 150) return;
     const pts = TSCALE[a.type] || 1, phh = f.h * ASCALE * pts * zoom, pr = Math.max(phh, f.w * ASCALE * pts * zoom) * .72; if (a.state === 'farceur') drawPowderGlow(x, y - phh / 2, pr);
     const k = zoom * ASCALE * (TSCALE[a.type] || 1), sq = a.type === 'boing' && a.y < 25 ? 1 + (25 - a.y) / 25 * .12 : 1;
