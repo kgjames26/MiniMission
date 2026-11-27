@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '122', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '123', asset = (p) => `${p}?v=${ASSET_V}`;
   // la soucoupe des farceurs passe de temps en temps dans le ciel des villes (l'indice de l'histoire, chapitre 1)
   const ufoImg = new Image(); let UFO = null; ufoImg.src = asset('assets/aliens.webp'); fetch(asset('assets/aliens.json')).then(r => r.json()).then(j => { UFO = j.zap_f1; }).catch(() => {});
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
@@ -682,8 +682,10 @@
   // pré-rendu à la taille exacte de l'écran (une seule fois par taille) : ensuite, chaque image ne fait qu'une copie sans
   // redimensionner. Redimensionner une grande image 60 fois par seconde (en qualité « haute ») faisait saccader.
   const STREET_CACHE = { key: '', cv: null }, STREET_UP = 600;   // hauteur de ciel ajoutée au-dessus du dessin (Filou monte haut)
+  // Construit UNE fois à l'échelle sans zoom (view.base) : quand la caméra zoome ou monte, on étire juste la copie
+  // (avant, chaque petit zoom ou mouvement vertical refaisait tout le dessin, parfois à chaque image : saccades).
   function streetCanvas(im, tw, th) {
-    const S = view.scale, key = (mission ? mission.city : 0) + '|' + Math.round(tw * S) + 'x' + Math.round(th * S);
+    const S = view.base, key = (mission ? mission.city : 0) + '|' + Math.round(tw * S) + 'x' + Math.round(th * S);
     if (STREET_CACHE.key !== key) { const cv = STREET_CACHE.cv || document.createElement('canvas'), w1 = Math.round(tw * S), hi = Math.round(th * S), up = Math.round(STREET_UP * S);
       cv.width = w1 * 2; cv.height = hi + up; const c = cv.getContext('2d'); c.clearRect(0, 0, cv.width, cv.height);
       c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high'; c.drawImage(im, 0, up, w1, hi); c.save(); c.translate(w1 * 2, 0); c.scale(-1, 1); c.drawImage(im, 0, up, w1, hi); c.restore();   // une image + son miroir : pas de couture
@@ -693,22 +695,25 @@
       const g = c.createLinearGradient(0, 0, 0, up + 40 * S); g.addColorStop(0, sky); g.addColorStop(up / (up + 40 * S), topCol); g.addColorStop(1, 'rgba(0,0,0,0)');
       c.fillStyle = g; c.fillRect(0, 0, cv.width, up); const g2 = c.createLinearGradient(0, up, 0, up + 40 * S); g2.addColorStop(0, topCol); g2.addColorStop(1, topCol.replace('rgb', 'rgba').replace(')', ',0)')); c.fillStyle = g2; c.fillRect(0, up, cv.width, 40 * S);
       c.fillStyle = 'rgba(255,255,255,.2)'; c.fillRect(0, up, cv.width, hi);   // le voile est cuit dans l'image
-      STREET_CACHE.cv = cv; STREET_CACHE.key = key; }
+      STREET_CACHE.cv = cv; STREET_CACHE.key = key; STREET_CACHE.n = (STREET_CACHE.n || 0) + 1; }
     return STREET_CACHE.cv;
   }
   const GROUND_CACHE = { key: '', cv: null };
   function groundCanvas() {
-    if (!GSTREET.complete || !GSTREET.naturalWidth) return null; const S = view.scale, h = Math.round(175 * S), w = Math.round(GSTREET.naturalWidth * 175 / 300 * S), key = w + 'x' + h;
-    if (GROUND_CACHE.key !== key) { const cv = GROUND_CACHE.cv || document.createElement('canvas'); cv.width = w; cv.height = h; const c = cv.getContext('2d'); c.imageSmoothingQuality = 'high'; c.drawImage(GSTREET, 0, 0, w, h); GROUND_CACHE.cv = cv; GROUND_CACHE.key = key; }
+    if (!GSTREET.complete || !GSTREET.naturalWidth) return null; const S = view.base, h = Math.round(175 * S), w = Math.round(GSTREET.naturalWidth * 175 / 300 * S), key = w + 'x' + h;
+    if (GROUND_CACHE.key !== key) { const cv = GROUND_CACHE.cv || document.createElement('canvas'); cv.width = w; cv.height = h; const c = cv.getContext('2d'); c.imageSmoothingQuality = 'high'; c.drawImage(GSTREET, 0, 0, w, h); GROUND_CACHE.cv = cv; GROUND_CACHE.key = key; GROUND_CACHE.n = (GROUND_CACHE.n || 0) + 1; }
     return GROUND_CACHE.cv;
   }
-  function blitRow(cv, xWorld, yWorld) {   // copie une bande pré-rendue, répétée sur toute la largeur, en pixels de l'écran
-    const T = ctx.getTransform(), y = Math.round(T.d * yWorld + T.f); let x = Math.round(T.a * xWorld + T.e) % cv.width; if (x > 0) x -= cv.width;
-    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); for (; x < canvas.width; x += cv.width) ctx.drawImage(cv, x, y); ctx.restore();
+  function blitRow(cv, xWorld, yWorld) {   // copie une bande pré-rendue (faite à l'échelle view.base), répétée sur toute la largeur
+    const T = ctx.getTransform(), k = view.z || 1, cw = cv.width * k, ch = cv.height * k, y = Math.round(T.d * yWorld + T.f); let x = (T.a * xWorld + T.e) % cw; if (x > 0) x -= cw;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (Math.abs(k - 1) < .002) for (x = Math.round(x); x < canvas.width; x += cv.width) ctx.drawImage(cv, x, y);
+    else { ctx.imageSmoothingQuality = 'low'; for (; x < canvas.width; x += cw) ctx.drawImage(cv, Math.floor(x), y, Math.ceil(cw) + 1, Math.ceil(ch)); }   // étirement simple : rapide
+    ctx.restore();
   }
   function drawStreet() {
-    const im = street(); if (!im) return false; const extra = Math.max(0, -viewTop0()), bot = world.floor + 6 + (world.camY || 0);
-    const th = Math.min(Math.max(bot + extra, 420), 520), tw = im.naturalWidth * th / im.naturalHeight, top = bot - th;
+    const im = street(); if (!im) return false; const extra0 = Math.max(0, -(WORLD_H - view.cut - canvas.height / view.base)), bot = world.floor + 6 + (world.camY || 0);
+    const th = Math.min(Math.max(world.floor + 6 + extra0, 420), 520), tw = im.naturalWidth * th / im.naturalHeight, top = bot - th;
     blitRow(streetCanvas(im, tw, th), -world.camera * .3, top - STREET_UP);
     return true;
   }
@@ -2888,6 +2893,7 @@
   $('#lang-select').addEventListener('change', e => { MM.i18n.setLang(e.target.value); sayText(T('newVoice')); setTimeout(() => { if (!hasVoiceFor()) showToast(T('noVoice', { lang: MM.i18n.info().name })); }, 600); });
   MM.i18n.localizeData(); MM.i18n.applyDom(); buildLangUI(); fillVoiceSelect(); setAudioEnabled(audioEnabled, true);
   updateNameSetting();
+  window.__mm = { startLevel, view, world, get rebuilds() { return (STREET_CACHE.n || 0) + '/' + (GROUND_CACHE.n || 0); } };   // pour les tests automatiques
   if (!MM.i18n.chosen) { const g = MM.i18n.guess(); $('#lang-grid').querySelector(`[data-lang="${g}"]`)?.classList.add('guess'); setScreen('lang-screen'); }
   else if (!save.nameAsked) openNameScreen('home');
   else if (location.hash === '#space' && !restLocked()) openSpace();       // retour d'un monde de Rose : on revient sur la carte des planètes
