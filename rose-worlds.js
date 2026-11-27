@@ -755,43 +755,47 @@
       for (const c of craters) { const sx = SX(c.x); if (sx < -200 || sx > W + 200) continue; ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(sx, gy + (24 + c.r * .2) * zoom, c.r * zoom, c.r * .2 * zoom, 0, 0, 7); ctx.fill(); }
     },
   };
-  // ================= le grand final : la ville envahie par les soucoupes =================
-  // Rose vole, Ziggy, Filou et Titan courent avec elle et envoient des bulles eux aussi ; à la fin, Capitaine Farfouille dans sa soucoupe.
+  // ================= le grand final : l'apothéose (logique dans rose-final.js) =================
+  // La poudre Grognon a rendu la ville toute grise. Quatre actes, comme dans le livre :
+  // les avenues de Ziggy, les toits de Filou, le chantier de Titan, et le ciel (le vaisseau géant de Capitaine Farfouille).
+  const FD = [
+    { x0: 300, x1: 3700, hero: 'ziggy',
+      pre: [{ type: 'glouglou', x: 1380, x0: 1290, x1: 1500 }, { type: 'boing', x: 1880, x0: 1800, x1: 1980 }],
+      waves: [[{ type: 'zap', x: 1950, y0: 400 }, { type: 'glouglou', x: 2700, x0: 2610, x1: 2850 }, { type: 'boing', x: 3420, x0: 3300, x1: 3560 }],
+              [{ type: 'zigzag', x: 1800, x0: 1720, x1: 1900 }, { type: 'glouglou', x: 2350, x0: 2200, x1: 2500, yb: 260 }, { type: 'zap', x: 3250, y0: 380 }, { type: 'zigzag', x: 3100, x0: 2990, x1: 3210, yb: 180 }]] },
+    { x0: 3700, x1: 7300, hero: 'filou',
+      pre: [{ type: 'glouglou', x: 4140, x0: 3990, x1: 4290, yb: 320 }, { type: 'zap', x: 4460, y0: 430 }],
+      waves: [[{ type: 'boing', x: 5310, x0: 5160, x1: 5460, yb: 280 }, { type: 'glouglou', x: 4710, x0: 4600, x1: 4820, yb: 380 }, { type: 'zap', x: 5640, y0: 470 }],
+              [{ type: 'zap', x: 6150, y0: 450 }, { type: 'glouglou', x: 5920, x0: 5800, x1: 6040, yb: 360 }, { type: 'boing', x: 6550, x0: 6400, x1: 6700, yb: 300 }, { type: 'zigzag', x: 7060, x0: 6990, x1: 7130, yb: 200 }]] },
+    { x0: 7300, x1: 10500, hero: 'titan',
+      pre: [{ type: 'glouglou', x: 7760, x0: 7640, x1: 7880, yb: 234 }, { type: 'boing', x: 7460, x0: 7380, x1: 7560 }],
+      waves: [[{ type: 'bidou', x: 8620, x0: 8520, x1: 8760 }, { type: 'zap', x: 8950, y0: 450 }, { type: 'zigzag', x: 8210, x0: 8130, x1: 8290, yb: 150 }],
+              [{ type: 'bidou', x: 9700, x0: 9620, x1: 9840 }, { type: 'glouglou', x: 8950, x0: 8830, x1: 9070, yb: 334 }, { type: 'boing', x: 9440, x0: 9330, x1: 9550, yb: 220 }, { type: 'zap', x: 10200, y0: 400 }]] },
+    { x0: 10500, x1: 12800, hero: null, pre: [], waves: [] },
+  ];
+  const FS = [
+    { x: 1000, y: 0, w: 340, h: 200, kind: 'block', c: 0 }, { x: 1600, y: 260, w: 260, h: 34, kind: 'slab' }, { x: 2150, y: 0, w: 400, h: 260, kind: 'block', c: 1 }, { x: 2950, y: 0, w: 300, h: 180, kind: 'block', c: 2 },
+    { x: 3950, y: 0, w: 380, h: 320, kind: 'block', c: 3 }, { x: 4560, y: 0, w: 300, h: 380, kind: 'block', c: 1 }, { x: 5100, y: 0, w: 420, h: 280, kind: 'block', c: 4 }, { x: 5760, y: 0, w: 320, h: 360, kind: 'block', c: 0 }, { x: 6350, y: 0, w: 400, h: 300, kind: 'block', c: 2 }, { x: 6950, y: 0, w: 220, h: 200, kind: 'block', c: 3 },
+    { x: 7600, y: 200, w: 320, h: 34, kind: 'slab' }, { x: 8100, y: 0, w: 220, h: 150, kind: 'block', c: 5 }, { x: 8320, y: 0, w: 140, h: 90, kind: 'block', c: 5 }, { x: 8800, y: 300, w: 300, h: 34, kind: 'slab' }, { x: 9300, y: 0, w: 280, h: 220, kind: 'block', c: 6 }, { x: 9900, y: 0, w: 200, h: 120, kind: 'block', c: 5 },
+    { x: 11000, y: 240, w: 260, h: 34, kind: 'slab' },
+  ];
+  // guirlandes entre deux immeubles voisins (elles apparaissent quand le quartier retrouve ses couleurs)
+  const FG = []; { const bl = FS.filter(q => q.kind === 'block'); for (let i = 0; i + 1 < bl.length; i++) { const a = bl[i], b = bl[i + 1]; if (b.x - (a.x + a.w) < 800 && !FD.some(d => a.x < d.x1 && b.x > d.x1)) FG.push([a.x + a.w, a.h, b.x, b.h]); } }
   W.final = {
-    name: 'Le grand final', chip: '🏙️ Le grand final', on: 'la ville', theme: '#8fd3ff', L: 9000, pin: 0,
-    noCages: true, noRocket: true, helpers: ['ziggy', 'filou', 'titan'], friends: 4,
-    boss: { x: 8150, x0: 7650, x1: 8650, y: 330, hp: 3 },
-    intro: 'Les farceurs sont partout dans la ville ! Envoie des bulles avec Ziggy, Filou et Titan. Capitaine Farfouille t’attend tout au bout !',
-    outroAll: 'Bravo Rose ! Toute la ville est remplie de bulles, et Capitaine Farfouille aussi !',
+    name: 'Le grand final', chip: '🏙️ Le grand final', on: 'la ville', theme: '#8fd3ff', L: 12800, pin: 0,
+    noCages: true, noRocket: true, helpers: ['ziggy', 'filou', 'titan'], friends: 0,
+    boss: {}, epic: { districts: FD, arena: [10500, 12800], crane: 8650, garlands: FG, total: FD.reduce((n, d) => n + d.pre.length + d.waves.flat().length, 0) + 4 },
+    intro: 'Oh non ! La poudre Grognon a rendu la ville toute grise ! Attrape les farceurs dans des bulles pour lui rendre ses couleurs !',
+    outroAll: 'Bravo Rose ! La ville a retrouvé toutes ses couleurs, et Capitaine Farfouille est dans une bulle !',
     colors: { ceil: ['#888', '#aaa', '#ccc'], crystal: '255,255,255', cloud: ['#fff', '#fff'], slab: ['#c0563a', '#ff8a5a'], tite: '#888', mesa: '#d9b38c', arch: '#c9a27c', mesaTop: '#f2d5b0', rock: ['#9aa3b5', '#c8d0de'],
-      block: [['#f2b6a0', '#c97a64'], ['#a8d8ea', '#6aa8c4'], ['#ffe08a', '#d1a84a'], ['#c8b6f2', '#8f7ac9'], ['#b6e6a8', '#74b064']] },
-    solids: [
-      { x: 900, y: 0, w: 360, h: 220, kind: 'block', c: 0 },
-      { x: 1500, y: 260, w: 260, h: 34, kind: 'slab' },
-      { x: 2050, y: 0, w: 420, h: 300, kind: 'block', c: 1 },
-      { x: 2900, y: 0, w: 300, h: 180, kind: 'block', c: 2 },
-      { x: 3500, y: 300, w: 280, h: 34, kind: 'slab' },
-      { x: 4100, y: 0, w: 460, h: 260, kind: 'block', c: 3 },
-      { x: 4900, y: 0, w: 540, h: 330, kind: 'arch', oh: 240 },
-      { x: 5800, y: 0, w: 320, h: 200, kind: 'block', c: 4 },
-      { x: 6400, y: 280, w: 280, h: 34, kind: 'slab' },
-      { x: 6950, y: 0, w: 380, h: 240, kind: 'block', c: 0 },
-    ],
-    stars: [[300, 650, 60, 60, 5], [940, 1220, 270, 40, 5], [1520, 1740, 330, 30, 4], [2100, 2420, 350, 40, 5], [2940, 3160, 230, 40, 4], [3520, 3760, 370, 30, 4], [4150, 4510, 310, 40, 5], [4980, 5360, 410, 40, 5], [5020, 5320, 60, 50, 4], [5840, 6080, 250, 40, 4], [6420, 6660, 350, 30, 4], [7000, 7280, 290, 40, 5], [7500, 7700, 80, 60, 3]],
-    aliens: [
-      { type: 'glouglou', x: 1350, x0: 1280, x1: 1480, y: 0 },
-      { type: 'zap', x: 1800, y0: 380, y: 380 },
-      { type: 'boing', x: 2700, x0: 2560, x1: 2840, y: 0 },
-      { type: 'zigzag', x: 3350, x0: 3250, x1: 3450, y: 0 },
-      { type: 'bidou', x: 3900, x0: 3820, x1: 4040, y: 0 },
-      { type: 'zap', x: 4700, y0: 380, y: 380 },
-      { type: 'glouglou', x: 5150, x0: 5060, x1: 5280, y: 0 },
-      { type: 'boing', x: 5600, x0: 5500, x1: 5720, y: 0 },
-      { type: 'zigzag', x: 6250, x0: 6180, x1: 6340, y: 0 },
-      { type: 'zap', x: 6800, y0: 400, y: 400 },
-      { type: 'bidou', x: 7450, x0: 7380, x1: 7560, y: 0 },
-    ],
-    boxes: [{ x: 1080, y: 310 }, { x: 4330, y: 350 }, { x: 7140, y: 330 }],
+      block: [['#f2b6a0', '#c97a64'], ['#a8d8ea', '#6aa8c4'], ['#ffe08a', '#d1a84a'], ['#c8b6f2', '#8f7ac9'], ['#b6e6a8', '#74b064'], ['#e0a96d', '#a8713a'], ['#d9d4c7', '#a59f8f']] },
+    solids: FS,
+    stars: [[600, 900, 60, 60, 4], [1040, 1300, 260, 40, 5], [1620, 1840, 320, 30, 4], [2190, 2510, 320, 40, 5], [2980, 3220, 240, 40, 4], [3350, 3600, 80, 60, 4],
+            [3990, 4290, 380, 30, 5], [4600, 4820, 440, 20, 4], [5140, 5480, 340, 40, 5], [5800, 6040, 420, 20, 4], [6390, 6710, 360, 30, 5], [6990, 7130, 260, 30, 3], [4380, 4520, 120, 80, 3],
+            [7640, 7880, 270, 30, 4], [8130, 8290, 210, 30, 3], [8830, 9070, 370, 20, 4], [9330, 9550, 280, 30, 4], [9930, 10080, 180, 30, 3], [7380, 7560, 80, 60, 3],
+            [10700, 11000, 100, 120, 5], [11300, 11700, 300, 80, 6], [11900, 12300, 150, 120, 6]],
+    aliens: [],
+    boxes: [{ x: 1170, y: 300 }, { x: 6550, y: 410 }, { x: 9440, y: 330 }],
     riddles: [
       { q: 'Pourquoi les farceurs faisaient-ils des blagues ?', o: [['💛', 'ils voulaient des amis'], ['🍰', 'ils voulaient un gâteau'], ['😴', 'ils voulaient dormir']], a: 0, fact: 'Oui ! Sur leur comète, ils étaient tout seuls. Ils voulaient juste des amis pour jouer.' },
       { q: 'Pour jouer avec quelqu’un, que peut-on faire ?', o: [['🙋', 'lui demander gentiment'], ['😠', 'lui prendre ses jouets'], ['🙈', 'se cacher']], a: 0, fact: 'Bravo ! Il suffit de demander : « Tu veux jouer avec moi ? »' },
