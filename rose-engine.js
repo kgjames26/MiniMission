@@ -15,6 +15,7 @@
     robot: 'Bip bip ! Le petit robot se réveille !', heli: 'Le petit hélicoptère s’envole avec toi !', bossStart: 'Voilà Capitaine Farfouille dans sa soucoupe ! Envoie-lui des bulles !',
     boss: ['Hé hé ! Tu ne m’attraperas pas !', 'Oh ! Encore une bulle ?', 'Non, non, non !'], bossPop: 'Pop ! Capitaine Farfouille est dans une bulle !', endN: 'Bravo, {name} !', end: 'Bravo !', replay: '↻ Rejouer',
     tStars: 'Étoiles ramassées : {n} sur {t} !', tLetters: 'Lettres trouvées : {n} sur {t} !', tFriends: 'Amis libérés : {n} sur {t} !', tBubbles: 'Farceurs dans une bulle : {n} sur {t} !', tWorld: '{w} : libère tous les amis, puis monte dans la fusée !', tWorldBoss: '{w} : mets les farceurs dans des bulles, puis aide Capitaine Farfouille à devenir gentil !',
+    moreStory: 'Libère au moins {n} amis pour lire la suite de l’histoire ! Tu peux revenir quand tu veux.',
     hintGo: 'Par ici, {name} ! Avance tout droit !', hintCage: 'Un ami attend dans la cage ! Envoie-lui une bulle !', hintAlien: 'Envoie des bulles au farceur !',
     partyN: 'Bravo {name} ! Grâce à toi, tout le monde est ami ! C’est la fête !', party: 'Bravo ! Grâce à toi, tout le monde est ami ! C’est la fête !', dipTitle: 'Diplôme de super-héros', dipLine: 'a sauvé la Terre avec Rose, Ziggy, Filou et Titan', dipLineAnon: 'Tu as sauvé la Terre avec Rose, Ziggy, Filou et Titan', dipSay: 'Voici ton diplôme de super-héros !',
     ...((LX && LX.engine) || {}) };
@@ -529,7 +530,12 @@
     try { const d = JSON.parse(localStorage.getItem('mm.rose.done') || '[]'); if (!d.includes(WID)) { d.push(WID); localStorage.setItem('mm.rose.done', JSON.stringify(d)); } } catch (e) {}
     finished = true; rose.vx = 0; rose.walking = false; play('win', 'ground'); rose.mode = 'ground'; sfx.good();
     say(WD.boss || got.friends >= 20 ? WD.outroAll : EN.partial.replace('{n}', got.friends).replace('{on}', WD.on));
-    setTimeout(() => MM.book && !MM.book.seen(WID + '_c') ? MM.book.open(WID + '_c', { onDone: showEnd }) : showEnd(), 3200);
+    // le livre de fin du monde (« les vingt amis sont libres ! ») se mérite : au moins la moitié des amis libérés (meilleur score gardé) ;
+    // le monde suivant s'ouvre quand même. Grand final et mondes sans cages : toujours.
+    let best = got.friends; try { const B = JSON.parse(localStorage.getItem('mm.rose.best') || '{}'); best = Math.max(best, B[WID] || 0); B[WID] = best; localStorage.setItem('mm.rose.best', JSON.stringify(B)); } catch (e) {}
+    const need = Math.ceil((cages.length || 20) / 2), earned = WD.boss || WD.noCages || best >= need;
+    if (!earned && MM.book && !MM.book.seen(WID + '_c')) setTimeout(() => say(EN.moreStory.replace('{n}', need)), 4800);
+    setTimeout(() => earned && MM.book && !MM.book.seen(WID + '_c') ? MM.book.open(WID + '_c', { onDone: showEnd }) : showEnd(), earned ? 3200 : 5200);
     function showEnd() {
       if (WD.boss) { showParty(); return; }   // le grand final : une vraie fête, puis le diplôme
       $('#end .title').textContent = KID ? EN.endN.replace('{name}', KID) : EN.end;   // on félicite le joueur, pas le personnage
