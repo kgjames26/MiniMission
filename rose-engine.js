@@ -600,7 +600,8 @@
   }
 
   // ================= dessin =================
-  const cv = $('#c'), ctx = cv.getContext('2d');
+  const cv = $('#c'); let ctx = cv.getContext('2d');   // « let » : les plateformes sont dessinées sur un calque à part pour recevoir la texture peinte
+  const offA = document.createElement('canvas'), offAX = offA.getContext('2d'), offB = document.createElement('canvas'), offBX = offB.getContext('2d');
   let W = 0, H = 0, dpr = 1, zoom = 1, GY = 0, camX = 0, camY = 0;
   function resize() { dpr = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; zoom = Math.min(H * .27, W * .24) / 210; GY = H * (H > W * 1.2 ? .66 : .8); }   // en portrait, on dézoome pour voir assez loin devant Rose
   addEventListener('resize', resize); resize();
@@ -622,8 +623,12 @@
     ctx.fillStyle = 'rgba(255,255,255,.14)'; ctx.fillRect(0, Math.max(0, top), W, hy - Math.max(0, top));   // un léger voile : le décor reste au loin, les personnages ressortent
     if (WD.bgOver) WD.bgOver(api(), time);
   }
+  // texture peinte du sol (assets/ground/*.webp, en « multiplier » : garde les couleurs du monde et ajoute cailloux, glace, plaques…)
+  const GTEX = { lune: 'rock', mars: 'rock', venus: 'rock', mercure: 'rock', soleil: 'rock', jupiter: 'ice', saturne: 'ice', uranus: 'ice', neptune: 'ice', terre: 'metal' }[WID];
+  const GTI = new Image(); let gPat = null; if (GTEX) { GTI.onload = () => { try { gPat = ctx.createPattern(GTI, 'repeat'); } catch (e) {} }; GTI.src = 'assets/ground/' + GTEX + '.webp?v=' + V; }
   function drawGround(time) {
     WD.drawGround(api(), time);
+    if (gPat) { const gy = SY(0), k = zoom * .55; ctx.save(); ctx.globalCompositeOperation = 'multiply'; try { gPat.setTransform(new DOMMatrix([k, 0, 0, k, -camX * zoom, gy])); } catch (e) {} ctx.fillStyle = gPat; ctx.fillRect(0, gy, W, H - gy + 4); ctx.restore(); }
     const c0 = SX(CAVE0), c1 = SX(CAVE1), gy = SY(0);                   // l'intérieur du passage couvert, plus sombre
     if (WD.cave && c1 > 0 && c0 < W) { const g = ctx.createLinearGradient(0, SY(CEIL), 0, gy); g.addColorStop(0, WD.caveShade[0]); g.addColorStop(1, WD.caveShade[1]); ctx.fillStyle = g; ctx.fillRect(c0, SY(CEIL), c1 - c0, gy - SY(CEIL)); }
   }
@@ -681,6 +686,20 @@
     ctx.closePath();
   }
   function polyPath(P) { ctx.beginPath(); P.forEach(([px, py], i) => i ? ctx.lineTo(SX(px), SY(py)) : ctx.moveTo(SX(px), SY(py))); ctx.closePath(); }
+  let texCost = 0, texOK = true;   // sur un téléphone trop lent, on renonce à la texture des plateformes (le jeu reste fluide)
+  function drawSolidsTex(time) {
+    if (!gPat || !texOK) { drawSolids(time); return; }
+    const t0 = performance.now();
+    if (offA.width !== cv.width || offA.height !== cv.height) { offA.width = offB.width = cv.width; offA.height = offB.height = cv.height; }
+    const T = ctx.getTransform(), main = ctx;
+    offAX.setTransform(1, 0, 0, 1, 0, 0); offAX.globalCompositeOperation = 'source-over'; offAX.clearRect(0, 0, offA.width, offA.height); offAX.setTransform(T);
+    ctx = offAX; try { drawSolids(time); } finally { ctx = main; }
+    offBX.setTransform(1, 0, 0, 1, 0, 0); offBX.globalCompositeOperation = 'source-over'; offBX.clearRect(0, 0, offB.width, offB.height); offBX.drawImage(offA, 0, 0);
+    offBX.globalCompositeOperation = 'source-atop'; offBX.setTransform(T); const k = zoom * .55; try { gPat.setTransform(new DOMMatrix([k, 0, 0, k, -camX * zoom, SY(0)])); } catch (e) {} offBX.fillStyle = gPat; offBX.fillRect(0, 0, W, H);
+    offAX.setTransform(1, 0, 0, 1, 0, 0); offAX.globalCompositeOperation = 'multiply'; offAX.drawImage(offB, 0, 0); offAX.globalCompositeOperation = 'source-over';
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(offA, 0, 0); ctx.restore();
+    texCost = texCost * .95 + (performance.now() - t0) * .05; if (texCost > 6) texOK = false;
+  }
   function drawSolids(time) {
     const C = WD.colors;
     for (const s of solids) {
@@ -909,7 +928,7 @@
       const hy = rose.mode === 'air' ? rose.y : rose.base, ty = Math.max(0, Math.min(CEIL - (GY / zoom) + 60, hy + 230 - GY / zoom * .82));
       camY += (Math.max(0, ty) - camY) * Math.min(1, dt * 3);
       const time = now / 1000;
-      drawBg(time); drawGround(time); drawDevils(time); drawRover(time); drawSolids(time); drawItems(time);
+      drawBg(time); drawGround(time); drawDevils(time); drawRover(time); drawSolidsTex(time); drawItems(time);
       cages.forEach(c => drawCage(c, time)); aliens.forEach(a => drawAlien(a, time)); friends.forEach(f => drawFriend(f, time)); drawSparks();
       drawHelpers(); drawBoss(time); drawRose(); drawHeli(time); drawShots(); drawHint(time);
     } else { ctx.fillStyle = WD.theme; ctx.fillRect(0, 0, W, H); }
