@@ -41,8 +41,8 @@
     if (!voiceOn) return;
     text = toKid(text);
     if (!important && performance.now() < speaking) return;
-    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = TTS; u.rate = .95; u.pitch = 1.08;
-      const lp = TTS.slice(0, 2).toLowerCase(), vs = speechSynthesis.getVoices(), v = vs.find(v => v.lang && v.lang.replace('_', '-').toLowerCase() === TTS.toLowerCase()) || vs.find(v => v.lang && v.lang.toLowerCase().startsWith(lp)); if (v) u.voice = v; speechSynthesis.speak(u); speaking = performance.now() + 1200 + text.length * 70; } catch {}
+    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); if (MM.voice) MM.voice.tune(u); else { u.lang = TTS; u.pitch = 1.14; u.rate = .96; }
+      speechSynthesis.speak(u); speaking = performance.now() + 1200 + text.length * 70; } catch {}
   }
   // les réglages du parent (sons, bruitages, musique) valent aussi dans les mondes de Rose
   const SND = (() => { try { const s = JSON.parse(localStorage.getItem('mini-mission-v1') || '{}'); const on = s.audioEnabled !== false; return { fx: on && s.effectsEnabled !== false, music: on && s.musicEnabled !== false }; } catch (e) { return { fx: true, music: true }; } })();
