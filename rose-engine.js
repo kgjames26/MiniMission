@@ -984,7 +984,13 @@
   });
   // ================= boucle =================
   let last = performance.now(), started = false;
+  let loopErr = 0;
   function loop(now) {
+    // une image qui rate ne doit jamais figer le jeu : on note l'erreur et on continue à l'image suivante
+    try { tick(now); } catch (e) { if (loopErr++ < 3) console.error(e); }
+    requestAnimationFrame(loop);
+  }
+  function tick(now) {
     const dt = Math.min(.05, (now - last) / 1000); last = now;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (RF && AF && roseImg.complete && alienImg.complete) {
@@ -1003,7 +1009,6 @@
       cages.forEach(c => drawCage(c, time)); aliens.forEach(a => drawAlien(a, time)); friends.forEach(f => drawFriend(f, time)); drawSparks();
       drawHelpers(); drawBoss(time); if (EP) EP.drawShip(time); drawRose(); drawHeli(time); drawShots(); if (EP) EP.drawFront(time); drawHint(time);
     } else { ctx.fillStyle = WD.theme; ctx.fillRect(0, 0, W, H); }
-    requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
   $('#cStars').textContent = '⭐ 0'; $('#cLetters').textContent = '🔤 0'; $('#cFriends').textContent = WD.noCages ? '🫧 0/' + (aliens.length + (boss ? 1 : 0)) : '💛 0/20';
