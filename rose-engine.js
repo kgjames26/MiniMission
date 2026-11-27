@@ -602,7 +602,7 @@
   // ================= dessin =================
   const cv = $('#c'), ctx = cv.getContext('2d');
   let W = 0, H = 0, dpr = 1, zoom = 1, GY = 0, camX = 0, camY = 0;
-  function resize() { dpr = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; zoom = Math.min(H * .27, W * .24) / 210; GY = H * (H > W * 1.2 ? .74 : .8); }   // en portrait, on dézoome pour voir assez loin devant Rose
+  function resize() { dpr = Math.min(2, devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; zoom = Math.min(H * .27, W * .24) / 210; GY = H * (H > W * 1.2 ? .66 : .8); }   // en portrait, on dézoome pour voir assez loin devant Rose
   addEventListener('resize', resize); resize();
   const SX = (x) => (x - camX) * zoom, SY = (y) => GY - (y - camY) * zoom;
   const bgStars = Array.from({ length: 160 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() < .2 ? 2 : 1, tw: Math.random() * 6 }));
