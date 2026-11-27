@@ -102,8 +102,11 @@
     const ctx = canvas.getContext('2d');
     let cur = [0, 0], solved = false, trail = [[0, 0]], raf = 0, stopped = false;
     const size = () => { const r = canvas.getBoundingClientRect(); const dpr = Math.min(window.devicePixelRatio || 1, 2); canvas.width = Math.round(r.width * dpr); canvas.height = Math.round(r.height * dpr); return r.width; };
+    let lastFrame = 0;
     function draw(t) {
       if (stopped) return;
+      if (t - lastFrame < 1000 / 30 - 4) { raf = requestAnimationFrame(draw); return; }   // 30 images par seconde, comme le jeu
+      lastFrame = t;
       const css = canvas.getBoundingClientRect().width; if (canvas.width !== Math.round(css * Math.min(window.devicePixelRatio || 1, 2))) size();
       const k = canvas.width / n, W = canvas.width;
       ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, W);

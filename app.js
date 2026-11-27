@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '125', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '126', asset = (p) => `${p}?v=${ASSET_V}`;
   // la soucoupe des farceurs passe de temps en temps dans le ciel des villes (l'indice de l'histoire, chapitre 1)
   const ufoImg = new Image(); let UFO = null; ufoImg.src = asset('assets/aliens.webp'); fetch(asset('assets/aliens.json')).then(r => r.json()).then(j => { UFO = j.zap_f1; }).catch(() => {});
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
@@ -508,7 +508,7 @@
       if (perf.ema > perf.tried.ema * .9) { perf.cap = perf.tried.cap; perf.locked = true; resizeCanvas(); return; }
       perf.tried = null;
     }
-    perf.slowFor = perf.ema > 24 ? perf.slowFor + elapsed : 0;
+    perf.slowFor = perf.ema > 42 ? perf.slowFor + elapsed : 0;   // lent = nettement sous les 30 images/s visées
     const now = Math.min(window.devicePixelRatio || 1, 2, perf.cap);
     if (perf.slowFor > 2 && now > 1.25) {
       perf.tried = { cap: perf.cap, ema: perf.ema };
@@ -533,9 +533,13 @@
   }
   // Une seule boucle à la fois, même après une pause/reprise très rapide.
   function startLoop() { lastTime = performance.now(); if (!rafId) rafId = requestAnimationFrame(loop); }
+  // Le jeu est limité à 30 images par seconde partout (moins de chauffe et de batterie, même rythme sur tous les écrans)
+  const FRAME_MS = 1000 / 30; let lastFrame = 0;
   function loop(now) {
     rafId = 0;
     if (scene !== 'game-screen') return;
+    if (now - lastFrame < FRAME_MS - 4) { rafId = requestAnimationFrame(loop); return; }   // écran à 60/90/120 Hz : on saute les images en trop
+    lastFrame = now;
     // Sur un téléphone lent (moins de 30 images/s), on découpe le temps écoulé en petits pas :
     // le jeu garde la même vitesse partout au lieu de ralentir.
     const elapsed = Math.min(.1, Math.max(0, (now - lastTime) / 1000)); lastTime = now;
