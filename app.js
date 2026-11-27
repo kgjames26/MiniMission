@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '116', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '117', asset = (p) => `${p}?v=${ASSET_V}`;
   // la soucoupe des farceurs passe de temps en temps dans le ciel des villes (l'indice de l'histoire, chapitre 1)
   const ufoImg = new Image(); let UFO = null; ufoImg.src = asset('assets/aliens.webp'); fetch(asset('assets/aliens.json')).then(r => r.json()).then(j => { UFO = j.zap_f1; }).catch(() => {});
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
@@ -673,13 +673,18 @@
   function street() { const i = (mission && mission.city) || 0; if (!(i in STREET)) { const im = new Image(); im.src = asset(`assets/bg/street${i}.webp`); STREET[i] = im; } const im = STREET[i]; return im.complete && im.naturalWidth ? im : null; }
   // pré-rendu à la taille exacte de l'écran (une seule fois par taille) : ensuite, chaque image ne fait qu'une copie sans
   // redimensionner. Redimensionner une grande image 60 fois par seconde (en qualité « haute ») faisait saccader.
-  const STREET_CACHE = { key: '', cv: null };
+  const STREET_CACHE = { key: '', cv: null }, STREET_UP = 600;   // hauteur de ciel ajoutée au-dessus du dessin (Filou monte haut)
   function streetCanvas(im, tw, th) {
     const S = view.scale, key = (mission ? mission.city : 0) + '|' + Math.round(tw * S) + 'x' + Math.round(th * S);
-    if (STREET_CACHE.key !== key) { const cv = STREET_CACHE.cv || document.createElement('canvas'); cv.width = Math.round(tw * S) * 2; cv.height = Math.round(th * S); const c = cv.getContext('2d');
-      c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high'; const w1 = Math.round(tw * S); c.drawImage(im, 0, 0, w1, cv.height); c.save(); c.translate(w1 * 2, 0); c.scale(-1, 1); c.drawImage(im, 0, 0, w1, cv.height); c.restore();   // une image + son miroir : pas de couture
-      const g = c.createLinearGradient(0, 0, 0, 70 * S); const sk = (mission && mission.palette && mission.palette[0]) || '#70d0f4'; g.addColorStop(0, sk); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0, 0, cv.width, 70 * S);
-      c.fillStyle = 'rgba(255,255,255,.2)'; c.fillRect(0, 0, cv.width, cv.height);   // le voile est cuit dans l'image
+    if (STREET_CACHE.key !== key) { const cv = STREET_CACHE.cv || document.createElement('canvas'), w1 = Math.round(tw * S), hi = Math.round(th * S), up = Math.round(STREET_UP * S);
+      cv.width = w1 * 2; cv.height = hi + up; const c = cv.getContext('2d'); c.clearRect(0, 0, cv.width, cv.height);
+      c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high'; c.drawImage(im, 0, up, w1, hi); c.save(); c.translate(w1 * 2, 0); c.scale(-1, 1); c.drawImage(im, 0, up, w1, hi); c.restore();   // une image + son miroir : pas de couture
+      // au-dessus de l'image : le ciel continue, en fondu de la couleur du haut de l'image vers le bleu du ciel du jeu
+      const px = c.getImageData(0, up + 2, cv.width, 1).data; let r = 0, gg = 0, b = 0, n = 0; for (let i = 0; i < px.length; i += 16) { r += px[i]; gg += px[i + 1]; b += px[i + 2]; n++; }
+      const topCol = `rgb(${r / n | 0},${gg / n | 0},${b / n | 0})`, sky = (mission && mission.palette && mission.palette[0]) || '#70d0f4';
+      const g = c.createLinearGradient(0, 0, 0, up + 40 * S); g.addColorStop(0, sky); g.addColorStop(up / (up + 40 * S), topCol); g.addColorStop(1, 'rgba(0,0,0,0)');
+      c.fillStyle = g; c.fillRect(0, 0, cv.width, up); const g2 = c.createLinearGradient(0, up, 0, up + 40 * S); g2.addColorStop(0, topCol); g2.addColorStop(1, topCol.replace('rgb', 'rgba').replace(')', ',0)')); c.fillStyle = g2; c.fillRect(0, up, cv.width, 40 * S);
+      c.fillStyle = 'rgba(255,255,255,.2)'; c.fillRect(0, up, cv.width, hi);   // le voile est cuit dans l'image
       STREET_CACHE.cv = cv; STREET_CACHE.key = key; }
     return STREET_CACHE.cv;
   }
@@ -696,7 +701,7 @@
   function drawStreet() {
     const im = street(); if (!im) return false; const extra = Math.max(0, -viewTop0()), bot = world.floor + 6 + (world.camY || 0);
     const th = Math.min(Math.max(bot + extra, 420), 520), tw = im.naturalWidth * th / im.naturalHeight, top = bot - th;
-    blitRow(streetCanvas(im, tw, th), -world.camera * .3, top);
+    blitRow(streetCanvas(im, tw, th), -world.camera * .3, top - STREET_UP);
     return true;
   }
   // la silhouette peinte de la ville, tout au loin (assets/bg/city<N>.webp), posée sur l'horizon et qui défile très lentement
