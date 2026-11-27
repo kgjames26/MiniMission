@@ -18,6 +18,14 @@
     moreStory: 'Libère au moins {n} amis pour lire la suite de l’histoire ! Tu peux revenir quand tu veux.',
     hintGo: 'Par ici, {name} ! Avance tout droit !', hintCage: 'Un ami attend dans la cage ! Envoie-lui une bulle !', hintAlien: 'Envoie des bulles au farceur !',
     partyN: 'Bravo {name} ! Grâce à toi, tout le monde est ami ! C’est la fête !', party: 'Bravo ! Grâce à toi, tout le monde est ami ! C’est la fête !', dipTitle: 'Diplôme de super-héros', dipLine: 'a sauvé la Terre avec Rose, Ziggy, Filou et Titan', dipLineAnon: 'Tu as sauvé la Terre avec Rose, Ziggy, Filou et Titan', dipSay: 'Voici ton diplôme de super-héros !',
+    // le grand final (rose-final.js)
+    epD: ['Les avenues de Ziggy ! Attrape tous les farceurs, et la rue retrouvera ses couleurs !', 'Les toits de Filou ! Les farceurs sont tout là-haut : vole avec Rose !', 'Le chantier de Titan ! Gros Bidou a besoin de deux bulles !', 'Le voilà ! Capitaine Farfouille dans son vaisseau géant ! Envoie-lui des bulles !'],
+    epSky: 'La route est libre ! Vole vers le ciel, Capitaine Farfouille t’attend !', epWave: 'Encore des soucoupes ! Voilà d’autres farceurs !',
+    epDone: ['Bravo ! Les avenues ont retrouvé leurs couleurs !', 'Bravo ! Les toits ont retrouvé leurs couleurs !', 'Bravo ! Le chantier a retrouvé ses couleurs !'],
+    epFriends: 'Regarde ! Cinq amis arrivent pour aider !', epWall: 'Le nuage de poudre bloque encore la route. Il reste des farceurs : suis la flèche !',
+    epReady: 'La super bulle est prête ! Appuie sur le bouton bulle !', epSuper: 'Tous ensemble : super bulle !', epPow: ['Bond lumineux !', 'Fil doux !', 'Force douce !'],
+    epShield: 'Boing ! Un bouclier ! Attrape d’abord les farceurs des petites soucoupes !', epB2: 'Aïe aïe aïe ! À moi, mes petites soucoupes ! Bouclier !', epB2off: 'Le bouclier a disparu ! Vas-y, encore des bulles !',
+    epB3: 'Grrr… Je suis très, très grognon ! Voilà ma poudre Grognon géante !', epAll: 'Tous ensemble ! Appuie, appuie, appuie sur le bouton bulle pour souffler une bulle géante !', epAllMore: 'Encore ! Tout le monde souffle avec toi !',
     ...((LX && LX.engine) || {}) };
   document.title = 'Mini Mission · Rose · ' + WD.name; $('#wchip').textContent = WD.chip;
   document.querySelector('meta[name=theme-color]').setAttribute('content', WD.theme); document.body.style.background = WD.theme;
@@ -210,7 +218,8 @@
   const HSPR = { ziggy: ['ziggy_r0', 'ziggy_r1', 'ziggy_r2', 'ziggy_r3'], filou: [0, 1, 2, 3, 4, 5, 6, 7].map(i => 'filou_w' + i), titan: [0, 1, 2, 3, 4, 5, 6, 7].map(i => 'titan_w' + i) };
   const helpers = (WD.helpers || []).map((n, i) => ({ n, i, x: 300 - i * 110, y: 0, vx: 0, face: 1, t: i, cool: 2 + i * 1.1, run: 0, shotT: 0 }));
   // grand final : Capitaine Farfouille dans sa soucoupe (il faut 3 bulles), tout au bout de la ville
-  const boss = WD.boss ? { ...WD.boss, hpMax: WD.boss.hp, state: 'wait', t: 0, dir: -1, hitT: 0, cool: 2.5, bt: 0, yy: WD.boss.y } : null;
+  let EP = null;   // grand final « épique » (rose-final.js) : crochets appelés par le moteur
+  const boss = WD.boss && !WD.epic ? { ...WD.boss, hpMax: WD.boss.hp, state: 'wait', t: 0, dir: -1, hitT: 0, cool: 2.5, bt: 0, yy: WD.boss.y } : null;
   const bossBox = () => ({ x0: boss.x - 95, x1: boss.x + 95, y0: boss.yy + 10, y1: boss.yy + 235 });
   const slime = [], bubbles = [], puffs = [], sparks = [];   // sparks : paillettes de poudre ronchon, cœurs, notes de musique
   const RIDDLES = WD.riddles;
@@ -261,7 +270,9 @@
   $('#again').onclick = () => { location.reload(); }; $('#again').textContent = EN.replay;
 
   function shoot() {
-    if (paused || finished || rose.cool > 0 || !RF) return;
+    if (paused || finished || !RF) return;
+    if (EP && EP.shoot()) return;   // super bulle, bulle géante…
+    if (rose.cool > 0) return;
     rose.cool = .32; sfx.bubble();
     const h = rose.mode === 'air' ? rose.y : rose.base, dash = rose.mode === 'air' && rose.vs > 300;
     const cx = rose.x + rose.face * (dash ? -14 : 6), cy = h + (dash ? 118 : 121);      // le petit triangle blanc sur la poitrine
@@ -272,7 +283,7 @@
   function moveX(dx, air) {
     const n = Math.max(1, Math.ceil(Math.abs(dx) / 6)), sx = dx / n;
     for (let i = 0; i < n; i++) {
-      const nx = Math.max(60, Math.min(L - 60, rose.x + sx));
+      const nx = Math.max(60, Math.min(EP ? EP.maxX() : L - 60, rose.x + sx));
       let h = air ? rose.y : rose.base;
       if (!air) { const sf = supportAt(nx, h + STEP); if (sf > h) h = sf; }          // une pente douce : elle la monte
       if (bodyHit(nx, h, air)) { if (air) { rose.vx *= -.3; if (Math.abs(dx) > 1) bonk(); } else rose.vx = 0; break; }
@@ -305,6 +316,10 @@
   function bonk() { if (rose.bump > 0) return; rose.bump = .4; sfx.bonk(); puffs.push({ x: rose.x + rose.face * RW, y: (rose.mode === 'air' ? rose.y : rose.base) + 110, t: 0, c: '#fff' }); }
 
   function update(dt) {
+    if (EP && EP.locked()) { const sv = { ...key }; key.l = key.r = key.fly = key.down = false; try { updateInner(dt); } finally { Object.assign(key, sv); } return; }
+    updateInner(dt);
+  }
+  function updateInner(dt) {
     const dir = (key.r ? 1 : 0) - (key.l ? 1 : 0);
     if (dir) rose.face = dir;
     rose.t += dt; rose.airT += dt; rose.cool -= dt; rose.bump -= dt; rose.vs += (Math.abs(rose.vx) - rose.vs) * Math.min(1, dt * 5);
@@ -389,6 +404,7 @@
       const sp = Math.hypot(u.vx, u.vy), nsp = Math.max(150, sp * Math.pow(.05, dt));      // …en ralentissant
       let tgt = null, bd = 1100;                                                          // et file un peu vers le farceur le plus proche, devant elle
       for (const a of aliens) if (a.state === 'farceur') { const ab = alienBox(a), ax = (ab.x0 + ab.x1) / 2, ay = (ab.y0 + ab.y1) / 2, dx = ax - u.x, d = Math.hypot(dx, ay - u.y); if (dx * Math.sign(u.vx || 1) > -20 && d < bd) { bd = d; tgt = [ax, ay]; } }
+      if (EP) { const t = EP.target(u); if (t) { const d = Math.hypot(t[0] - u.x, t[1] - u.y); if ((t[0] - u.x) * Math.sign(u.vx || 1) > -20 && d < bd) { bd = d; tgt = t; } } }
       if (boss && boss.state === 'fight') { const bb = bossBox(), ax = boss.x, ay = (bb.y0 + bb.y1) / 2, dx = ax - u.x, d = Math.hypot(dx, ay - u.y); if (dx * Math.sign(u.vx || 1) > -20 && d < bd) { bd = d; tgt = [ax, ay]; } }
       let ang = Math.atan2(u.vy, u.vx);
       if (tgt) { const want = Math.atan2(tgt[1] - u.y, tgt[0] - u.x); let da = want - ang; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI; ang += Math.max(-2.4 * dt, Math.min(2.4 * dt, da)); }
@@ -397,7 +413,8 @@
       let hit = u.life <= 0 || solidPoint(u.x, u.y, false);
       for (const a of aliens) if (!hit && a.state === 'farceur') { const ab = alienBox(a); if (u.x + u.r * .6 > ab.x0 && u.x - u.r * .6 < ab.x1 && u.y + u.r * .6 > ab.y0 && u.y - u.r * .6 < ab.y1) {
         if (a.hp > 1) { a.hp--; a.hitT = .55; hit = true; sfx.bonk(); puffs.push({ x: u.x, y: u.y, t: 0, c: '#ffd08a' }); continue; }   // 1re bulle : il boude, il en faut une 2e
-        a.state = 'bubble'; a.bt = 0; a.vy = 40; a.vx = (Math.random() - .5) * 60; hit = 'keep'; sfx.pop(); powderBurst((ab.x0 + ab.x1) / 2, (ab.y0 + ab.y1) / 2); got.aliens++; if (WD.noCages) bubbleChip(); } }
+        bubbleAlien(a); hit = 'keep'; } }
+      if (!hit && EP && EP.bubbleHit(u)) hit = true;
       if (!hit && boss && boss.state === 'fight') { const bb = bossBox(); if (u.x + u.r * .6 > bb.x0 && u.x - u.r * .6 < bb.x1 && u.y + u.r * .6 > bb.y0 && u.y - u.r * .6 < bb.y1) { hit = true; hitBoss(u.x, u.y); } }
       for (const c of cages) if (!hit && !c.open && Math.abs(u.x - c.x) < 70 + u.r * .4 && u.y > c.y && u.y < c.y + 160) { openCage(c); hit = true; }
       if (hit) { bubbles.splice(i, 1); if (hit !== 'keep') puffs.push({ x: u.x, y: u.y, t: 0, c: '#d9f6ff' }); }
@@ -405,15 +422,17 @@
     // extraterrestres
     for (const a of aliens) {
       a.t += dt;
-      if (a.state === 'farceur') {
+      if (a.state === 'farceur' && a.web > 0) { a.web -= dt; a.throwT = 0; }   // pris dans le fil doux de Filou : il ne bouge plus
+      else if (a.state === 'farceur' && a.dizzy > 0) { a.dizzy -= dt; a.throwT = 0; if (a.y > (a.yb || 0)) a.y = Math.max(a.yb || 0, a.y - 260 * dt); }   // secoué par Titan : la tête qui tourne
+      else if (a.state === 'farceur') {
         if (a.type === 'glouglou') { a.x += a.dir * 45 * dt; if (a.x > a.x1) a.dir = -1; if (a.x < a.x0) a.dir = 1; }
-        else if (a.type === 'boing') { a.y = Math.abs(Math.sin(a.t * 2.4)) * 130; a.x += a.dir * 30 * dt; if (a.x > a.x1) a.dir = -1; if (a.x < a.x0) a.dir = 1; }
+        else if (a.type === 'boing') { a.y = (a.yb || 0) + Math.abs(Math.sin(a.t * 2.4)) * 130; a.x += a.dir * 30 * dt; if (a.x > a.x1) a.dir = -1; if (a.x < a.x0) a.dir = 1; }
         else if (a.type === 'bidou') { a.hitT -= dt; if (a.hitT <= 0) { a.x += a.dir * 28 * dt; if (a.x > a.x1) a.dir = -1; if (a.x < a.x0) a.dir = 1; } }
         else if (a.type === 'zigzag') {                                     // Zigzag souffle 2 bulles d'un coup vers Rose (rien de méchant)
           a.x += a.dir * 22 * dt; if (a.x > a.x1) a.dir = -1; if (a.x < a.x0) a.dir = 1; a.cool -= dt; a.throwT = (a.throwT || 0) - dt;
           if (a.cool <= 0 && Math.abs(rose.x - a.x) < 700) { a.cool = 3.8; a.throwT = .5; a.dir = rose.x < a.x ? -1 : 1;
-            const h = (rose.mode === 'air' ? rose.y : rose.base) + 100, dx = rose.x - a.x, dy = h - 80, base = Math.atan2(dy, dx);
-            for (const da of [-.22, .22]) slime.push({ soap: true, x: a.x + a.dir * 55, y: 85, vx: Math.cos(base + da) * 210, vy: Math.sin(base + da) * 210, life: 3.5 }); } }
+            const h = (rose.mode === 'air' ? rose.y : rose.base) + 100, dx = rose.x - a.x, dy = h - (a.yb || 0) - 80, base = Math.atan2(dy, dx);
+            for (const da of [-.22, .22]) slime.push({ soap: true, x: a.x + a.dir * 55, y: (a.yb || 0) + 85, vx: Math.cos(base + da) * 210, vy: Math.sin(base + da) * 210, life: 3.5 }); } }
         else { a.y = a.y0 + Math.sin(a.t * 1.3) * 60; a.dir = rose.x < a.x ? -1 : 1; a.cool -= dt;
           if (a.cool <= 0 && Math.abs(rose.x - a.x) < 750) { a.cool = 3.6; a.throwT = .45; const h = (rose.mode === 'air' ? rose.y : rose.base) + 100, dx = rose.x - a.x, dy = h - (a.y + 60), d = Math.hypot(dx, dy) || 1;
             slime.push({ x: a.x + a.dir * 50, y: a.y + 70, vx: dx / d * 230, vy: dy / d * 230, life: 3.5 }); } a.throwT = (a.throwT || 0) - dt; }
@@ -431,13 +450,14 @@
       if (s.life <= 0 || s.y < 0 || solidPoint(s.x, s.y, true)) { slime.splice(i, 1); puffs.push({ x: s.x, y: Math.max(8, s.y), t: 0, c: s.soap ? '#bfe8ff' : '#8be36a' }); } }
     // les amis suivent Rose en petite file
     friends.filter(f => f.home).forEach(f => { f.t += dt; f.hv += 260 * dt; f.x += 420 * dt; f.y += f.hv * dt * .8; f.face = 1; });   // les plus anciens rentrent à la fusée
-    friends.filter(f => !f.home).forEach((f, i) => { f.t += dt; const tx = rose.x - rose.face * (150 + i * 95), ty = Math.max(0, (rose.mode === 'air' ? rose.y : rose.base) - 10 + Math.sin(f.t * 3 + i) * 10);
-      f.x += (tx - f.x) * Math.min(1, dt * 2.6); f.y += (ty - f.y) * Math.min(1, dt * 2.2); f.face = tx > f.x ? 1 : -1; });
+    friends.filter(f => !f.home).forEach((f, i) => { f.t += dt; const tx = rose.x - rose.face * (150 + i * (WD.epic ? 52 : 95)) + (f.dx || 0), ty = Math.max(0, (rose.mode === 'air' ? rose.y : rose.base) - 10 + Math.sin(f.t * 3 + i) * 10);
+      if (f.lock > 0) { f.lock -= dt; return; } f.x += (tx - f.x) * Math.min(1, dt * 2.6); f.y += (ty - f.y) * Math.min(1, dt * 2.2); f.face = tx > f.x ? 1 : -1; });
     for (let i = puffs.length - 1; i >= 0; i--) { puffs[i].t += dt; if (puffs[i].t > .6) puffs.splice(i, 1); }
     for (let i = sparks.length - 1; i >= 0; i--) { const q = sparks[i]; q.t += dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vy -= (q.g || 0) * dt; if (q.t > q.life) sparks.splice(i, 1); }
     cages.forEach(c => { if (c.open) c.t += dt; });
     if (!finished && !WD.boss && rose.x > ROCKET - 40 && rose.mode !== 'air') finish();
     updateHelpers(dt); updateBoss(dt, B);
+    if (EP) EP.update(dt, B);
   }
   const ASCALE = 1;
   const BUBBLE_R = 92;   // un peu plus grand que le plus grand extraterrestre (≈ 150 de haut)
@@ -446,21 +466,29 @@
   function alienBox(a) { const f = AF && AF[a.type + '_f1'], z = ASCALE * (TSCALE[a.type] || 1); const w = f ? f.w * z : 120, h = f ? f.h * z : 120; return { x0: a.x - w * .38, x1: a.x + w * .38, y0: a.y, y1: a.y + h * .9 }; }
   function openCage(c) { c.open = true; c.t = 0; sfx.pop(); puffs.push({ x: c.x, y: c.y + 90, t: 0, c: '#ffe9a8' }); setTimeout(() => addFriend(c.kind, c.kind === 'mon' ? c.a : c.hue, c.x, c.y), 450); }
 
+  function bubbleAlien(a) {   // un farceur attrapé dans une bulle (par Rose, un héros ou la super bulle)
+    if (a.state !== 'farceur') return; const ab = alienBox(a);
+    a.state = 'bubble'; a.bt = 0; a.vy = 40; a.vx = (Math.random() - .5) * 60; a.web = 0; sfx.pop(); powderBurst((ab.x0 + ab.x1) / 2, (ab.y0 + ab.y1) / 2); got.aliens++;
+    if (EP) EP.onBubble(a); else if (WD.noCages) bubbleChip();
+  }
   function bubbleChip() { chip('#cFriends', '🫧 ' + got.aliens + '/' + (aliens.length + (boss ? 1 : 0))); }
   // ----- les héros qui aident (grand final) -----
   function groundTop(x) { let best = 0; for (const q of solids) { if (q.kind === 'slab') continue; const sp = spansAt(q, x); if (sp) for (const [, hi] of sp) if (hi > best) best = hi; } return best; }
   function updateHelpers(dt) {
     for (const h of helpers) {
-      h.t += dt; h.cool -= dt; h.shotT -= dt;
-      const tx = rose.x - rose.face * (120 + h.i * 115), d = tx - h.x, v = Math.max(-480, Math.min(480, d * 2.4));
-      h.vx = Math.abs(d) > 12 ? v : 0; h.x += h.vx * dt; if (Math.abs(h.vx) > 20) h.face = Math.sign(h.vx); h.run += Math.abs(h.vx) * dt;
+      h.t += dt; h.cool -= dt; h.shotT -= dt; h.poseT = (h.poseT || 0) - dt; if (h.poseT <= 0) h.pose = null;
+      if (h.lock > 0) { h.lock -= dt; continue; }        // pendant un pouvoir (grand final), c'est rose-final.js qui le déplace
+      const tx = (h.tx != null ? h.tx : rose.x - rose.face * (120 + h.i * 115)), d = tx - h.x, v = Math.max(-480, Math.min(480, d * 2.4));
+      h.vx = Math.abs(d) > 12 ? v : 0; h.x += h.vx * dt; if (EP) h.x = Math.min(h.x, EP.maxX() + 60); if (Math.abs(h.vx) > 20) h.face = Math.sign(h.vx); h.run += Math.abs(h.vx) * dt;
       const gt = groundTop(h.x), ty = gt + (gt > h.y + 4 ? 0 : 0); h.y += (ty - h.y) * Math.min(1, dt * (ty > h.y ? 9 : 6));   // ils sautent sur les toits
       if (h.cool <= 0 && !finished) {                     // une bulle vers le farceur le plus proche
-        let best = null, bd = 700;
-        for (const a of aliens) if (a.state === 'farceur') { const dd = Math.abs(a.x - h.x); if (dd < bd) { bd = dd; best = a.x; } }
-        if (boss && boss.state === 'fight' && Math.abs(boss.x - h.x) < bd) best = boss.x;
-        if (best !== null) { h.face = best > h.x ? 1 : -1; h.cool = 2.4 + Math.random() * 1.6; h.shotT = .3; sfx.bubble();
-          bubbles.push({ x: h.x + h.face * 50, y: h.y + 130, vx: h.face * 950, vy: 0, age: 0, life: 2.2, r: 5 }); }
+        let best = null, bd = 700, by = 0;
+        for (const a of aliens) if (a.state === 'farceur') { const dd = Math.abs(a.x - h.x); if (dd < bd) { bd = dd; best = a.x; by = a.y + 60; } }
+        if (boss && boss.state === 'fight' && Math.abs(boss.x - h.x) < bd) { best = boss.x; by = boss.yy + 100; }
+        if (EP) { const t = EP.helperTarget(h); if (t && Math.abs(t[0] - h.x) < bd) { best = t[0]; by = t[1]; } }
+        if (best !== null) { h.face = best > h.x ? 1 : -1; h.cool = (EP ? 1.8 : 2.4) + Math.random() * 1.6; h.shotT = .3; sfx.bubble();
+          const sx = h.x + h.face * 50, sy = h.y + 130, ang = Math.atan2(Math.max(-200, by - sy), Math.abs(best - sx)) * .8;   // vise aussi vers le haut (farceurs sur les toits)
+          bubbles.push({ x: sx, y: sy, vx: h.face * 950 * Math.cos(ang), vy: 950 * Math.sin(ang), age: 0, life: 2.2, r: 5, h: 1 }); if (EP) EP.helperShot(h); }
         else h.cool = .5;
       }
     }
@@ -623,12 +651,15 @@
   const BGI = new Image(); let bgOk = false; BGI.onload = () => { bgOk = true; }; BGI.src = 'assets/bg/' + WID + '.webp?v=' + V;
   function drawBg(time) {
     if (!bgOk) { WD.drawBg(api(), time); return; }
-    const hy = SY(0) + camY * zoom * .55, sc = Math.max(hy / BGI.height, (H * .5) / BGI.height), tw = BGI.width * sc, th = BGI.height * sc, top = hy - th;
+    if (EP && EP.drawBg) { EP.drawBg(paintBg, BGI, time); return; }
+    paintBg(BGI); if (WD.bgOver) WD.bgOver(api(), time);
+  }
+  function paintBg(img) {
+    const BGI = img, hy = SY(0) + camY * zoom * .55, sc = Math.max(hy / BGI.height, (H * .5) / BGI.height), tw = BGI.width * sc, th = BGI.height * sc, top = hy - th;
     if (top > 0) { ctx.fillStyle = WD.skyTop || WD.theme; ctx.fillRect(0, 0, W, top + 2); }
     let x0 = -((camX * zoom * .18) % (tw * 2)); if (x0 > 0) x0 -= tw * 2;
     for (let i = 0, x = x0; x < W; i++, x += tw) { ctx.save(); if (i % 2) { ctx.translate(x + tw, top); ctx.scale(-1, 1); } else ctx.translate(x, top); ctx.drawImage(BGI, 0, 0, tw + (i % 2 ? 0 : 1), th); ctx.restore(); }   // une image sur deux en miroir : pas de couture visible
     ctx.fillStyle = 'rgba(255,255,255,.14)'; ctx.fillRect(0, Math.max(0, top), W, hy - Math.max(0, top));   // un léger voile : le décor reste au loin, les personnages ressortent
-    if (WD.bgOver) WD.bgOver(api(), time);
   }
   // texture peinte du sol (assets/ground/*.webp, en « multiplier » : garde les couleurs du monde et ajoute cailloux, glace, plaques…)
   const GTEX = null && { lune: 'rock', mars: 'rock', venus: 'rock', mercure: 'rock', soleil: 'rock', jupiter: 'ice', saturne: 'ice', uranus: 'ice', neptune: 'ice', terre: 'metal' }[WID];
@@ -718,7 +749,7 @@
         for (let k = 60; k < s.w; k += 330) { const kx = SX(s.x + k), ky = yb + 8 * zoom, gl = .5 + .5 * Math.sin(time * 2 + k); ctx.fillStyle = `rgba(${C.crystal},${.4 + gl * .4})`; ctx.beginPath(); ctx.moveTo(kx, ky); ctx.lineTo(kx + 9 * zoom, ky + 26 * zoom); ctx.lineTo(kx + 18 * zoom, ky); ctx.fill(); }
         continue; }
       if (s.kind === 'cloudceil') { ctx.fillStyle = C.cloud[0]; polyPath(s.poly); ctx.fill(); ctx.fillStyle = C.cloud[1]; for (let k = 0; k < s.w; k += 60) { ctx.beginPath(); ctx.arc(SX(s.x + k + 30), SY(s.y - 26 - Math.abs(Math.sin((s.x + k + 30) * .012)) * 34) - 8 * zoom, 26 * zoom, Math.PI, 0); ctx.fill(); } continue; }
-      if (s.kind === 'block') { const pal = (C.block || [['#d8d0c4', '#a89c8c']])[s.c || 0]; ctx.fillStyle = pal[0]; polyPath(s.poly); ctx.fill();
+      if (s.kind === 'block') { let pal = (C.block || [['#d8d0c4', '#a89c8c']])[s.c || 0]; if (EP) pal = EP.blockPal(s, pal); ctx.fillStyle = pal[0]; polyPath(s.poly); ctx.fill();
         const cols = Math.max(2, Math.floor(s.w / 85)), rows = Math.max(1, Math.floor((s.h - 50) / 70));
         for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) { const wx = SX(s.x + 34 + i * (s.w - 68) / Math.max(1, cols - 1)) - 17 * zoom, wy = SY(s.y + s.h - 36 - j * 70);
           ctx.fillStyle = (i + j) % 3 ? 'rgba(225,242,255,.95)' : 'rgba(255,228,150,.95)'; ctx.fillRect(wx, wy, 34 * zoom, 42 * zoom); ctx.fillStyle = 'rgba(0,0,0,.12)'; ctx.fillRect(wx, wy + 38 * zoom, 34 * zoom, 4 * zoom); }
@@ -778,14 +809,14 @@
   function drawAlien(a, time) {
     if (!AF || !alienImg.complete) return;
     let name = a.type + '_f1';
-    if (a.state === 'farceur') { if (a.type === 'boing') name = a.y > 25 ? 'boing_f2' : 'boing_f1'; else if (a.type === 'zap') name = (a.throwT || 0) > 0 ? 'zap_f2' : 'zap_f1';
+    if (a.state === 'farceur') { if (a.type === 'boing') name = a.y - (a.yb || 0) > 25 ? 'boing_f2' : 'boing_f1'; else if (a.type === 'zap') name = (a.throwT || 0) > 0 ? 'zap_f2' : 'zap_f1';
       else if (a.type === 'zigzag') name = (a.throwT || 0) > 0 ? 'zigzag_f2' : 'zigzag_f1';
       else if (a.type === 'bidou') name = a.hitT > 0 ? 'bidou_f1' : Math.floor(a.t * 2.2) % 2 ? 'bidou_f2' : 'bidou_f1'; else name = Math.floor(a.t * 3.2) % 2 ? 'glouglou_f2' : 'glouglou_f1'; }
     else if (a.state === 'gone') return;
     else if (a.state === 'bubble' && WD.boss && AF[a.type + '_ami']) name = a.type + '_ami';   // au grand final, ils deviennent amis : sourire dans la bulle
     const f = AF[name], x = SX(a.x), y = SY(a.y); if (x < -150 || x > W + 150) return;
     const pts = TSCALE[a.type] || 1, phh = f.h * ASCALE * pts * zoom, pr = Math.max(phh, f.w * ASCALE * pts * zoom) * .72; if (a.state === 'farceur') drawPowderGlow(x, y - phh / 2, pr);
-    const k = zoom * ASCALE * (TSCALE[a.type] || 1), sq = a.type === 'boing' && a.y < 25 ? 1 + (25 - a.y) / 25 * .12 : 1;
+    const k = zoom * ASCALE * (TSCALE[a.type] || 1), by = a.y - (a.yb || 0), sq = a.type === 'boing' && a.state === 'farceur' && by < 25 ? 1 + (25 - by) / 25 * .12 : 1;
     ctx.save(); ctx.translate(x, y); ctx.scale((a.dir < 0 ? -1 : 1) * k * sq, k / sq);
     if (a.type === 'glouglou' && a.state === 'farceur') ctx.rotate(Math.sin(a.t * 6.4) * .06);
     if (a.state === 'bubble') { ctx.translate(0, -f.h / 2); ctx.rotate(Math.sin(a.bt * 7) * .18); const d = 1 + Math.sin(a.bt * 14) * .05; ctx.scale(d, 2 - d); ctx.translate(0, f.h / 2); }   // content d'être libéré : il danse dans sa bulle
@@ -837,9 +868,10 @@
   }
   function drawHelpers() {
     if (!S2 || !s2Img.complete) return;
-    for (const h of helpers) { const fr = HSPR[h.n], k = fr[Math.abs(h.vx) > 20 ? Math.floor(h.run / 38) % fr.length : 0], q = S2[k]; if (!q) continue;
-      const x = SX(h.x), y = SY(h.y), sc = 190 / 280 * zoom; if (x < -150 || x > W + 150) continue;
-      ctx.fillStyle = 'rgba(30,25,70,.22)'; ctx.beginPath(); ctx.ellipse(x, y + 3, 44 * zoom, 9 * zoom, 0, 0, 7); ctx.fill();
+    for (const h of helpers) { const fr = HSPR[h.n], k = h.pose || fr[Math.abs(h.vx) > 20 ? Math.floor(h.run / 38) % fr.length : 0], q = S2[k]; if (!q) continue;
+      const x = SX(h.x), y = SY(h.y + (h.lift || 0)), sc = 190 / 280 * zoom; if (x < -150 || x > W + 150) continue;
+      ctx.fillStyle = 'rgba(30,25,70,.22)'; ctx.beginPath(); ctx.ellipse(x, SY(h.y) + 3, 44 * zoom, 9 * zoom, 0, 0, 7); ctx.fill();
+      if (h.trail > 0) for (let i = 4; i >= 1; i--) { ctx.save(); ctx.globalAlpha = h.trail * .22 / i * 2; ctx.translate(x - h.face * i * 34 * zoom, y); ctx.scale(h.face * sc, sc); ctx.drawImage(s2Img, q.x, q.y, q.w, q.h, -q.ax, -q.ay, q.w, q.h); ctx.restore(); }   // traînée lumineuse de Ziggy
       ctx.save(); ctx.translate(x, y - (h.shotT > 0 ? 6 * zoom : 0)); ctx.scale(h.face * sc, sc); ctx.drawImage(s2Img, q.x, q.y, q.w, q.h, -q.ax, -q.ay, q.w, q.h); ctx.restore(); }
   }
   function drawBoss(time) {
@@ -907,7 +939,7 @@
     const plan = WID === 'final' ? null : 'assets/planets/' + WID + '.webp?v=' + V;
     if (kind === 'stars') { ic = '⭐'; n = got.stars; t = stars.length; line = EN.tStars; }
     else if (kind === 'letters') { ic = '🔤'; n = got.letters; t = letters.length; line = EN.tLetters; extra = '<div class="tl-letters">' + letters.map((l, i) => `<b class="${l.got ? 'on' : ''}" style="--c:${COLS[i % 5]}">${l.got ? l.l : '?'}</b>`).join('') + '</div>'; }
-    else if (kind === 'friends') { if (WD.noCages) { ic = '🫧'; n = got.aliens; t = aliens.length + (boss ? 1 : 0); line = EN.tBubbles; } else { ic = '💛'; n = got.friends; t = 20; line = EN.tFriends; } }
+    else if (kind === 'friends') { if (WD.noCages) { ic = '🫧'; n = got.aliens; t = WD.epic ? WD.epic.total + 1 : aliens.length + (boss ? 1 : 0); line = EN.tBubbles; } else { ic = '💛'; n = got.friends; t = 20; line = EN.tFriends; } }
     else { ic = plan ? `<img src="${plan}" alt="">` : '🏙️'; n = -1; line = (WD.boss ? EN.tWorldBoss : EN.tWorld).replace('{w}', WD.name); }
     const txt = line.replace('{n}', n).replace('{t}', t);
     let d = document.getElementById('tile'); if (!d) { d = document.createElement('div'); d.id = 'tile'; document.body.appendChild(d); d.addEventListener('pointerdown', (e) => { e.preventDefault(); d.classList.remove('show'); paused = d.dataset.wasPaused === '1'; }); }
@@ -920,12 +952,13 @@
   // ================= petits indices à la voix (si l'enfant ne sait plus où aller) =================
   const hint = { best: 0, idle: 0, n: 0, show: 0, tx: 0, ty: 0, gotSum: 0 };
   function updateHint(dt) {
-    if (finished || (boss && boss.state === 'fight')) { hint.idle = 0; return; }
+    if (finished || (boss && boss.state === 'fight') || (EP && EP.noHint())) { hint.idle = 0; return; }
     const sum = got.friends + got.aliens + got.stars + got.letters;
     if (rose.x > hint.best + 80 || sum !== hint.gotSum) { hint.best = Math.max(hint.best, rose.x); hint.gotSum = sum; hint.idle = 0; hint.n = 0; }
     hint.show = Math.max(0, hint.show - dt); hint.idle += dt;
     if (hint.idle < (hint.n ? 18 : 13) || hint.n >= 4) return;
     hint.idle = 0; hint.n++; hint.show = 4.5; hint.go = false;
+    if (EP) { const t = EP.hintTarget(); if (t) { hint.tx = t.x; hint.ty = t.y; hint.go = !!t.go; say(t.say || EN.hintAlien, true); return; } }
     const cage = cages.filter(c => !c.open && Math.abs(c.x - rose.x) < 650).sort((a, b) => Math.abs(a.x - rose.x) - Math.abs(b.x - rose.x))[0];
     const al = aliens.filter(a => a.state === 'farceur' && Math.abs(a.x - rose.x) < 700).sort((a, b) => Math.abs(a.x - rose.x) - Math.abs(b.x - rose.x))[0];
     if (cage) { hint.tx = cage.x; hint.ty = cage.y + 230; say(EN.hintCage, true); }
@@ -935,12 +968,20 @@
   function drawHint(time) {
     if (hint.show <= 0) return; const x = SX(hint.tx), y = SY(hint.ty) + Math.sin(time * 8) * 10 * zoom, s = zoom * 1.1, a = Math.min(1, hint.show * 2);
     ctx.save(); ctx.globalAlpha = a; ctx.translate(Math.max(40, Math.min(W - 40, x)), Math.max(60, y));
-    if (hint.go || x > W - 40) ctx.rotate(-Math.PI / 2);                  // la cible est plus loin à droite : la flèche pointe vers la droite
+    if (hint.go || x > W - 40) ctx.rotate(-Math.PI / 2); else if (x < 40) ctx.rotate(Math.PI / 2);                  // la cible est plus loin à droite : la flèche pointe vers la droite
     ctx.fillStyle = '#ffd53d'; ctx.strokeStyle = '#a66a00'; ctx.lineWidth = 5 * s; ctx.lineJoin = 'round';
     ctx.beginPath(); ctx.moveTo(-22 * s, -60 * s); ctx.lineTo(22 * s, -60 * s); ctx.lineTo(22 * s, -22 * s); ctx.lineTo(44 * s, -22 * s); ctx.lineTo(0, 18 * s); ctx.lineTo(-44 * s, -22 * s); ctx.lineTo(-22 * s, -22 * s); ctx.closePath(); ctx.stroke(); ctx.fill();
     ctx.restore();
   }
 
+  // ================= le grand final (rose-final.js) : on lui prête tout ce qu'il faut =================
+  if (WD.epic && MM.ROSE_EPIC) EP = MM.ROSE_EPIC({
+    WD, L, EN, KID, rose, aliens, bubbles, slime, puffs, sparks, helpers, friends, stars, solids, key, got, CALM, HUES, TSCALE, FARF,
+    alienImg, monImg, s2Img, flameImg, farfImg, get AF() { return AF; }, get S2() { return S2; },
+    get ctx() { return ctx; }, get W() { return W; }, get H() { return H; }, get GY() { return GY; }, get zoom() { return zoom; }, get camX() { return camX; }, get camY() { return camY; }, get paused() { return paused; }, get finished() { return finished; },
+    SX, SY, say, tone, sfx, chip, toKid, heartPath, alienBox, bubbleAlien, powderBurst, groundTop, supportAt, roseBox,
+    finish: () => finish(), hintNow: () => { hint.idle = 99; hint.n = 0; }, stopFlying: () => { rose.vx = 0; },
+  });
   // ================= boucle =================
   let last = performance.now(), started = false;
   function loop(now) {
@@ -948,21 +989,23 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (RF && AF && roseImg.complete && alienImg.complete) {
       if (!started) { started = true; paused = true; MM.say = (t) => say(t, true); MM.hush = () => { try { speechSynthesis.cancel(); } catch (e) {} };
-        const go = () => { paused = false; last = performance.now(); say(WD.intro); };
+        const go = () => { paused = false; last = performance.now(); if (EP) EP.start(); else say(WD.intro); };
         if (MM.book && !MM.book.seen(WID + '_a')) MM.book.open(WID + '_a', { onDone: go }); else go(); }
       if (!paused) { update(dt); updateHint(dt); fadeT += dt; }
       const look = rose.face * 120;
-      camX += ((rose.x + look - (W * .4) / zoom) - camX) * Math.min(1, dt * 3.5); camX = Math.max(0, Math.min(L - W / zoom, camX));
-      const hy = rose.mode === 'air' ? rose.y : rose.base, ty = Math.max(0, Math.min(CEIL - (GY / zoom) + 60, hy + 230 - GY / zoom * .82));
+      const cf = EP && EP.cam ? EP.cam() : null;   // le grand final peut cadrer autre chose que Rose (le vaisseau, la bulle géante)
+      camX += (((cf && cf.x != null ? cf.x : rose.x + look) - (W * .4) / zoom) - camX) * Math.min(1, dt * (cf && cf.x != null ? 2 : 3.5)); camX = Math.max(0, Math.min(L - W / zoom, camX));
+      const hy = rose.mode === 'air' ? rose.y : rose.base; let ty = Math.max(0, Math.min(CEIL - (GY / zoom) + 60, hy + 230 - GY / zoom * .82)); if (cf && cf.minY != null) ty = Math.max(ty, cf.minY);
       camY += (Math.max(0, ty) - camY) * Math.min(1, dt * 3);
       const time = now / 1000;
-      drawBg(time); drawGround(time); drawDevils(time); drawRover(time); drawSolidsTex(time); drawItems(time);
+      if (EP) EP.frame(dt, time);
+      drawBg(time); drawGround(time); drawDevils(time); drawRover(time); if (EP) EP.drawBack(time); drawSolidsTex(time); if (EP) EP.drawMid(time); drawItems(time);
       cages.forEach(c => drawCage(c, time)); aliens.forEach(a => drawAlien(a, time)); friends.forEach(f => drawFriend(f, time)); drawSparks();
-      drawHelpers(); drawBoss(time); drawRose(); drawHeli(time); drawShots(); drawHint(time);
+      drawHelpers(); drawBoss(time); if (EP) EP.drawShip(time); drawRose(); drawHeli(time); drawShots(); if (EP) EP.drawFront(time); drawHint(time);
     } else { ctx.fillStyle = WD.theme; ctx.fillRect(0, 0, W, H); }
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
   $('#cStars').textContent = '⭐ 0'; $('#cLetters').textContent = '🔤 0'; $('#cFriends').textContent = WD.noCages ? '🫧 0/' + (aliens.length + (boss ? 1 : 0)) : '💛 0/20';
-  window.__rose = { party: () => showParty(), WID, helpers, get boss() { return boss; }, rover, heli, devils, rose, aliens, cages, boxes, stars, letters, friends, key, got, solids, get paused() { return paused; } };
+  window.__rose = { bubbles, party: () => showParty(), bubble: (a) => bubbleAlien(a), get EP() { return EP; }, WID, helpers, get boss() { return boss; }, rover, heli, devils, rose, aliens, cages, boxes, stars, letters, friends, key, got, solids, get paused() { return paused; } };
 })();
