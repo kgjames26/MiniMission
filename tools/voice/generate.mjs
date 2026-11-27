@@ -5,7 +5,12 @@
                               une phrase sans fichier reste dite par la voix du navigateur.
    Seules les phrases nouvelles ou modifiées (texte, voix ou ton) sont refaites : on peut relancer le script sans frais.
 
-   Accès à Google Cloud (une des deux façons) :
+   Le plus simple : la clé gratuite de Google AI Studio (https://aistudio.google.com/apikey) :
+     GEMINI_API_KEY=… node tools/voice/generate.mjs --engine aistudio
+     (il faut aussi ffmpeg sur l'ordinateur pour faire les MP3). La version gratuite limite le nombre de phrases par jour :
+     quand Google dit stop, le script s'arrête proprement ; relancez le lendemain, il reprend où il en était.
+
+   Accès à Google Cloud (moteurs gemini et chirp, une des deux façons) :
      - gcloud auth application-default login   (ou gcloud auth login), et un projet avec l'API Text-to-Speech activée ;
        le script demande lui-même le jeton à gcloud. Projet : variable GOOGLE_CLOUD_PROJECT, sinon celui de gcloud.
      - ou une clé d'API : GOOGLE_API_KEY=… (clé limitée à l'API Cloud Text-to-Speech).
@@ -15,14 +20,15 @@
      node tools/voice/generate.mjs --only bravo.,nom. --limit 5   un petit essai
      node tools/voice/generate.mjs                            tout ce qui manque
      node tools/voice/generate.mjs --audition guide Laomedeia,Leda,Aoede   la même phrase avec plusieurs voix (voice/_essais/)
-   Options : --engine gemini|chirp (gemini par défaut : le ton est joué d'après la consigne ; chirp : vitesse et pauses seulement)
+   Options : --engine aistudio|gemini|chirp (gemini par défaut : le ton est joué d'après la consigne ; chirp : vitesse et pauses seulement ;
+             aistudio : les mêmes voix Gemini, avec la clé AI Studio)   --rpm 8 (aistudio : phrases par minute)
              --model gemini-2.5-flash-tts|gemini-2.5-pro-tts   --force (tout refaire)   --prune (effacer les fichiers qui ne servent plus)
              --concurrency 4   --phrase "texte pour --audition" */
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
-import { execSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -34,11 +40,12 @@ const DONE = path.join(HERE, `.generated-${LANG}.json`);   // empreinte de chaqu
 /* ---------- options ---------- */
 const argv = process.argv.slice(2);
 const opt = (n, d) => { const i = argv.indexOf('--' + n); return i < 0 ? d : (argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : true); };
-const ENGINE = opt('engine', 'gemini'), MODEL = opt('model', 'gemini-2.5-flash-tts');
+const ENGINE = opt('engine', 'gemini'), MODEL = opt('model', ENGINE === 'aistudio' ? 'gemini-2.5-flash-preview-tts' : 'gemini-2.5-flash-tts');
+const RPM = Math.max(1, +opt('rpm', 8) || 8);
 const DRY = !!opt('dry-run', false), FORCE = !!opt('force', false), PRUNE = !!opt('prune', false);
 const ONLY = opt('only', '') ? String(opt('only')).split(',').filter(Boolean) : null;
-const LIMIT = +opt('limit', 0) || Infinity, CONC = Math.max(1, +opt('concurrency', 4) || 4);
-if (!['gemini', 'chirp'].includes(ENGINE)) { console.error('--engine gemini ou chirp'); process.exit(1); }
+const LIMIT = +opt('limit', 0) || Infinity, CONC = ENGINE === 'aistudio' ? 1 : Math.max(1, +opt('concurrency', 4) || 4);
+if (!['gemini', 'chirp', 'aistudio'].includes(ENGINE)) { console.error('--engine aistudio, gemini ou chirp'); process.exit(1); }
 
 /* ---------- la même normalisation que le jeu (voice-clips.js) ---------- */
 const ctx = { console, Intl, localStorage: { getItem: () => null, setItem() {} }, navigator: { language: 'fr' }, document: { readyState: 'complete', addEventListener() {}, querySelectorAll: () => [], head: { appendChild() {} }, createElement: () => ({}) }, setTimeout: () => 0, fetch: () => Promise.reject(new Error('x')) };
@@ -71,6 +78,11 @@ const PAUSE = { aucune: 'sans pause', courtes: 'avec de petites pauses naturelle
 function request(row, voiceName = null) {
   const p = VOICES.personnages[row.personnage] || VOICES.personnages.guide;
   const voix = voiceName || p.voix, vitesse = num(row.vitesse, 1), ent = Math.round(num(row.enthousiasme, 3));
+  if (ENGINE === 'aistudio') {
+    // API Gemini (AI Studio) : la consigne de ton et le texte vont dans le même message
+    const how = `Tu es ${p.role}. Lis à voix haute, en français de France, pour un tout-petit, ${row.style} ; parle ${PACE(vitesse)}, ${PAUSE[row.pauses] || PAUSE.courtes}, enthousiasme ${ent} sur 5. Lis seulement le texte entre guillemets, sans rien ajouter :`;
+    return { contents: [{ parts: [{ text: `${how}\n« ${row.phrase} »` }] }], generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voix } } } } };
+  }
   if (ENGINE === 'gemini') {
     const prompt = `Tu es ${p.role}. Dis le texte en français de France, pour un tout-petit : ${row.style}. Parle ${PACE(vitesse)}, ${PAUSE[row.pauses] || PAUSE.courtes}. Enthousiasme : ${ent} sur 5. Ne dis que le texte, sans rien ajouter.`;
     return { input: { text: row.phrase, prompt }, voice: { languageCode: VOICES.langue, name: voix, modelName: MODEL }, audioConfig: { audioEncoding: 'MP3', sampleRateHertz: 24000 } };
@@ -91,7 +103,33 @@ function getAuth() {
   const project = process.env.GOOGLE_CLOUD_PROJECT || sh('gcloud config get-value project');
   return (auth = { url: '', headers: { Authorization: 'Bearer ' + token, ...(project ? { 'x-goog-user-project': project } : {}) } });
 }
+class DailyLimit extends Error {}
+let lastCall = 0;
+// AI Studio rend du son brut (PCM 16 bits, 24 kHz, mono) : ffmpeg en fait un MP3
+function toMp3(pcm) {
+  const r = spawnSync('ffmpeg', ['-loglevel', 'error', '-f', 's16le', '-ar', '24000', '-ac', '1', '-i', 'pipe:0', '-codec:a', 'libmp3lame', '-b:a', '48k', '-f', 'mp3', 'pipe:1'], { input: pcm, maxBuffer: 64 << 20 });
+  if (r.error || r.status !== 0) throw new Error('ffmpeg introuvable ou en erreur : installez ffmpeg (https://ffmpeg.org) puis relancez.');
+  return r.stdout;
+}
+async function synthStudio(body) {
+  const keyApi = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  if (!keyApi) { console.error('Donnez la clé AI Studio : GEMINI_API_KEY=… (https://aistudio.google.com/apikey)'); process.exit(1); }
+  for (let attempt = 1; ; attempt++) {
+    const wait = lastCall + 60000 / RPM - Date.now(); if (wait > 0) await new Promise((r) => setTimeout(r, wait)); lastCall = Date.now();
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': keyApi }, body: JSON.stringify(body) });
+    if (res.ok) {
+      const j = await res.json(), part = j.candidates?.[0]?.content?.parts?.find((x) => x.inlineData);
+      if (!part) { if (attempt < 3) continue; throw new Error('pas de son dans la réponse'); }
+      return toMp3(Buffer.from(part.inlineData.data, 'base64'));
+    }
+    const msg = (await res.text()).slice(0, 600);
+    if (res.status === 429 && /per ?day|PerDay|daily/i.test(msg)) throw new DailyLimit('limite du jour atteinte');
+    if ((res.status === 429 || res.status >= 500) && attempt < 6) { await new Promise((r) => setTimeout(r, 5000 * attempt)); continue; }
+    throw new Error(`Google a répondu ${res.status} : ${msg}`);
+  }
+}
 async function synth(body) {
+  if (ENGINE === 'aistudio') return synthStudio(body);
   const a = getAuth();
   for (let attempt = 1; ; attempt++) {
     const res = await fetch('https://texttospeech.googleapis.com/v1/text:synthesize' + a.url, { method: 'POST', headers: { 'Content-Type': 'application/json; charset=utf-8', ...a.headers }, body: JSON.stringify(body) });
@@ -141,7 +179,9 @@ else {
     while (k < batch.length) {
       const x = batch[k++];
       try { fs.writeFileSync(x.file, await synth(request(x.r))); done[x.r.code] = x.fp; process.stdout.write(`✔ ${x.r.code}\n`); }
-      catch (e) { fails++; console.error(`✘ ${x.r.code} : ${e.message}`); if (/ 40[0-3] /.test(e.message) && fails > 3) { console.error('Arrêt : plusieurs refus de Google.'); k = batch.length; } }
+      catch (e) {
+        if (e instanceof DailyLimit) { console.log(`\nGoogle : limite gratuite du jour atteinte après ${k - 1} phrase(s). Relancez demain, le script reprendra ici.`); k = batch.length; break; }
+        fails++; console.error(`✘ ${x.r.code} : ${e.message}`); if (/ 40[0-3] /.test(e.message) && fails > 3) { console.error('Arrêt : plusieurs refus de Google.'); k = batch.length; } }
       if (k % 25 === 0) fs.writeFileSync(DONE, JSON.stringify(done, null, 0));
     }
   };

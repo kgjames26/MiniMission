@@ -12,6 +12,18 @@ Le jeu lit d'abord les fichiers `voice/<langue>/<code>.mp3`. S'il manque un fich
 | `tools/voice/generate.mjs` | fabrique les MP3 et `voice/fr/index.json` |
 | `voice-clips.js` | dans le jeu : trouve le fichier de chaque phrase et le joue, sinon passe à la voix du navigateur |
 
+## Avec la clé gratuite de Google AI Studio (le plus simple)
+
+1. Crée une clé sur https://aistudio.google.com/apikey et installe ffmpeg (https://ffmpeg.org).
+2. Essaie sur 5 phrases :
+   ```
+   GEMINI_API_KEY=ta_clé node tools/voice/generate.mjs --engine aistudio --only bravo. --limit 5
+   ```
+   Sous Windows (PowerShell) : `$env:GEMINI_API_KEY="ta_clé"; node tools/voice/generate.mjs --engine aistudio --only bravo. --limit 5`
+3. Écoute `voice/fr/bravo.01.mp3`… puis relance sans `--only` ni `--limit`.
+
+La version gratuite limite le nombre de phrases par jour. Quand la limite est atteinte, le script s'arrête proprement : relance-le le lendemain, il reprend où il en était. Le jeu utilise déjà les fichiers faits, et la voix du navigateur dit le reste.
+
 ## Après un changement de texte
 
 ```
