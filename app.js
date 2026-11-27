@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '119', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '120', asset = (p) => `${p}?v=${ASSET_V}`;
   // la soucoupe des farceurs passe de temps en temps dans le ciel des villes (l'indice de l'histoire, chapitre 1)
   const ufoImg = new Image(); let UFO = null; ufoImg.src = asset('assets/aliens.webp'); fetch(asset('assets/aliens.json')).then(r => r.json()).then(j => { UFO = j.zap_f1; }).catch(() => {});
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
@@ -241,7 +241,7 @@
     const L = levelEntry(mission.level.hero, mission.level.index);
     L.stars = mission.coins.filter(c => c.collected).map(c => c.id);
     L.letters = mission.letters.filter(l => l.collected).map(l => l.letter);
-    L.monsters = (mission.monsters || []).filter(m => m.friendly).map(m => m.id);
+    L.monsters = [...new Set([...(L.monsters || []), ...(mission.monsters || []).filter(m => m.friendly).map(m => m.id)])];   // les amis déjà faits restent acquis
     L.q = Math.max(L.q || 0, (mission.stationsDone || []).filter(Boolean).length);
     L.silver = !!(L.silver || mission.silverGiven); L.gold = !!(L.gold || mission.goldGiven); L.mon = !!(L.mon || mission.monGiven);
     L.tot = { s: mission.coins.length, l: mission.letters.length, m: MON_TOTAL, q: 3 };
@@ -252,6 +252,10 @@
   const HEROES3 = ['ziggy', 'filou', 'titan'];
   let levelCity = 0;
   const cityDone = i => HEROES3.some(h => readLevel(h, i).done);
+  // v0.1xx : le petit livre d'un héros se mérite : quartier fini ET au moins la moitié des monstres devenus amis (sinon, le livre
+  // raconterait « tout le quartier est calmé » alors que ce n'est pas vrai). La ville suivante, elle, s'ouvre toujours.
+  const STORY_MIN = Math.ceil(MON_TOTAL / 2);
+  const heroEarned = (h, i) => { const L = readLevel(h, i); return !!L.done && (L.monsters || []).length >= STORY_MIN; };
   const DEV = () => { try { return localStorage.getItem('mm.dev') === '1'; } catch (e) { return false; } };   // mode développeur : tout est ouvert
   const cityUnlocked = i => i === 0 || DEV() || cityDone(i - 1);
   const heroMini = h => `<span class="sprite" style="--col:${h === 'ziggy' ? 0 : 2};--row:${HERO_ROW[h] ?? 0}"></span>`;
@@ -267,12 +271,14 @@
     });
     setScreen('hero-select');
     // une petite page pour chaque héros qui vient de finir son quartier, puis la conclusion quand les 3 ont fini
-    const pend = HEROES3.filter(h => readLevel(h, i).done).map(h => 'c' + i + h);
-    if (HEROES3.every(h => readLevel(h, i).done)) pend.push('c' + i + 'c');
+    const pend = HEROES3.filter(h => heroEarned(h, i)).map(h => 'c' + i + h);
+    if (HEROES3.every(h => heroEarned(h, i))) pend.push('c' + i + 'c');
+    const waiting = HEROES3.some(h => readLevel(h, i).done && !heroEarned(h, i) && MM.book && !MM.book.seen('c' + i + h));
     if (MM.cities.every((_, k) => HEROES3.every(h => readLevel(h, k).done))) pend.push('ch1end');
     const todo = pend.filter(id => MM.book && !MM.book.seen(id));
-    if (todo.length) { bookChain(todo, () => { if (!timerNoticePlaying && c) sayText(T('sayChooseHeroCity', { city: c.say || c.name }), null, true); }); return; }
-    if (!timerNoticePlaying && c) sayText(T('sayChooseHeroCity', { city: c.say || c.name }), null, true);
+    const sayNext = () => { if (timerNoticePlaying || !c) return; sayText(waiting ? T('storyMoreCity', { n: STORY_MIN }) : T('sayChooseHeroCity', { city: c.say || c.name }), null, true); };   // il manque des amis pour la suite de l'histoire : la voix encourage à revenir
+    if (todo.length) { bookChain(todo, sayNext); return; }
+    sayNext();
   }
   function renderLevels() {
     const grid = $('#level-grid');
