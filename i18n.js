@@ -197,8 +197,14 @@
   function list() { return (window.speechSynthesis ? speechSynthesis.getVoices() : []).filter(v => (v.lang || '').slice(0, 2).toLowerCase() === MM.i18n.lang).sort((a, b) => score(b) - score(a)); }
   function saved() { try { const s = JSON.parse(localStorage.getItem('mini-mission-v1') || '{}'); return (s.voices && s.voices[MM.i18n.lang]) || (MM.i18n.lang === 'fr' ? s.voiceName : '') || ''; } catch (e) { return ''; } }
   function pick() { const l = list(); if (!l.length) return null; const n = saved(); return (n && l.find(v => v.name === n)) || l[0]; }
-  function tune(u) { const v = pick(); if (v) u.voice = v; u.lang = (v && v.lang) || MM.i18n.info().tts; u.pitch = LIVELY.pitch; u.rate = LIVELY.rate; return u; }
-  MM.voice = { score, list, pick, tune, LIVELY };
+  // ce que la voix lit : sans émojis ni symboles (certaines voix les décrivent : « visage souriant »), et les mots en MAJUSCULES
+  // (« OUI ! », « NOS amis ») en minuscules pour qu'ils ne soient pas épelés lettre par lettre ; les sigles connus restent.
+  function clean(t) {
+    return String(t || '').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu, ' ')
+      .replace(/(?<!\p{L})\p{Lu}{2,}(?!\p{L})/gu, (w) => /^(USA|UK|ONU|OK)$/.test(w) ? w : w.toLowerCase()).replace(/[#*_~|<>]/g, ' ').replace(/\s{2,}/g, ' ').trim();
+  }
+  function tune(u) { try { u.text = clean(u.text); } catch (e) {} const v = pick(); if (v) u.voice = v; u.lang = (v && v.lang) || MM.i18n.info().tts; u.pitch = LIVELY.pitch; u.rate = LIVELY.rate; return u; }
+  MM.voice = { score, list, pick, tune, clean, LIVELY };
   if (window.speechSynthesis) try { speechSynthesis.getVoices(); speechSynthesis.addEventListener && speechSynthesis.addEventListener('voiceschanged', () => {}); } catch (e) {}
 })();
 
