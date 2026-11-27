@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '117', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '118', asset = (p) => `${p}?v=${ASSET_V}`;
   // la soucoupe des farceurs passe de temps en temps dans le ciel des villes (l'indice de l'histoire, chapitre 1)
   const ufoImg = new Image(); let UFO = null; ufoImg.src = asset('assets/aliens.webp'); fetch(asset('assets/aliens.json')).then(r => r.json()).then(j => { UFO = j.zap_f1; }).catch(() => {});
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
@@ -281,7 +281,7 @@
       // les 3 héros de la ville : chacun son quartier, coché quand il l'a fini
       const inner = !open ? '<span class="lv-lock" aria-hidden="true">🔒</span>'
         : `<div class="lv-heroes">${HEROES3.map((h, k) => `<span class="lv-h ${Ls[k].done ? 'ok' : Ls[k].tot ? 'go' : ''}">${heroMini(h)}</span>`).join('')}</div>${any ? '' : `<span class="lv-new">${T('newBadge')}</span>`}`;
-      return `<button type="button" role="listitem" class="level-card ${open ? '' : 'locked'} ${all ? 'done' : ''}" data-i="${i}" style="--a:${c.sky[0]};--b:${c.sky[1]};--g:${c.grass}" aria-label="${escapeHtml(T('aLevel', { n: i + 1, city: c.name }))}${open ? '' : T('aLocked')}"><span class="lv-num">${i + 1}</span><span class="lv-flag">${c.flag}</span><span class="lv-icon">${c.icon}</span><b class="lv-name">${escapeHtml(c.name)}</b>${inner}</button>`;
+      return `<button type="button" role="listitem" class="level-card ${open ? '' : 'locked'} ${all ? 'done' : ''}" data-i="${i}" style="--a:${c.sky[0]};--b:${c.sky[1]};--g:${c.grass};--pic:url(${asset(`assets/bg/street${i}.webp`)})" aria-label="${escapeHtml(T('aLevel', { n: i + 1, city: c.name }))}${open ? '' : T('aLocked')}"><span class="lv-num">${i + 1}</span><span class="lv-flag">${c.flag}</span><span class="lv-icon">${c.icon}</span><b class="lv-name">${escapeHtml(c.name)}</b>${inner}</button>`;
     }).join('');
   }
   function pickLevel(i) {
