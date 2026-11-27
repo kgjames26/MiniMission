@@ -549,7 +549,7 @@
     const ALI = ['glouglou_ami', 'boing_ami', 'zap_ami', 'zigzag_ami', 'bidou_ami'];
     const HJ = { ziggy: 'ziggy_j', filou: 'filou_j', titan: 'titan_j' };
     const nf = (pre) => S2 ? Object.keys(S2).filter(k => k.startsWith(pre)).sort((a, b) => parseInt(a.slice(pre.length)) - parseInt(b.slice(pre.length))) : [];
-    const jumps = {}; const RW = RF ? Object.keys(RF).filter(k => k.startsWith('rose_win')).sort((a, b) => parseInt(a.slice(8)) - parseInt(b.slice(8))) : [];
+    const jumps = {}; let RW = [];   // calculés dès que les planches sont chargées (sinon Rose et les héros manqueraient à la fête)
     say(KID ? EN.partyN.replace('{name}', KID) : EN.party); sfx.good(); setTimeout(() => sfx.friend(), 500);
     function frame(now) {
       if (!run) return; const t = (now - t0) / 1000; requestAnimationFrame(frame);
@@ -576,8 +576,8 @@
       const front = [['ziggy', .2], ['filou', .36], ['rose', .64], ['titan', .8]];
       front.forEach(([n, fx], i) => { const x = PW * fx, ph = (t * 1.3 + i * .25) % 1, hop = Math.sin(Math.min(1, ph * 1.6) * Math.PI) * 60 * u;
         c.fillStyle = 'rgba(30,25,70,.25)'; c.beginPath(); c.ellipse(x, gy + 4, 50 * u * (1 - hop / (120 * u)), 10 * u, 0, 0, 7); c.fill();
-        if (n === 'rose') { if (!RF || !roseImg.complete || !RW.length) return; const q = RF[RW[Math.floor(t * 12) % RW.length]], k = .8 * u; c.save(); c.translate(x, gy - hop * .5); c.scale(-k, k); c.drawImage(roseImg, q.x, q.y, q.w, q.h, -q.ax, -q.ay, q.w, q.h); c.restore(); return; }
-        if (!S2 || !s2Img.complete) return; const L = jumps[n] || (jumps[n] = nf(HJ[n])); const q = S2[L.length ? L[Math.min(L.length - 1, Math.floor(ph * L.length))] : HSPR[n][0]]; if (!q) return;
+        if (n === 'rose') { if (RF && !RW.length) RW = Object.keys(RF).filter(k => k.startsWith('rose_win')).sort((a, b) => parseInt(a.slice(8)) - parseInt(b.slice(8))); if (!RF || !roseImg.complete || !RW.length) return; const q = RF[RW[Math.floor(t * 12) % RW.length]], k = .8 * u; if (!q) { RW = []; return; } c.save(); c.translate(x, gy - hop * .5); c.scale(-k, k); c.drawImage(roseImg, q.x, q.y, q.w, q.h, -q.ax, -q.ay, q.w, q.h); c.restore(); return; }
+        if (!S2 || !s2Img.complete) return; const L = (jumps[n] && jumps[n].length) ? jumps[n] : (jumps[n] = nf(HJ[n])); const q = S2[L.length ? L[Math.min(L.length - 1, Math.floor(ph * L.length))] : HSPR[n][0]]; if (!q) return;
         const k = .62 * u; c.save(); c.translate(x, gy - hop); c.scale((fx < .5 ? 1 : -1) * k, k); c.drawImage(s2Img, q.x, q.y, q.w, q.h, -q.ax, -q.ay, q.w, q.h); c.restore(); });
       // confettis
       for (const p of conf) { p.y += p.v * .016 * 3; if (p.y > 1.05) { p.y = -.05; p.x = Math.random(); } p.r += .05; const x = p.x * PW + Math.sin(t * 2 + p.r) * 12, y = p.y * PH;
