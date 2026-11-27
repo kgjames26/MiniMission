@@ -920,3 +920,17 @@ body.peeking .fly-item{visibility:hidden}   /* les objets qui volent vers les co
 /* album en paysage : 6 colonnes et des rangées qui gardent leur hauteur (les autocollants se chevauchaient) */
 .album-grid{grid-auto-rows:max-content}
 @media (orientation:landscape) and (min-height:521px) and (max-height:900px){.album-grid:not(.books){grid-template-columns:repeat(6,minmax(0,1fr))}}
+/* les rangées d'onglets de l'album ne se tassent plus (le compteur des héros débordait sous le bouton) */
+.album-tabs{flex:none}
+.album-tab>span{flex:none}
+/* réglages : le bouton du prénom garde le prénom visible, même sur un téléphone étroit */
+.name-setting .name-edit{width:auto;padding:0 14px;max-width:60%}
+.name-setting .name-edit span:last-child{display:inline;overflow:hidden;text-overflow:ellipsis}
+/* ville finie avec un héros : sa vignette passe au vert avec une médaille ; ville finie avec les trois : carte dorée et trophée */
+.lv-h{border:2px solid transparent}
+.lv-h.ok{background:linear-gradient(#d9f7de,#8fdc9c);border-color:#fff;box-shadow:0 0 0 2px #3fb35c}
+.lv-h.ok::after{content:'★';width:18px;height:18px;right:-1px;top:-1px;font-size:12px;background:#ffcf2e;color:#8a5a00;box-shadow:0 1px 0 #c98f00}
+.lv-h.go{background:rgba(255,255,255,.8)}
+.level-card.done{border-color:#ffd23f;box-shadow:0 5px 0 #d29a12,0 0 18px rgba(255,205,50,.75)}
+.level-card.done::after{content:'🏆';width:34px;height:34px;right:6px;top:4px;font-size:20px;background:linear-gradient(#fff3b0,#ffcf2e);box-shadow:0 2px 0 #c98f00}
+.level-card.done .lv-name{background:linear-gradient(#fff6c8,#ffe27a)}
