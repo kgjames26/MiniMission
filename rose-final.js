@@ -379,7 +379,7 @@
       // ondes du saut de Titan
       for (const r of rings) { const x = E.SX(r.x), y = E.SY(r.y), k = r.t / .8; c.globalAlpha = 1 - k; c.strokeStyle = '#ffda56'; c.lineWidth = 8 * z * (1 - k); c.beginPath(); c.ellipse(x, y, (60 + k * 700) * z, (14 + k * 90) * z, 0, 0, 7); c.stroke(); c.globalAlpha = 1; }
       // la super bulle : une grande onde arc-en-ciel
-      if (wave) { const x = E.SX(wave.x), y = E.SY(wave.y), r = wave.r * z; c.save(); c.globalAlpha = clamp(1.4 - wave.t, 0, 1); c.lineWidth = 16 * z; for (let i = 0; i < 6; i++) { c.strokeStyle = `hsl(${i * 55 + time * 200} 90% 65%)`; c.beginPath(); c.arc(x, y, r - i * 12 * z, 0, 7); c.stroke(); } c.restore(); }
+      if (wave) { const x = E.SX(wave.x), y = E.SY(wave.y), r = wave.r * z; c.save(); c.globalAlpha = clamp(1.4 - wave.t, 0, 1); c.lineWidth = 16 * z; for (let i = 0; i < 6; i++) { c.strokeStyle = `hsl(${i * 55 + time * 200} 90% 65%)`; c.beginPath(); c.arc(x, y, Math.max(1, r - i * 12 * z), 0, 7); c.stroke(); } c.restore(); }
       // la bulle géante de la fin
       if (fin && phase === 'finale' || (fin && ship && ship.st === 'caught' && ship.caught < .3)) { const x = E.SX(fin.x), y = E.SY(fin.y), r = gbR() * z * (1 + Math.sin(time * 5) * .03);
         const g = c.createRadialGradient(x - r * .35, y - r * .35, r * .08, x, y, r); g.addColorStop(0, 'rgba(255,255,255,.85)'); g.addColorStop(.55, 'rgba(160,225,255,.32)'); g.addColorStop(1, 'rgba(255,150,235,.75)'); c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
