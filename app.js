@@ -45,7 +45,7 @@
   const countWord = (n) => window.MM.i18n.count(n);
   // Les images changent de nom à chaque version (?v=…) : le téléphone ne peut pas garder une ancienne planche avec le nouveau code
   // (sinon un monstre ajouté serait dessiné depuis une case vide : invisible). ASSET_V est mis à jour par tools/bump-version.mjs.
-  const ASSET_V = '114', asset = (p) => `${p}?v=${ASSET_V}`;
+  const ASSET_V = '117', asset = (p) => `${p}?v=${ASSET_V}`;
   // la soucoupe des farceurs passe de temps en temps dans le ciel des villes (l'indice de l'histoire, chapitre 1)
   const ufoImg = new Image(); let UFO = null; ufoImg.src = asset('assets/aliens.webp'); fetch(asset('assets/aliens.json')).then(r => r.json()).then(j => { UFO = j.zap_f1; }).catch(() => {});
   const leafImg = new Image(); leafImg.src = asset('assets/friend-flame.webp');
@@ -663,10 +663,46 @@
     const sh = FX.shakeOffset();
     ctx.setTransform(view.scale, 0, 0, view.scale, view.ox + sh.x*view.scale, view.oy + sh.y*view.scale);
     drawSky(time);
-    ctx.save(); ctx.translate(0, world.floor - 426 + (world.camY || 0) * .4); drawHills(); drawTown(time); ctx.restore();   // décors lointains posés sur l'horizon
+    if (!drawStreet()) { ctx.save(); ctx.translate(0, world.floor - 426 + (world.camY || 0) * .4); drawHills(); drawTown(time); ctx.restore(); }   // décor peint de la ville, sinon décors dessinés
     ctx.save(); ctx.translate(0, world.camY || 0);
     drawWorld(time); drawPlayer(time); drawShots(time); FX.draw(ctx, world.camera);
     ctx.restore(); drawAmbient(time);
+  }
+  // BETA : la rue peinte de chaque ville (assets/bg/street<N>.webp) : ciel, monuments et maisons, posée sur le sol du jeu
+  const STREET = {}, GSTREET = new Image(); GSTREET.src = asset('assets/ground/street.webp');
+  function street() { const i = (mission && mission.city) || 0; if (!(i in STREET)) { const im = new Image(); im.src = asset(`assets/bg/street${i}.webp`); STREET[i] = im; } const im = STREET[i]; return im.complete && im.naturalWidth ? im : null; }
+  // pré-rendu à la taille exacte de l'écran (une seule fois par taille) : ensuite, chaque image ne fait qu'une copie sans
+  // redimensionner. Redimensionner une grande image 60 fois par seconde (en qualité « haute ») faisait saccader.
+  const STREET_CACHE = { key: '', cv: null }, STREET_UP = 600;   // hauteur de ciel ajoutée au-dessus du dessin (Filou monte haut)
+  function streetCanvas(im, tw, th) {
+    const S = view.scale, key = (mission ? mission.city : 0) + '|' + Math.round(tw * S) + 'x' + Math.round(th * S);
+    if (STREET_CACHE.key !== key) { const cv = STREET_CACHE.cv || document.createElement('canvas'), w1 = Math.round(tw * S), hi = Math.round(th * S), up = Math.round(STREET_UP * S);
+      cv.width = w1 * 2; cv.height = hi + up; const c = cv.getContext('2d'); c.clearRect(0, 0, cv.width, cv.height);
+      c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high'; c.drawImage(im, 0, up, w1, hi); c.save(); c.translate(w1 * 2, 0); c.scale(-1, 1); c.drawImage(im, 0, up, w1, hi); c.restore();   // une image + son miroir : pas de couture
+      // au-dessus de l'image : le ciel continue, en fondu de la couleur du haut de l'image vers le bleu du ciel du jeu
+      const px = c.getImageData(0, up + 2, cv.width, 1).data; let r = 0, gg = 0, b = 0, n = 0; for (let i = 0; i < px.length; i += 16) { r += px[i]; gg += px[i + 1]; b += px[i + 2]; n++; }
+      const topCol = `rgb(${r / n | 0},${gg / n | 0},${b / n | 0})`, sky = (mission && mission.palette && mission.palette[0]) || '#70d0f4';
+      const g = c.createLinearGradient(0, 0, 0, up + 40 * S); g.addColorStop(0, sky); g.addColorStop(up / (up + 40 * S), topCol); g.addColorStop(1, 'rgba(0,0,0,0)');
+      c.fillStyle = g; c.fillRect(0, 0, cv.width, up); const g2 = c.createLinearGradient(0, up, 0, up + 40 * S); g2.addColorStop(0, topCol); g2.addColorStop(1, topCol.replace('rgb', 'rgba').replace(')', ',0)')); c.fillStyle = g2; c.fillRect(0, up, cv.width, 40 * S);
+      c.fillStyle = 'rgba(255,255,255,.2)'; c.fillRect(0, up, cv.width, hi);   // le voile est cuit dans l'image
+      STREET_CACHE.cv = cv; STREET_CACHE.key = key; }
+    return STREET_CACHE.cv;
+  }
+  const GROUND_CACHE = { key: '', cv: null };
+  function groundCanvas() {
+    if (!GSTREET.complete || !GSTREET.naturalWidth) return null; const S = view.scale, h = Math.round(175 * S), w = Math.round(GSTREET.naturalWidth * 175 / 300 * S), key = w + 'x' + h;
+    if (GROUND_CACHE.key !== key) { const cv = GROUND_CACHE.cv || document.createElement('canvas'); cv.width = w; cv.height = h; const c = cv.getContext('2d'); c.imageSmoothingQuality = 'high'; c.drawImage(GSTREET, 0, 0, w, h); GROUND_CACHE.cv = cv; GROUND_CACHE.key = key; }
+    return GROUND_CACHE.cv;
+  }
+  function blitRow(cv, xWorld, yWorld) {   // copie une bande pré-rendue, répétée sur toute la largeur, en pixels de l'écran
+    const T = ctx.getTransform(), y = Math.round(T.d * yWorld + T.f); let x = Math.round(T.a * xWorld + T.e) % cv.width; if (x > 0) x -= cv.width;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); for (; x < canvas.width; x += cv.width) ctx.drawImage(cv, x, y); ctx.restore();
+  }
+  function drawStreet() {
+    const im = street(); if (!im) return false; const extra = Math.max(0, -viewTop0()), bot = world.floor + 6 + (world.camY || 0);
+    const th = Math.min(Math.max(bot + extra, 420), 520), tw = im.naturalWidth * th / im.naturalHeight, top = bot - th;
+    blitRow(streetCanvas(im, tw, th), -world.camera * .3, top - STREET_UP);
+    return true;
   }
   // la silhouette peinte de la ville, tout au loin (assets/bg/city<N>.webp), posée sur l'horizon et qui défile très lentement
   const SKYLINE = {};
@@ -676,7 +712,7 @@
     let x0 = -((world.camera * .07) % (tw * 2)); if (x0 > 0) x0 -= tw * 2;
     for (let i = 0, x = x0; x < W; i++, x += tw) { ctx.save(); if (i % 2) { ctx.translate(x + tw, top); ctx.scale(-1, 1); } else ctx.translate(x, top); ctx.drawImage(im, 0, 0, tw + (i % 2 ? 0 : 1), th); ctx.restore(); }
   }
-  function drawSky(time){const W=view.w,p=mission?.palette||[],extra=Math.max(0,-viewTop0());const g=ctx.createLinearGradient(0,0,0,WORLD_H);g.addColorStop(0,p[0]||'#70d0f4');g.addColorStop(.67,p[2]||'#c8f1fa');g.addColorStop(1,'#e8f9e9');ctx.fillStyle=g;ctx.fillRect(0,-extra-2,W,extra+WORLD_H+4);drawSkyline();for(let i=0;i<Math.ceil(W/260)+2;i++){const x=((i*260-world.camera*.16+time*3)%(W+260))-130,y=55+(i%3)*48;cloud(x,y,1+(i%2)*.18);}if(extra>40)for(let i=0;i<Math.ceil(W/300)+2;i++){const x=((i*300-world.camera*.1+time*2)%(W+300))-150,y=-extra*(.2+(i%3)*.25);cloud(x,y,1.1+(i%2)*.25);}drawUfo(time);}
+  function drawSky(time){const W=view.w,p=mission?.palette||[],extra=Math.max(0,-viewTop0());const g=ctx.createLinearGradient(0,0,0,WORLD_H);g.addColorStop(0,p[0]||'#70d0f4');g.addColorStop(.67,p[2]||'#c8f1fa');g.addColorStop(1,'#e8f9e9');ctx.fillStyle=g;ctx.fillRect(0,-extra-2,W,extra+WORLD_H+4);if(!street())drawSkyline();for(let i=0;i<Math.ceil(W/260)+2;i++){const x=((i*260-world.camera*.16+time*3)%(W+260))-130,y=55+(i%3)*48;cloud(x,y,1+(i%2)*.18);}if(extra>40)for(let i=0;i<Math.ceil(W/300)+2;i++){const x=((i*300-world.camera*.1+time*2)%(W+300))-150,y=-extra*(.2+(i%3)*.25);cloud(x,y,1.1+(i%2)*.25);}drawUfo(time);}
   function drawUfo(time){if(!UFO||!ufoImg.complete)return;const W=view.w,per=22,ph=(time%per)/per;if(ph>.5)return;const k=ph/.42,x=-120+(W+240)*k,y=250+Math.sin(time*2.2)*14+Math.sin(k*Math.PI)*-20,s=.6;ctx.save();ctx.translate(x,y);ctx.rotate(Math.sin(time*3)*.08);ctx.globalAlpha=.95;ctx.drawImage(ufoImg,UFO.x,UFO.y,UFO.w,UFO.h,-UFO.w*s/2,-UFO.h*s/2,UFO.w*s,UFO.h*s);ctx.restore();ctx.fillStyle='rgba(190,120,255,.55)';for(let i=0;i<5;i++){const a=time*5+i*1.3,d=(i*17+time*40)%60;ctx.beginPath();ctx.arc(x-UFO.w*s*.3-d,y+12+Math.sin(a)*6,2.5,0,7);ctx.fill();}}
   function cloud(x,y,s=1){ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.fillStyle='rgba(255,255,255,.78)';ctx.beginPath();ctx.ellipse(0,12,49,18,0,0,Math.PI*2);ctx.ellipse(-23,2,24,20,0,0,Math.PI*2);ctx.ellipse(0,-5,28,27,0,0,Math.PI*2);ctx.ellipse(26,4,24,19,0,0,Math.PI*2);ctx.fill();ctx.restore();}
   function drawHills(){const W=view.w,TH=theme();if(TH.far&&!skyline())MM.farDraw[TH.far](ctx,W,372,world.camera,TH.far==='fuji'?'#a9a4d0':TH.far==='dunes'?TH.dirt:TH.hill[1]);ctx.fillStyle=TH.hill[0];ctx.beginPath();ctx.moveTo(0,355);for(let x=0;x<=W;x+=5){ctx.lineTo(x,350+28*Math.sin((x+world.camera*.18)/160)+16*Math.sin(x/63));}ctx.lineTo(W,540);ctx.lineTo(0,540);ctx.fill();ctx.fillStyle=TH.hill[1];ctx.beginPath();ctx.moveTo(0,395);for(let x=0;x<=W;x+=5)ctx.lineTo(x,390+22*Math.sin((x+world.camera*.31)/125));ctx.lineTo(W,540);ctx.lineTo(0,540);ctx.fill();}
@@ -840,7 +876,8 @@
     const TH = theme();
     ctx.fillStyle = TH.edge; ctx.fillRect(0, F+13, W, 7);
     ctx.fillStyle = TH.dirt; ctx.fillRect(0, F+25, W, 145);
-    ctx.fillStyle = TH.line; for (let i = -1; i < Math.ceil(W/80)+2; i++) { const x = ((i*80 - cam*.9) % (W+80)); ctx.fillRect(x, F+42, 48, 3); }
+    const gcv = street() && groundCanvas(); if (gcv) { blitRow(gcv, -cam * .9, F - 4); ctx.fillStyle = 'rgba(35,22,55,.55)'; ctx.fillRect(0, F - 5, W, 3); }   // sol peint, pré-rendu
+    else { ctx.fillStyle = TH.line; for (let i = -1; i < Math.ceil(W/80)+2; i++) { const x = ((i*80 - cam*.9) % (W+80)); ctx.fillRect(x, F+42, 48, 3); } }
     world.gaps.forEach(gap => {
       const x = gap.x - cam; if (x + gap.w < 0 || x > W) return;
       if (gapLava(gap)) {
