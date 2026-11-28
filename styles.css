@@ -967,3 +967,20 @@ body.peeking .fly-item{visibility:hidden}   /* les objets qui volent vers les co
 .ending-screen .ending-inner{z-index:2}
 .ending-screen .ending-stats,.ending-screen .end-stats{background:rgba(255,255,255,.92)}
 .ending-screen .ending-confetti{z-index:1}
+
+/* ===== Décor peint des menus (accueil, héros, mode d'emploi, album) : un grand panorama qui dérive doucement ===== */
+.scene{background:#9fdcf7}
+.scene-svg{display:none}
+.scene::before{content:'';position:absolute;inset:-4%;background:url(assets/bg/menu.webp) center 72%/cover no-repeat;animation:menu-drift 46s ease-in-out infinite alternate;will-change:transform}
+.scene::after{content:'';position:absolute;left:-30%;top:4%;width:46%;height:22%;pointer-events:none;opacity:.55;
+  background:radial-gradient(ellipse at 30% 60%,#fff 0 28%,transparent 29%),radial-gradient(ellipse at 55% 45%,#fff 0 30%,transparent 31%),radial-gradient(ellipse at 75% 62%,#fff 0 24%,transparent 25%);
+  filter:blur(2px);animation:menu-cloud 70s linear infinite}
+@keyframes menu-drift{from{transform:scale(1.02) translateX(-1.2%)}to{transform:scale(1.07) translateX(1.2%)}}
+@keyframes menu-cloud{from{transform:translateX(0)}to{transform:translateX(330%)}}
+@media (prefers-reduced-motion:reduce){.scene::before,.scene::after{animation:none}}
+
+/* ===== Cartes des héros : un décor peint pour chacun (Ziggy la piste, Filou les toits, Titan les montagnes) ===== */
+.hero-card.ziggy{background:linear-gradient(180deg,rgba(255,240,200,.05) 35%,rgba(255,236,190,.82) 80%),url(assets/bg/hero-ziggy.webp) 50% 40%/cover}
+.hero-card.filou{background:linear-gradient(180deg,rgba(230,220,255,.05) 35%,rgba(225,215,255,.82) 80%),url(assets/bg/hero-filou.webp) 50% 30%/cover}
+.hero-card.titan{background:linear-gradient(180deg,rgba(230,250,200,.05) 35%,rgba(225,248,195,.82) 80%),url(assets/bg/hero-titan.webp) 60% 40%/cover}
+.hero-card::before{background:radial-gradient(circle at 50% 40%,rgba(255,255,255,.6),rgba(255,255,255,0) 55%)}
