@@ -75,7 +75,7 @@
       alpha: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
       // nom des lettres tel qu'il se prononce (la synthèse vocale lit mal une lettre seule : « Y » devient « i »)
       say: { A: 'a', B: 'bé', C: 'cé', D: 'dé', E: 'e', F: 'effe', G: 'gé', H: 'hache', I: 'i', J: 'ji', K: 'ka', L: 'elle', M: 'emme', N: 'enne', O: 'o', P: 'pé', Q: 'ku', R: 'erre', S: 'esse', T: 'té', U: 'u', V: 'vé', W: 'double vé', X: 'iks', Y: 'i grec', Z: 'zède' },
-      words: { A: ['avion', '✈️'], B: ['ballon', '🎈'], C: ['chat', '🐱'], D: ['dauphin', '🐬'], E: ['éléphant', '🐘'], F: ['fusée', '🚀'], G: ['girafe', '🦒'], H: ['hibou', '🦉'], I: ['igloo', '🏠'], J: ['jus', '🧃'], K: ['koala', '🐨'], L: ['lion', '🦁'], M: ['maison', '🏡'], N: ['nuage', '☁️'], O: ['ours', '🐻'], P: ['pomme', '🍎'], Q: ['quatre', '4️⃣'], R: ['robot', '🤖'], S: ['soleil', '☀️'], T: ['tortue', '🐢'], U: ['ukulélé', '🎸'], V: ['vélo', '🚲'], W: ['wagon', '🚃'], X: ['xylophone', '🎶'], Y: ['yaourt', '🥛'], Z: ['zèbre', '🦓'] }
+      words: { A: [['avion', '✈️'], ['ananas', '🍍'], ['arbre', '🌳'], ['abeille', '🐝']], B: [['ballon', '🎈'], ['bateau', '⛵'], ['banane', '🍌'], ['bébé', '👶']], C: [['cerise', '🍒'], ['citron', '🍋'], ['cirque', '🎪'], ['cinq', '5️⃣']], D: [['dauphin', '🐬'], ['dinosaure', '🦕'], ['dragon', '🐉'], ['dé', '🎲']], E: [['éléphant', '🐘'], ['étoile', '⭐'], ['école', '🏫']], F: [['fusée', '🚀'], ['fleur', '🌸'], ['fraise', '🍓'], ['fourmi', '🐜']], G: [['girafe', '🦒'], ['genou', '🦵'], ['gilet', '🦺']], H: [['hibou', '🦉'], ['hérisson', '🦔'], ['haricot', '🫘']], I: [['igloo', '🛖'], ['île', '🏝️'], ['iguane', '🦎']], J: [['jus', '🧃'], ['jouet', '🧸'], ['jaune', '💛'], ['jardin', '🪴']], K: [['koala', '🐨'], ['kangourou', '🦘'], ['kiwi', '🥝']], L: [['lion', '🦁'], ['lune', '🌙'], ['lapin', '🐰'], ['lait', '🥛']], M: [['maison', '🏡'], ['maman', '👩'], ['mouton', '🐑'], ['main', '✋']], N: [['nuage', '☁️'], ['nid', '🪺'], ['neige', '❄️'], ['nez', '👃']], O: [['ours', '🐻'], ['orange', '🍊'], ['olive', '🫒'], ['os', '🦴']], P: [['pomme', '🍎'], ['papa', '👨'], ['poisson', '🐟'], ['pain', '🍞']], Q: [['quatre', '4️⃣'], ['quille', '🎳'], ['quiche', '🥧']], R: [['robot', '🤖'], ['renard', '🦊'], ['raisin', '🍇'], ['roue', '🛞']], S: [['soleil', '☀️'], ['serpent', '🐍'], ['sapin', '🎄'], ['souris', '🐭']], T: [['tortue', '🐢'], ['tomate', '🍅'], ['train', '🚂'], ['tambour', '🥁']], U: [['usine', '🏭'], ['uniforme', '👕'], ['univers', '🌌']], V: [['vélo', '🚲'], ['vache', '🐮'], ['voiture', '🚗'], ['volcan', '🌋']], W: [['wagon', '🚃']], X: [['xylophone', '🎶']], Y: [['yaourt', '🥛'], ['yoyo', '🪀'], ['yeux', '👀']], Z: [['zèbre', '🦓'], ['zéro', '0️⃣'], ['zoo', '🦒']] }
     },
     quiz: {
       animals: [['🐱', 'le chat', 'miaou'], ['🐶', 'le chien', 'ouaf ouaf'], ['🐮', 'la vache', 'meuh'], ['🐑', 'le mouton', 'bê'], ['🐷', 'le cochon', 'groin groin'], ['🦆', 'le canard', 'coin coin'], ['🐸', 'la grenouille', 'coa coa'], ['🐔', 'la poule', 'cot cot'], ['🦁', 'le lion', 'grrr'], ['🐝', 'l’abeille', 'bzzz'], ['🐴', 'le cheval', 'hiii'], ['🐓', 'le coq', 'cocorico']],
@@ -138,7 +138,10 @@
   const letterSay = (l) => letters().say[l] || l;
   // « B, comme ballon ! » : la phrase à dire et le petit dessin, dans la langue choisie
   function letterPhrase(l) {
-    const w = letters().words[l]; if (!w) return { say: letterSay(l), emoji: '' };
+    let w = letters().words[l]; if (!w) return { say: letterSay(l), emoji: '' };
+    // plusieurs mots par lettre : ils tournent d'une fois à l'autre (et d'un niveau à l'autre), pour ne pas toujours entendre le même
+    if (Array.isArray(w[0])) { const key = 'mm.lw.' + (lang || 'fr'); let st = {}; try { st = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) {}
+      const n = st[l] || 0; w = w[n % w.length]; st[l] = n + 1; try { localStorage.setItem(key, JSON.stringify(st)); } catch (e) {} }
     return { say: w[2] || t('letterLike', { l: letterSay(l), w: w[0] }), emoji: w[1] };
   }
   function count(n) { const c = cur().count || L10N.fr.count; return c[n] != null ? c[n] : String(n); }
