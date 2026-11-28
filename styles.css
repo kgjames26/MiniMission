@@ -984,3 +984,16 @@ body.peeking .fly-item{visibility:hidden}   /* les objets qui volent vers les co
 .hero-card.filou{background:linear-gradient(180deg,rgba(230,220,255,.05) 35%,rgba(225,215,255,.82) 80%),url(assets/bg/hero-filou.webp) 50% 30%/cover}
 .hero-card.titan{background:linear-gradient(180deg,rgba(230,250,200,.05) 35%,rgba(225,248,195,.82) 80%),url(assets/bg/hero-titan.webp) 60% 40%/cover}
 .hero-card::before{background:radial-gradient(circle at 50% 40%,rgba(255,255,255,.6),rgba(255,255,255,0) 55%)}
+
+/* ===== Espace et chapitres en peinture : nébuleuse peinte (Gemini) et vraie rue de Paris sur la carte « La Terre » ===== */
+.space-screen{background:#141048}
+.space-screen::before{content:'';position:absolute;inset:-5%;z-index:0;pointer-events:none;background:url(assets/bg/space.webp) center/cover no-repeat;animation:space-drift 60s ease-in-out infinite alternate;will-change:transform}
+.space-screen::after{content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(circle,#fff 0 1.2px,transparent 1.8px) 0 0/97px 89px,radial-gradient(circle,#fff 0 1px,transparent 1.6px) 40px 30px/131px 113px;animation:space-twinkle 3.6s ease-in-out infinite alternate;opacity:.7}
+.space-screen>*{position:relative;z-index:1}
+@keyframes space-drift{from{transform:scale(1.02) rotate(-.6deg)}to{transform:scale(1.08) rotate(.6deg)}}
+@keyframes space-twinkle{from{opacity:.25}to{opacity:.85}}
+.chap-card.c1{--bg:url("assets/bg/street0.webp") 40% bottom / cover no-repeat}
+.chap-card.c2{--bg:url("assets/bg/space.webp") 35% center / cover no-repeat}
+.chapter-screen .chap-card.c1 .chap-globe{opacity:.95}
+@media (prefers-reduced-motion:reduce){.space-screen::before,.space-screen::after{animation:none}}
